@@ -1,0 +1,79 @@
+.punk-btn {
+    position: relative;
+    border: none;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+    outline-offset: 4px;
+    transition: filter 250ms;
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+}
+
+.punk-btn-content {
+    display: block;
+    position: relative;
+    padding: 12px 24px;
+    background-color: var(--punk-primary);
+    color: #fff;
+    border: 2px solid var(--punk-primary);
+    transition: transform 0.1s;
+    z-index: 2;
+}
+
+.punk-btn-primary .punk-btn-content {
+    background-color: var(--punk-primary);
+    color: #fff;
+}
+
+.punk-btn-secondary .punk-btn-content {
+    background-color: transparent;
+    color: var(--punk-primary);
+    border: 1px solid var(--punk-primary);
+}
+
+.punk-btn-outline .punk-btn-content {
+    background-color: transparent;
+    color: var(--punk-text);
+    border: 1px solid var(--punk-border);
+}
+
+
+.punk-btn:hover .punk-btn-content {
+    transform: translate(-2px, -2px);
+}
+
+.punk-btn:active .punk-btn-content {
+    transform: translate(0, 0);
+}
+
+.punk-btn::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--punk-secondary);
+    z-index: 1;
+    transform: translate(4px, 4px);
+    transition: transform 0.1s;
+}
+
+.punk-btn-secondary::after {
+    background-color: var(--punk-primary);
+    opacity: 0.3;
+}
+
+.punk-btn:hover::after {
+    transform: translate(6px, 6px);
+}
+
+.punk-btn:active::after {
+    transform: translate(0px, 0px);
+}

@@ -1,0 +1,75 @@
+.create-page {
+    padding: 4rem 2rem;
+    max-width: 800px;
+    /* Narrower for form */
+}
+
+.create-form-container {
+    background: rgba(20, 20, 20, 0.8);
+    padding: 3rem;
+    border-radius: 8px;
+    /* Slight rounding if desired, or keep sharp for punk */
+}
+
+.form-group {
+    margin-bottom: 2rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+label {
+    display: block;
+    font-family: var(--font-display);
+    color: var(--punk-secondary);
+    margin-bottom: 0.8rem;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+}
+
+input,
+textarea {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--punk-border);
+    padding: 1rem;
+    color: #fff;
+    font-family: var(--font-main);
+    font-size: 1rem;
+    transition: all 0.3s;
+    outline: none;
+}
+
+input:focus,
+textarea:focus {
+    border-color: var(--punk-primary);
+    box-shadow: 0 0 10px rgba(255, 0, 255, 0.2);
+}
+
+.upload-area {
+    border: 2px dashed var(--punk-border);
+    padding: 3rem;
+    text-align: center;
+    color: #888;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.upload-area:hover {
+    border-color: var(--punk-secondary);
+    color: #fff;
+    background: rgba(0, 255, 255, 0.05);
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .create-form-container {
+        padding: 1.5rem;
+    }
+}

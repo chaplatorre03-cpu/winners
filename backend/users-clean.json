@@ -1,0 +1,37 @@
+[
+  {
+    "email": "admin@rifary.com",
+    "name": "GEFERSON ALEXANDER LATORRE ZAMBRANO",
+    "role": "ADMIN"
+  },
+  {
+    "email": "user@rifary.com",
+    "name": "Test User",
+    "role": "USER"
+  },
+  {
+    "email": "alexander.latorre@celya.co",
+    "name": "Alexander Latorre",
+    "role": "USER"
+  },
+  {
+    "email": "test@example.com",
+    "name": "Test User",
+    "role": "USER"
+  },
+  {
+    "email": "test2@example.co",
+    "name": "Al la",
+    "role": "USER"
+  },
+  {
+    "email": "",
+    "name": "",
+    "role": "USER"
+  },
+  {
+    "email": "test3@example.com",
+    "name": "Alex Test three",
+    "role": "USER"
+  }
+]
