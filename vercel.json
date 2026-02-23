@@ -3,18 +3,11 @@
     "rewrites": [
         {
             "source": "/api/(.*)",
-            "destination": "/backend/src/index.js"
+            "destination": "backend/src/index.js"
         },
         {
             "source": "/(.*)",
-            "destination": "/frontend/dist/$1"
-        }
-    ],
-    "redirects": [
-        {
-            "source": "/",
-            "destination": "/frontend/dist/index.html",
-            "permanent": false
+            "destination": "/$1"
         }
     ]
 }
