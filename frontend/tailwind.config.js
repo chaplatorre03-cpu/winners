@@ -18,7 +18,7 @@ export default {
                     light: '#ff66eb',   // Lighter Pink/Magenta
                 },
                 accent: {
-                    DEFAULT: '#d000ff', // Vivid Purple
+                    DEFAULT: '#00ff00', // Neon Green (was Vivid Purple #d000ff)
                 }
             },
             fontFamily: {

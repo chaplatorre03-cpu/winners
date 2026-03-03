@@ -325,6 +325,9 @@ const Register = () => {
                                             name="password"
                                             type={showPassword ? 'text' : 'password'}
                                             required
+                                            spellCheck="false"
+                                            autoCorrect="off"
+                                            autoCapitalize="off"
                                             value={formData.password}
                                             onChange={handleChange}
                                             autoComplete="new-password"
@@ -370,6 +373,9 @@ const Register = () => {
                                             name="confirmPassword"
                                             type={showPassword ? 'text' : 'password'}
                                             required
+                                            spellCheck="false"
+                                            autoCorrect="off"
+                                            autoCapitalize="off"
                                             value={formData.confirmPassword}
                                             onChange={handleChange}
                                             autoComplete="new-password"
@@ -389,10 +395,9 @@ const Register = () => {
                                             name="acceptPolicy"
                                             type="checkbox"
                                             required
-                                            disabled
                                             checked={formData.acceptPolicy}
-                                            onChange={(e) => { }} // Controlled by modal
-                                            className="w-5 h-5 border border-gray-600 rounded bg-[#1a1a1a] text-primary cursor-not-allowed opacity-70"
+                                            onChange={(e) => setFormData({ ...formData, acceptPolicy: e.target.checked })}
+                                            className="w-5 h-5 border border-gray-600 rounded bg-[#1a1a1a] text-primary cursor-pointer transition-all"
                                             onInvalid={(e) => e.target.setCustomValidity('Debes aceptar la política de privacidad')}
                                             onInput={(e) => e.target.setCustomValidity('')}
                                         />
@@ -402,7 +407,7 @@ const Register = () => {
                                         <button
                                             type="button"
                                             onClick={() => setShowPrivacyModal(true)}
-                                            className="text-primary hover:text-primary-dark hover:underline font-semibold"
+                                            className="text-[#ff00de] hover:brightness-110 hover:underline font-semibold"
                                         >
                                             Política de Privacidad
                                         </button>
@@ -515,7 +520,7 @@ const Register = () => {
                             ¿Ya tienes cuenta?{' '}
                             <button
                                 onClick={() => navigate('/login')}
-                                className="text-primary hover:text-primary-dark font-semibold hover:underline"
+                                className="text-[#ff00de] hover:brightness-110 font-semibold hover:underline"
                             >
                                 Inicia sesión
                             </button>

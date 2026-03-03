@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { X, ArrowLeft, CheckCircle } from 'lucide-react';
 import WinnersLogo from '../components/WinnersLogo';
+import CloseButton from '../components/CloseButton';
 
 const PrivacyPolicyModal = ({ onClose, onAccept, initialAccepted = false }) => {
     const [hasScrolledToBottom, setHasScrolledToBottom] = useState(initialAccepted);
@@ -16,18 +17,13 @@ const PrivacyPolicyModal = ({ onClose, onAccept, initialAccepted = false }) => {
 
     return (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-[#0a0a0a] w-full max-w-4xl max-h-[90vh] rounded-2xl border border-gray-800 flex flex-col shadow-2xl">
+            <div className="bg-[#0a0a0a] w-full max-w-4xl max-h-[90vh] rounded-2xl border border-gray-800 flex flex-col shadow-2xl relative">
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-800 bg-[#0a0a0a] rounded-t-2xl z-10">
+                <div className="flex items-center justify-between pt-16 md:pt-20 px-6 pb-6 border-b border-gray-800 bg-[#0a0a0a] rounded-t-2xl z-10">
                     <div className="flex items-center">
                         <WinnersLogo size="small" />
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="p-2 hover:bg-gray-800 rounded-full transition-colors text-gray-400 hover:text-white"
-                    >
-                        <X className="h-6 w-6" />
-                    </button>
+                    <CloseButton onClick={onClose} />
                 </div>
 
                 {/* Content */}
@@ -40,7 +36,6 @@ const PrivacyPolicyModal = ({ onClose, onAccept, initialAccepted = false }) => {
                         <h1 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                             Política de Privacidad
                         </h1>
-                        <p className="text-gray-400">Última actualización: {new Date().toLocaleDateString()}</p>
                     </div>
 
                     <div className="space-y-8 text-gray-300 leading-relaxed">

@@ -175,6 +175,10 @@ const Login = () => {
 
             setSuccessMessage('¡Contraseña actualizada! Ya puedes iniciar sesión.');
             setStep('login');
+            setFormData({
+                email: resetEmail,
+                password: ''
+            });
             setResetEmail('');
             setResetCode('');
             setNewPassword('');
@@ -277,6 +281,9 @@ const Login = () => {
                             type={showPassword ? 'text' : 'password'}
                             required
                             autoComplete="current-password"
+                            spellCheck="false"
+                            autoCorrect="off"
+                            autoCapitalize="off"
                             value={formData.password}
                             onChange={handleChange}
                             className="input-field pl-10 pr-10 focus:ring-primary focus:border-primary"
@@ -501,6 +508,9 @@ const Login = () => {
                         <input
                             type={showNewPassword ? 'text' : 'password'}
                             required
+                            spellCheck="false"
+                            autoCorrect="off"
+                            autoCapitalize="off"
                             value={newPassword}
                             onChange={(e) => { setNewPassword(e.target.value); setError(''); }}
                             className="input-field pl-10 pr-10"
@@ -545,6 +555,9 @@ const Login = () => {
                         <input
                             type={showNewPassword ? 'text' : 'password'}
                             required
+                            spellCheck="false"
+                            autoCorrect="off"
+                            autoCapitalize="off"
                             value={confirmNewPassword}
                             onChange={(e) => { setConfirmNewPassword(e.target.value); setError(''); }}
                             className="input-field pl-10"

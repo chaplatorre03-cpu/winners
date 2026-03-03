@@ -1,7 +1,8 @@
 :root {
     --Winners-primary: #8b00ff;
     --Winners-secondary: #ff00de;
-    --Winners-accent: #d000ff;
+    --Winners-accent: #00ff00;
+    /* Neon Green */
     --bg-white: #ffffff;
     --bg-light: #f8fafc;
     --border-color: #f1f5f9;
@@ -247,7 +248,7 @@
 .pagado-card {
     background: white;
     border: 2px solid var(--Winners-accent);
-    box-shadow: 0 15px 35px -12px rgba(208, 0, 255, 0.2);
+    box-shadow: 0 15px 35px -12px rgba(0, 255, 0, 0.2);
 }
 
 .stat-header {
@@ -297,7 +298,7 @@
 
 .stat-badge.pagado {
     background-color: var(--Winners-accent);
-    color: #fff;
+    color: #000;
 }
 
 /* Participants Section */
@@ -366,7 +367,7 @@
 
 .participant-status.pagado {
     background: var(--Winners-accent);
-    color: #fff;
+    color: #000;
 }
 
 /* Modals */

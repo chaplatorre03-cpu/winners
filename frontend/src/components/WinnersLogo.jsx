@@ -136,7 +136,7 @@ const WinnersLogo = ({ size = 'medium', className = '' }) => {
         `}
       </style>
 
-      <div className="neo-punk-logo neo-punk-container relative z-10 flex items-center bg-gray-900 rounded-xl px-5 py-2.5 border-2 border-[#8b00ff]/30 overflow-hidden transition-all duration-500 group-hover:border-[#ff00de]/80 group-hover:bg-black group-hover:brightness-[1.5]">
+      <div className="neo-punk-logo neo-punk-container relative z-10 flex items-center bg-gray-900 rounded-xl px-3 py-1 md:px-5 md:py-2.5 border-2 border-[#8b00ff]/30 overflow-hidden transition-all duration-500 group-hover:border-[#ff00de]/80 group-hover:bg-black group-hover:brightness-[1.5]">
         {/* Background Grids and Scans */}
         <div className="absolute inset-0 cyber-grid opacity-10 group-hover:opacity-30 transition-opacity" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#8b00ff]/5 to-transparent pointer-events-none" />

@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import {
     Home, Menu, Plus, ChevronDown, ChevronUp, MoreVertical,
     Grid, Settings, Trophy, X, Calendar, DollarSign,
-    Ticket, Layout, LogOut, User, Mail, Phone, Lock, CheckCircle
+    Ticket, Layout, LogOut, User, Mail, Phone, Lock, CheckCircle, Eye, EyeOff
 } from 'lucide-react';
 import WinnersLogo from '../components/WinnersLogo';
+import CloseButton from '../components/CloseButton';
 
 import { API_URL } from '../config';
 
@@ -27,8 +28,11 @@ const Dashboard = () => {
         name: '',
         email: '',
         phone: '',
-        password: ''
+        password: '',
+        confirmPassword: ''
     });
+    const [showPassword, setShowPassword] = useState(false);
+    const [profileError, setProfileError] = useState('');
 
     const [newRaffle, setNewRaffle] = useState({
         title: '',
@@ -57,9 +61,12 @@ const Dashboard = () => {
                 name: currentUser.name || '',
                 email: currentUser.email || '',
                 phone: currentUser.phone || '',
-                password: ''
+                password: '',
+                confirmPassword: ''
             });
             setPhoneError('');
+            setProfileError('');
+            setShowPassword(false);
         }
     }, [showEditProfileModal, currentUser]);
 
@@ -147,6 +154,19 @@ const Dashboard = () => {
         if (editProfileForm.phone.length !== 10) {
             setPhoneError('El teléfono debe tener 10 dígitos');
             return;
+        }
+
+        if (editProfileForm.password) {
+            if (editProfileForm.password !== editProfileForm.confirmPassword) {
+                setProfileError('Las contraseñas no coinciden');
+                return;
+            }
+
+            const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/;
+            if (!passwordRegex.test(editProfileForm.password)) {
+                setProfileError('La contraseña no cumple con los requisitos de seguridad');
+                return;
+            }
         }
 
         try {
@@ -341,7 +361,12 @@ const Dashboard = () => {
                                                     <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">{new Date(raffle.endDate).toLocaleDateString()}</p>
                                                 </div>
                                             </div>
-                                            <Trophy className="w-5 h-5 text-gray-300 group-hover:text-yellow-500 transition-colors" />
+                                            <div className="flex items-center space-x-3">
+                                                <span className="text-[10px] font-black text-sky-400 bg-sky-400/10 px-2 py-1 rounded-lg transition-all">
+                                                    {Math.round(((raffle.paidTicketsCount || 0) / raffle.totalTickets) * 100)}% PAGADO
+                                                </span>
+                                                <Trophy className="w-5 h-5 text-gray-300 group-hover:text-yellow-500 transition-colors" />
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -357,13 +382,8 @@ const Dashboard = () => {
                     <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center p-0 md:p-4">
                         <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setShowCreateModal(false)}></div>
                         <div className="relative bg-white w-full max-w-lg md:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden animate-slide-up md:animate-scale-in max-h-[95vh] flex flex-col">
-                            <div className="bg-gradient-to-r from-primary to-secondary p-6 md:p-8 text-white relative shrink-0">
-                                <button
-                                    onClick={() => setShowCreateModal(false)}
-                                    className="absolute top-4 md:top-6 right-4 md:right-6 p-2 hover:bg-white/20 rounded-xl transition-colors"
-                                >
-                                    <X className="w-5 h-5 md:w-6 md:h-6" />
-                                </button>
+                            <div className="bg-gradient-to-r from-primary to-secondary pt-16 md:pt-20 px-6 md:px-8 pb-6 md:pb-8 text-white relative shrink-0">
+                                <CloseButton onClick={() => setShowCreateModal(false)} />
                                 <h2 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase mb-1 md:mb-2">Nueva ronda</h2>
                                 <p className="text-white/80 font-bold text-xs md:text-sm">Configura tu próximo sorteo</p>
                             </div>
@@ -484,15 +504,15 @@ const Dashboard = () => {
                     <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center p-0 md:p-4">
                         <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setShowEditProfileModal(false)}></div>
                         <div className="relative bg-white w-full max-w-lg md:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden animate-scale-in max-h-[95vh] flex flex-col">
-                            <div className="bg-gradient-to-r from-primary to-secondary p-6 md:p-8 text-white relative shrink-0">
-                                <button
-                                    onClick={() => setShowEditProfileModal(false)}
-                                    className="absolute top-4 md:top-6 right-4 md:right-6 p-2 hover:bg-white/20 rounded-xl transition-colors"
-                                >
-                                    <X className="w-5 h-5 md:w-6 md:h-6" />
-                                </button>
+                            <div className="bg-gradient-to-r from-primary to-secondary pt-16 md:pt-20 px-6 md:px-8 pb-6 md:pb-8 text-white relative shrink-0">
+                                <CloseButton onClick={() => setShowEditProfileModal(false)} />
                                 <h2 className="text-3xl font-black italic tracking-tighter uppercase mb-2">Mi Perfil</h2>
                                 <p className="text-white/80 font-bold text-sm">Actualiza tu información personal</p>
+                                {profileError && (
+                                    <div className="mt-2 bg-red-500/10 border border-red-500/50 p-2 rounded-lg">
+                                        <p className="text-[10px] md:text-xs font-bold text-red-500 uppercase tracking-widest">{profileError}</p>
+                                    </div>
+                                )}
                             </div>
 
                             <form onSubmit={handleUpdateProfile} className="p-8 space-y-6 overflow-y-auto custom-scrollbar">
@@ -519,7 +539,7 @@ const Dashboard = () => {
                                     </div>
 
                                     <div className="space-y-1.5 opacity-60">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Correo Electrónico (No editable)</label>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Correo Electrónico</label>
                                         <div className="relative group">
                                             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                             <input
@@ -533,7 +553,7 @@ const Dashboard = () => {
                                     </div>
 
                                     <div className="space-y-1.5 opacity-60">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Teléfono (No editable)</label>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Teléfono</label>
                                         <div className="relative group">
                                             <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                             <input
@@ -548,19 +568,83 @@ const Dashboard = () => {
 
                                     <div className="border-t border-gray-100 my-4 pt-4">
                                         <h4 className="text-sm font-bold text-gray-500 mb-4 uppercase tracking-wider">Seguridad</h4>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Nueva Contraseña (Opcional)</label>
-                                            <div className="relative group">
-                                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-primary transition-colors" />
-                                                <input
-                                                    type="password"
-                                                    autoComplete="new-password"
-                                                    placeholder="Dejar vacía para no cambiar"
-                                                    className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900"
-                                                    value={editProfileForm.password}
-                                                    onChange={(e) => setEditProfileForm({ ...editProfileForm, password: e.target.value })}
-                                                />
+                                        <div className="space-y-4">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Nueva Contraseña (Opcional)</label>
+                                                <div className="relative group">
+                                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-primary transition-colors" />
+                                                    <input
+                                                        type={showPassword ? 'text' : 'password'}
+                                                        autoComplete="new-password"
+                                                        spellCheck="false"
+                                                        autoCorrect="off"
+                                                        autoCapitalize="off"
+                                                        placeholder="Dejar vacía para no cambiar"
+                                                        className="input-field pl-12 pr-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900"
+                                                        value={editProfileForm.password}
+                                                        onChange={(e) => {
+                                                            setEditProfileForm({ ...editProfileForm, password: e.target.value });
+                                                            setProfileError('');
+                                                        }}
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowPassword(!showPassword)}
+                                                        className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:text-primary transition-colors"
+                                                    >
+                                                        {showPassword ? <EyeOff className="h-5 w-5 text-gray-400" /> : <Eye className="h-5 w-5 text-gray-400" />}
+                                                    </button>
+                                                </div>
+
+                                                {/* Requerimientos - Solo mostrar si se empieza a escribir */}
+                                                {editProfileForm.password && (
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 mt-3 px-1">
+                                                        <div className={`text-[10px] flex items-center gap-2 ${editProfileForm.password.length >= 8 ? 'text-green-500 font-bold' : 'text-gray-400'}`}>
+                                                            <div className={`w-1.5 h-1.5 rounded-full ${editProfileForm.password.length >= 8 ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]' : 'bg-gray-300'}`} />
+                                                            Mínimo 8 caracteres
+                                                        </div>
+                                                        <div className={`text-[10px] flex items-center gap-2 ${/[A-Z]/.test(editProfileForm.password) ? 'text-green-500 font-bold' : 'text-gray-400'}`}>
+                                                            <div className={`w-1.5 h-1.5 rounded-full ${/[A-Z]/.test(editProfileForm.password) ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]' : 'bg-gray-300'}`} />
+                                                            Una mayúscula
+                                                        </div>
+                                                        <div className={`text-[10px] flex items-center gap-2 ${/\d/.test(editProfileForm.password) ? 'text-green-500 font-bold' : 'text-gray-400'}`}>
+                                                            <div className={`w-1.5 h-1.5 rounded-full ${/\d/.test(editProfileForm.password) ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]' : 'bg-gray-300'}`} />
+                                                            Un número
+                                                        </div>
+                                                        <div className={`text-[10px] flex items-center gap-2 ${/[!@#$%^&*(),.?":{}|<>]/.test(editProfileForm.password) ? 'text-green-500 font-bold' : 'text-gray-400'}`}>
+                                                            <div className={`w-1.5 h-1.5 rounded-full ${/[!@#$%^&*(),.?":{}|<>]/.test(editProfileForm.password) ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]' : 'bg-gray-300'}`} />
+                                                            Un carácter especial
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
+
+                                            {/* Campo Confirmar */}
+                                            {editProfileForm.password && (
+                                                <div className="space-y-1.5 animate-slide-up">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Confirmar Contraseña</label>
+                                                    <div className="relative group">
+                                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-primary transition-colors" />
+                                                        <input
+                                                            type={showPassword ? 'text' : 'password'}
+                                                            autoComplete="new-password"
+                                                            spellCheck="false"
+                                                            autoCorrect="off"
+                                                            autoCapitalize="off"
+                                                            placeholder="Repite tu nueva contraseña"
+                                                            className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900"
+                                                            value={editProfileForm.confirmPassword}
+                                                            onChange={(e) => {
+                                                                setEditProfileForm({ ...editProfileForm, confirmPassword: e.target.value });
+                                                                setProfileError('');
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    {editProfileForm.confirmPassword && editProfileForm.password !== editProfileForm.confirmPassword && (
+                                                        <p className="text-[10px] text-red-500 font-bold mt-1 ml-1 uppercase tracking-tight">Las contraseñas no coinciden</p>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -579,13 +663,8 @@ const Dashboard = () => {
                 showLogoutConfirm && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-md transition-opacity" onClick={() => setShowLogoutConfirm(false)}></div>
-                        <div className="relative bg-white/90 backdrop-blur-2xl w-full max-w-md rounded-[3rem] p-10 shadow-[0_40px_100px_rgba(0,0,0,0.2)] border-2 border-gray-100 overflow-hidden animate-scale-in">
-                            <button
-                                onClick={() => setShowLogoutConfirm(false)}
-                                className="absolute top-6 right-6 p-2 hover:bg-gray-50 rounded-xl transition-colors z-20"
-                            >
-                                <X className="w-6 h-6 text-gray-400" />
-                            </button>
+                        <div className="relative bg-white/90 backdrop-blur-2xl w-full max-w-md rounded-[3rem] pt-16 md:pt-20 px-10 pb-10 shadow-[0_40px_100px_rgba(0,0,0,0.2)] border-2 border-gray-100 overflow-hidden animate-scale-in">
+                            <CloseButton onClick={() => setShowLogoutConfirm(false)} />
                             {/* Design details */}
 
 
@@ -618,7 +697,7 @@ const Dashboard = () => {
                 showSuccessModal && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-md animate-fade-in" onClick={() => setShowSuccessModal(false)}></div>
-                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-[2rem] p-8 shadow-2xl border-2 border-white/50 animate-scale-in text-center">
+                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-[2rem] pt-16 md:pt-20 px-8 pb-8 shadow-2xl border-2 border-white/50 animate-scale-in text-center">
 
 
                             <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 relative">

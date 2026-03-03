@@ -3,12 +3,13 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
     Home, Grid, Settings, Trophy, Plus, Search,
     Filter, AlertTriangle, ExternalLink, User as UserIcon,
-    ChevronRight, ArrowLeft, X, Check, Clock, AlertCircle, Layout, Trash2,
+    ChevronRight, ArrowLeft, X, Check, Clock, AlertCircle, Layout, Trash2, Calendar,
     Image as ImageIcon, Ticket, CheckCircle, Phone, QrCode, Copy
 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import WinnersLogo from '../components/WinnersLogo';
 import AdminSidebar from '../components/AdminSidebar';
+import CloseButton from '../components/CloseButton';
 
 import { API_URL } from '../config';
 
@@ -293,6 +294,7 @@ const RaffleManagement = () => {
 
         const matchesSearch = t.buyerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             t.number.toString().includes(searchQuery) ||
+            (t.buyerPhone && t.buyerPhone.includes(searchQuery)) ||
             day.includes(searchQuery) ||
             month.includes(searchQuery) ||
             year.includes(searchQuery) ||
@@ -386,7 +388,7 @@ const RaffleManagement = () => {
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <input
                                     type="text"
-                                    placeholder="Buscar participante, número o fecha..."
+                                    placeholder="Buscar..."
                                     className="input-field pl-10 bg-white border-gray-100 text-gray-900"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -400,7 +402,7 @@ const RaffleManagement = () => {
                         {(() => {
                             const activeColor = !statusFilter ? '#00d1ff' :
                                 statusFilter === 'REVISANDO' ? '#ff00de' :
-                                    statusFilter === 'PAGADO' ? '#d000ff' :
+                                    statusFilter === 'PAGADO' ? '#00ff00' :
                                         '#8b00ff';
 
                             const currentVal = statusFilter === 'APARTADO' ? stats.apartado :
@@ -450,9 +452,9 @@ const RaffleManagement = () => {
                         })()}
 
                         {[
-                            { label: 'Apartado', val: stats.apartado, bg: 'bg-primary/10', border: 'border-primary/20', text: 'text-primary', badge: 'bg-primary', code: 'L-P', status: 'APARTADO', ring: 'ring-primary', hover: 'hover:bg-primary/20 hover:border-primary/50 hover:shadow-primary/20 hover:brightness-110' },
-                            { label: 'Revisando', val: stats.revisando, bg: 'bg-secondary/10', border: 'border-secondary/20', text: 'text-secondary', badge: 'bg-secondary', code: 'R-S', status: 'REVISANDO', ring: 'ring-secondary', hover: 'hover:bg-secondary/20 hover:border-secondary/50 hover:shadow-secondary/20 hover:brightness-110' },
-                            { label: 'Pagado', val: stats.pagado, bg: 'bg-accent/10', border: 'border-accent/20', text: 'text-accent', badge: 'bg-accent', code: 'OK', status: 'PAGADO', ring: 'ring-accent', hover: 'hover:bg-accent/20 hover:border-accent/50 hover:shadow-accent/20 hover:brightness-110' }
+                            { label: 'Apartado', val: stats.apartado, bg: 'bg-primary/10', border: 'border-primary/20', text: 'text-primary', badge: 'bg-primary', code: 'AP', status: 'APARTADO', ring: 'ring-primary', hover: 'hover:bg-primary/20 hover:border-primary/50 hover:shadow-primary/20 hover:brightness-110' },
+                            { label: 'Revisando', val: stats.revisando, bg: 'bg-secondary/10', border: 'border-secondary/20', text: 'text-secondary', badge: 'bg-secondary', code: 'RE', status: 'REVISANDO', ring: 'ring-secondary', hover: 'hover:bg-secondary/20 hover:border-secondary/50 hover:shadow-secondary/20 hover:brightness-110' },
+                            { label: 'Pagado', val: stats.pagado, bg: 'bg-[#00ff00]/10', border: 'border-[#00ff00]/20', text: 'text-[#00ff00]', badge: 'bg-[#00ff00]', code: 'OK', status: 'PAGADO', ring: 'ring-[#00ff00]', hover: 'hover:bg-[#00ff00]/20 hover:border-[#00ff00]/50 hover:shadow-[#00ff00]/20 hover:brightness-110' }
                         ].map((s) => (
                             <div
                                 key={s.label}
@@ -500,44 +502,46 @@ const RaffleManagement = () => {
                                             }}
                                             className="hover:bg-gray-50 transition-all cursor-pointer group"
                                         >
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center space-x-4">
-                                                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black transition-all group-hover:scale-110 shadow-sm
-                                                            ${ticket.status === 'PAGADO' ? 'bg-[#d000ff]/10 text-[#d000ff]' : ''}
+                                            <td className="px-2 md:px-6 py-4">
+                                                <div className="flex items-center space-x-2 md:space-x-4">
+                                                    <div className={`w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl flex items-center justify-center font-black transition-all group-hover:scale-110 shadow-sm shrink-0 text-xs md:text-base
+                                                            ${ticket.status === 'PAGADO' ? 'bg-[#00ff00]/10 text-[#00ff00]' : ''}
                                                             ${ticket.status === 'REVISANDO' ? 'bg-[#ff00de]/10 text-[#ff00de]' : ''}
                                                             ${ticket.status === 'APARTADO' ? 'bg-[#8b00ff]/10 text-[#8b00ff]' : ''}
                                                           `}>
                                                         {ticket.number}
                                                     </div>
-                                                    <div>
-                                                        <p className={`font-bold text-gray-900 transition-colors
-                                                            ${ticket.status === 'PAGADO' ? 'group-hover:text-[#d000ff]' : ''}
+                                                    <div className="min-w-0">
+                                                        <p className={`font-bold text-gray-900 transition-colors text-xs md:text-sm truncate
+                                                            ${ticket.status === 'PAGADO' ? 'group-hover:text-[#00ff00]' : ''}
                                                             ${ticket.status === 'REVISANDO' ? 'group-hover:text-[#ff00de]' : ''}
                                                             ${ticket.status === 'APARTADO' ? 'group-hover:text-[#8b00ff]' : ''}
                                                         `}>{ticket.buyerName}</p>
-                                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{new Date(ticket.createdAt).toLocaleDateString()}</p>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center justify-center space-x-2 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100 group-hover:bg-white transition-colors w-fit mx-auto">
-                                                    <Phone className={`w-3.5 h-3.5 text-gray-400 transition-colors
-                                                        ${ticket.status === 'PAGADO' ? 'group-hover:text-[#d000ff]' : ''}
-                                                        ${ticket.status === 'REVISANDO' ? 'group-hover:text-[#ff00de]' : ''}
-                                                        ${ticket.status === 'APARTADO' ? 'group-hover:text-[#8b00ff]' : ''}
-                                                    `} />
-                                                    <span className="text-xs font-bold text-gray-500 group-hover:text-gray-900 transition-colors tracking-tight">
-                                                        {ticket.buyerPhone || 'Sin teléfono'}
-                                                    </span>
+                                            <td className="px-2 md:px-6 py-4">
+                                                <div className="flex flex-col items-center justify-center space-y-1">
+                                                    <p className="text-[9px] md:text-[10px] text-gray-400 font-bold uppercase tracking-widest">{new Date(ticket.createdAt).toLocaleDateString()}</p>
+                                                    <div className="flex items-center space-x-1.5 md:space-x-2 bg-gray-50 px-2 md:px-3 py-1 md:py-1.5 rounded-lg md:rounded-xl border border-gray-100 group-hover:bg-white transition-colors w-fit">
+                                                        <Phone className={`w-3 h-3 md:w-3.5 md:h-3.5 text-gray-400 transition-colors
+                                                            ${ticket.status === 'PAGADO' ? 'group-hover:text-[#00ff00]' : ''}
+                                                            ${ticket.status === 'REVISANDO' ? 'group-hover:text-[#ff00de]' : ''}
+                                                            ${ticket.status === 'APARTADO' ? 'group-hover:text-[#8b00ff]' : ''}
+                                                        `} />
+                                                        <span className="text-[10px] md:text-xs font-bold text-gray-500 group-hover:text-gray-900 transition-colors tracking-tighter md:tracking-tight">
+                                                            {ticket.buyerPhone || 'Sin tel.'}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full
-                                                  ${ticket.status === 'PAGADO' ? 'bg-[#d000ff]/20 text-[#d000ff]' : ''}
+                                            <td className="px-2 md:px-6 py-4 text-right">
+                                                <span className={`text-[8px] md:text-[10px] font-black uppercase tracking-widest px-2 md:px-3 py-1 md:py-1.5 rounded-full
+                                                  ${ticket.status === 'PAGADO' ? 'bg-[#00ff00]/20 text-[#00ff00]' : ''}
                                                   ${ticket.status === 'REVISANDO' ? 'bg-[#ff00de]/20 text-[#ff00de]' : ''}
                                                   ${ticket.status === 'APARTADO' ? 'bg-[#8b00ff]/20 text-[#8b00ff]' : ''}
                                                 `}>
-                                                    {ticket.status}
+                                                    {ticket.status === 'REVISANDO' ? 'RE' : ticket.status === 'APARTADO' ? 'AP' : 'OK'}
                                                 </span>
                                             </td>
                                         </tr>
@@ -593,14 +597,9 @@ const RaffleManagement = () => {
                 <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
                     <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setSelectedTicket(null)}></div>
                     <div className="relative bg-white w-full max-w-sm md:rounded-[2.5rem] rounded-t-3xl shadow-2xl animate-slide-up md:animate-scale-in max-h-[95vh] flex flex-col">
-                        <button
-                            onClick={() => setSelectedTicket(null)}
-                            className="absolute top-4 md:top-6 right-4 md:right-6 p-2 hover:bg-gray-50 rounded-xl transition-colors z-30"
-                        >
-                            <X className="w-5 h-5 md:w-6 md:h-6 text-gray-400" />
-                        </button>
+                        <CloseButton onClick={() => setSelectedTicket(null)} />
                         <div className="overflow-y-auto overflow-x-visible custom-scrollbar flex-1">
-                            <div className="p-6 md:p-10 text-center space-y-4 md:space-y-6 pb-8">
+                            <div className="pt-16 md:pt-20 px-6 md:px-10 text-center space-y-4 md:space-y-6 pb-8">
 
 
                                 <div>
@@ -703,7 +702,7 @@ const RaffleManagement = () => {
                                     {['APARTADO', 'REVISANDO', 'PAGADO'].map((st) => {
                                         const getColorClasses = (status) => {
                                             switch (status) {
-                                                case 'PAGADO': return 'bg-[#d000ff] border-[#a000c4] shadow-[#d000ff]/30';
+                                                case 'PAGADO': return 'bg-[#00ff00] border-[#00cc00] shadow-[#00ff00]/30';
                                                 case 'REVISANDO': return 'bg-[#ff00de] border-[#b3009b] shadow-[#ff00de]/30';
                                                 default: return 'bg-[#8b00ff] border-[#6000b0] shadow-[#8b00ff]/30';
                                             }
@@ -750,7 +749,7 @@ const RaffleManagement = () => {
                     <div className="absolute inset-0 bg-gray-900/80 backdrop-blur-md" onClick={() => !isDrawing && handleCloseModal()}></div>
                     <div className="relative bg-white w-full max-w-md md:rounded-[2.5rem] rounded-t-3xl shadow-2xl overflow-hidden animate-slide-up md:animate-scale-in flex flex-col max-h-[95vh]">
                         <div className="bg-gradient-to-r from-primary to-secondary p-8 text-white relative text-center shrink-0">
-                            <button
+                            <CloseButton
                                 onClick={() => {
                                     if (isDrawing) return;
                                     if (showWinnersView) {
@@ -759,13 +758,7 @@ const RaffleManagement = () => {
                                         handleCloseModal();
                                     }
                                 }}
-                                className="absolute top-6 right-6 p-2 hover:bg-white/20 rounded-xl transition-colors"
-                            >
-                                <X className="w-6 h-6" />
-                            </button>
-                            <div className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-3xl flex items-center justify-center mx-auto mb-4 border border-white/30">
-                                <Trophy className="w-10 h-10 text-white" />
-                            </div>
+                            />
                             <h3 className="text-2xl font-black italic tracking-tighter uppercase">
                                 Ganadores Seleccionados
                             </h3>
@@ -806,122 +799,123 @@ const RaffleManagement = () => {
                                             <ChevronRight className="w-5 h-5 text-gray-400 group-hover:translate-x-1 transition-transform" />
                                         </button>
                                     )}
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Cantidad de ganadores</label>
-                                        <input
-                                            type="number"
-                                            className="input-field bg-gray-50 border-gray-100 text-gray-900"
-                                            defaultValue="1"
-                                            min="1"
-                                            id="winnersCount"
-                                        />
-                                    </div>
-                                    <div className="flex items-center space-x-3 bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                                        <input
-                                            type="checkbox"
-                                            id="onlyPaid"
-                                            checked={drawOnlyPaid}
-                                            onChange={(e) => setDrawOnlyPaid(e.target.checked)}
-                                            className="w-5 h-5 accent-primary"
-                                        />
-                                        <label htmlFor="onlyPaid" className="text-sm font-bold text-gray-700">
-                                            {drawOnlyPaid ? `Solo números pagados (${stats.pagado})` : `Todos los números (${stats.totalSold})`}
-                                        </label>
-                                    </div>
-                                </div>
+                                    {!isEnded && (
+                                        <>
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Cantidad de ganadores</label>
+                                                <input
+                                                    type="number"
+                                                    className="input-field bg-gray-50 border-gray-100 text-gray-900"
+                                                    defaultValue="1"
+                                                    min="1"
+                                                    id="winnersCount"
+                                                />
+                                            </div>
+                                            <div className="flex items-center space-x-3 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                                                <input
+                                                    type="checkbox"
+                                                    id="onlyPaid"
+                                                    checked={drawOnlyPaid}
+                                                    onChange={(e) => setDrawOnlyPaid(e.target.checked)}
+                                                    className="w-5 h-5 accent-primary"
+                                                />
+                                                <label htmlFor="onlyPaid" className="text-sm font-bold text-gray-700">
+                                                    {drawOnlyPaid ? `Solo números pagados (${stats.pagado})` : `Todos los números (${stats.totalSold})`}
+                                                </label>
+                                            </div>
 
-                                <button
-                                    onClick={() => {
-                                        const countInput = document.getElementById('winnersCount');
-                                        if (!countInput || !countInput.value || parseInt(countInput.value) <= 0) {
-                                            setCustomErrorMessage("Por favor ingresa una cantidad válida de ganadores (mínimo 1).");
-                                            setShowCustomErrorModal(true);
-                                            return;
-                                        }
-                                        const count = countInput.value;
-                                        startDraw(count, drawOnlyPaid);
-                                    }}
-                                    disabled={isDrawing || isEnded || (stats.pagado === 0 && drawOnlyPaid)}
-                                    className={`w-full btn-primary py-5 text-xl tracking-tighter font-black shadow-2xl transition-transform ${isEnded ? 'opacity-50 grayscale cursor-not-allowed' : 'active:scale-95 shadow-primary/40'}`}
-                                >
-                                    {isEnded ? 'SORTEO FINALIZADO' : isDrawing ? 'SORTEANDO...' : 'LANZAR SORTEO'}
-                                </button>
+                                            <button
+                                                onClick={() => {
+                                                    const countInput = document.getElementById('winnersCount');
+                                                    if (!countInput || !countInput.value || parseInt(countInput.value) <= 0) {
+                                                        setCustomErrorMessage("Por favor ingresa una cantidad válida de ganadores (mínimo 1).");
+                                                        setShowCustomErrorModal(true);
+                                                        return;
+                                                    }
+                                                    const count = countInput.value;
+                                                    startDraw(count, drawOnlyPaid);
+                                                }}
+                                                disabled={isDrawing || (stats.pagado === 0 && drawOnlyPaid)}
+                                                className={`w-full btn-primary py-5 text-xl tracking-tighter font-black shadow-2xl transition-transform active:scale-95 shadow-primary/40`}
+                                            >
+                                                {isDrawing ? 'SORTEANDO...' : 'LANZAR SORTEO'}
+                                            </button>
 
-                                {/* Divider */}
-                                <div className="flex items-center gap-4 py-2">
-                                    <div className="flex-1 h-px bg-gray-200"></div>
-                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">O</span>
-                                    <div className="flex-1 h-px bg-gray-200"></div>
-                                </div>
+                                            {/* Divider */}
+                                            <div className="flex items-center gap-4 py-2">
+                                                <div className="flex-1 h-px bg-gray-200"></div>
+                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">O</span>
+                                                <div className="flex-1 h-px bg-gray-200"></div>
+                                            </div>
 
-                                {/* Manual Winner Section */}
-                                <div className="space-y-3 text-left">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Ingresar ganador manual</label>
-                                    <div className="flex flex-col sm:flex-row gap-3">
-                                        <div className="relative flex-none sm:flex-1 group">
-                                            <Trophy className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-[#ff00de] transition-colors" />
-                                            <input
-                                                type="number"
-                                                placeholder="Número ganador"
-                                                min="1"
-                                                max={raffle?.totalTickets || 999}
-                                                className="input-field pl-11 bg-gray-50 border-gray-100 text-gray-900 focus:border-[#ff00de] focus:ring-2 focus:ring-[#ff00de]/20"
-                                                value={manualWinnerNumber}
-                                                onChange={(e) => setManualWinnerNumber(e.target.value)}
-                                                disabled={isEnded}
-                                            />
-                                        </div>
-                                        <button
-                                            onClick={async () => {
-                                                if (!manualWinnerNumber) {
-                                                    setCustomErrorMessage('Ingresa un número de boleta para registrar como ganador.');
-                                                    setShowCustomErrorModal(true);
-                                                    return;
-                                                }
+                                            {/* Manual Winner Section */}
+                                            <div className="space-y-3 text-left">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Ingresar ganador manual</label>
+                                                <div className="flex flex-col sm:flex-row gap-3">
+                                                    <div className="relative flex-none sm:flex-1 group">
+                                                        <Trophy className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-[#ff00de] transition-colors" />
+                                                        <input
+                                                            type="number"
+                                                            placeholder="Número ganador"
+                                                            min="1"
+                                                            max={raffle?.totalTickets || 999}
+                                                            className="input-field pl-11 bg-gray-50 border-gray-100 text-gray-900 focus:border-[#ff00de] focus:ring-2 focus:ring-[#ff00de]/20"
+                                                            value={manualWinnerNumber}
+                                                            onChange={(e) => setManualWinnerNumber(e.target.value)}
+                                                        />
+                                                    </div>
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (!manualWinnerNumber) {
+                                                                setCustomErrorMessage('Ingresa un número de boleta para registrar como ganador.');
+                                                                setShowCustomErrorModal(true);
+                                                                return;
+                                                            }
 
-                                                const manualNum = parseInt(manualWinnerNumber);
-                                                // Permitir si ya ganó al azar, pero no si ya se ingresó manualmente
-                                                if (winnersList.some(w => w.ticketNumber === manualNum && Boolean(w.isManualWinner))) {
-                                                    setCustomErrorMessage(`El número ${manualNum} ya ha sido registrado manualmente como ganador.`);
-                                                    setShowCustomErrorModal(true);
-                                                    return;
-                                                }
+                                                            const manualNum = parseInt(manualWinnerNumber);
+                                                            // Permitir si ya ganó al azar, pero no si ya se ingresó manualmente
+                                                            if (winnersList.some(w => w.ticketNumber === manualNum && Boolean(w.isManualWinner))) {
+                                                                setCustomErrorMessage(`El número ${manualNum} ya ha sido registrado manualmente como ganador.`);
+                                                                setShowCustomErrorModal(true);
+                                                                return;
+                                                            }
 
-                                                // El usuario permite duplicados manuales, pero validamos frontend para evitar errores de fetch
+                                                            try {
+                                                                const res = await fetch(`${API_URL}/raffles/${raffleId}/manual-winner`, {
+                                                                    method: 'POST',
+                                                                    headers: {
+                                                                        'Authorization': `Bearer ${token}`,
+                                                                        'Content-Type': 'application/json'
+                                                                    },
+                                                                    body: JSON.stringify({
+                                                                        ticketNumber: parseInt(manualWinnerNumber),
+                                                                        onlyPaid: drawOnlyPaid
+                                                                    })
+                                                                });
+                                                                const data = await res.json();
+                                                                if (!res.ok) throw new Error(data.error || 'Error al registrar ganador');
 
-                                                try {
-                                                    const res = await fetch(`${API_URL}/raffles/${raffleId}/manual-winner`, {
-                                                        method: 'POST',
-                                                        headers: {
-                                                            'Authorization': `Bearer ${token}`,
-                                                            'Content-Type': 'application/json'
-                                                        },
-                                                        body: JSON.stringify({
-                                                            ticketNumber: parseInt(manualWinnerNumber),
-                                                            onlyPaid: drawOnlyPaid
-                                                        })
-                                                    });
-                                                    const data = await res.json();
-                                                    if (!res.ok) throw new Error(data.error || 'Error al registrar ganador');
+                                                                // ACUMULACIÓN: Sumamos el manual a los ganadores actuales (al principio)
+                                                                setWinnersList(prev => [...data.winners, ...(Array.isArray(prev) ? prev : [])]);
+                                                                setShowWinnersView(true);
 
-                                                    // ACUMULACIÓN: Sumamos el manual a los ganadores actuales (al principio)
-                                                    setWinnersList(prev => [...data.winners, ...(Array.isArray(prev) ? prev : [])]);
-                                                    setShowWinnersView(true);
-
-                                                    setManualWinnerNumber('');
-                                                    fetchRaffleDetails();
-                                                } catch (err) {
-                                                    setCustomErrorMessage(err.message);
-                                                    setShowCustomErrorModal(true);
-                                                }
-                                            }}
-                                            disabled={isEnded || !manualWinnerNumber}
-                                            className={`btn-primary px-8 py-4 text-sm tracking-widest whitespace-nowrap shadow-2xl transition-all ${isEnded || !manualWinnerNumber ? 'opacity-50 grayscale cursor-not-allowed' : 'active:scale-95 shadow-primary/40'}`}
-                                        >
-                                            Agregar
-                                        </button>
-                                    </div>
-                                    <p className="text-[9px] text-gray-400 font-medium ml-1">Ingresa un número de boleta existente para registrarlo como ganador sin sorteo aleatorio.</p>
+                                                                setManualWinnerNumber('');
+                                                                fetchRaffleDetails();
+                                                            } catch (err) {
+                                                                setCustomErrorMessage(err.message);
+                                                                setShowCustomErrorModal(true);
+                                                            }
+                                                        }}
+                                                        disabled={!manualWinnerNumber}
+                                                        className={`btn-primary px-8 py-4 text-sm tracking-widest whitespace-nowrap shadow-2xl transition-all ${!manualWinnerNumber ? 'opacity-50 grayscale cursor-not-allowed' : 'active:scale-95 shadow-primary/40'}`}
+                                                    >
+                                                        Agregar
+                                                    </button>
+                                                </div>
+                                                <p className="text-[9px] text-gray-400 font-medium ml-1">Ingresa un número de boleta existente para registrarlo como ganador sin sorteo aleatorio.</p>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         ) : (
@@ -929,10 +923,10 @@ const RaffleManagement = () => {
                                 <div className="px-6 py-6 border-b border-gray-100 bg-white flex items-center justify-between shrink-0">
                                     <button
                                         onClick={() => setShowWinnersView(false)}
-                                        className="btn-primary flex items-center space-x-2 px-6 py-2 shadow-2xl shadow-primary/40 relative z-10 group scale-90 md:scale-100"
+                                        className="btn-primary flex items-center space-x-2 px-8 py-3 shadow-2xl shadow-primary/40 relative z-10 group md:scale-105"
                                     >
                                         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                                        <span className="font-black italic uppercase tracking-tighter text-xs">Volver Atrás</span>
+                                        <span className="font-black italic uppercase tracking-tighter text-sm">Volver</span>
                                     </button>
                                     <div className="flex flex-col items-end">
                                         <span className="text-[10px] font-black text-gray-900 uppercase tracking-widest italic leading-none">Resultados</span>
@@ -954,10 +948,6 @@ const RaffleManagement = () => {
                                                     const ticketNum = win?.ticketNumber || '??';
                                                     const buyerName = win?.buyer?.name || 'Anónimo';
                                                     const buyerPhone = win?.buyer?.phone || 'Sin tel.';
-                                                    // If buyer is missing but the record exists in winnersList, it was deleted.
-                                                    // However, manual winners might not have a buyer relation if added purely by number without a registration? 
-                                                    // Actually manual winners are linked to tickets usually. If ticket is deleted, relation remains but buyer is null.
-                                                    // We assume if no buyer info is present, it's a deleted reservation.
                                                     const isDeleted = !win?.buyer;
 
                                                     return (
@@ -966,7 +956,7 @@ const RaffleManagement = () => {
                                                             onClick={() => {
                                                                 if (buyerPhone && buyerPhone !== 'Sin tel.' && !isDeleted) {
                                                                     const cleanPhone = buyerPhone.replace(/\D/g, '').slice(-10);
-                                                                    const message = `¡Felicidades ${buyerName}! Has ganado un puesto en el sorteo "${raffle?.title || 'Winners'}" con el numero ${ticketNum}. Por favor comunicate con el organizador para reclamar tu premio.`;
+                                                                    const message = `¡Felicidades ${buyerName}! Has ganado un premio en el sorteo "${raffle?.title || 'Winners'}" con el número ${ticketNum}. Por favor comunícate con el organizador para reclamar tu premio.`;
                                                                     window.open(`https://api.whatsapp.com/send?phone=57${cleanPhone}&text=${encodeURIComponent(message)}`, '_blank');
                                                                 }
                                                             }}
@@ -979,39 +969,39 @@ const RaffleManagement = () => {
                                                                         }` : ''}`
                                                                 }`}
                                                         >
-                                                            {/* Left Section: Rank and Name */}
-                                                            <div className="text-left w-1/3">
-                                                                <p className={`text-[10px] font-black uppercase ${isDeleted ? 'text-gray-400' : (isManual ? 'text-amber-500' : 'text-primary')}`}>
-                                                                    Puesto #{
-                                                                        (() => {
-                                                                            const subset = winnersList.filter(w => Boolean(w.isManualWinner) === isManual);
-                                                                            const winIndexInSubset = subset.indexOf(win);
-                                                                            return subset.length - winIndexInSubset;
-                                                                        })()
-                                                                    }
-                                                                </p>
+                                                            {/* Left Section: Name */}
+                                                            <div className="flex-1 text-left min-w-0 pr-4">
                                                                 <h4 className={`text-lg font-black transition-colors ${isDeleted ? 'text-gray-500' : 'text-gray-900'} ${!isDeleted && (isManual ? 'group-hover/card:text-amber-600' : 'group-hover/card:text-[#8b00ff]')}`}>{buyerName}</h4>
                                                             </div>
 
-                                                            {/* Center Section: Phone (Centered on md+) */}
-                                                            <div className="flex-1 flex items-center justify-center space-x-2">
-                                                                <span className={`text-sm md:text-base font-bold font-mono tracking-tighter italic transition-all ${isDeleted ? 'text-gray-400' : 'text-gray-500'} ${!isDeleted && (isManual ? 'group-hover/card:text-amber-500' : 'group-hover/card:text-[#8b00ff]')}`}>
-                                                                    {buyerPhone}
-                                                                </span>
-                                                                {buyerPhone && buyerPhone !== 'Sin tel.' && (
-                                                                    <Phone className={`w-5 h-5 md:w-6 md:h-6 transition-all ${isDeleted ? 'text-gray-300' : (isManual ? 'text-amber-500' : 'text-[#ff00de]')} ${!isDeleted && 'group-hover/card:scale-125 group-hover/card:rotate-12'}`} />
-                                                                )}
-                                                            </div>
+                                                            {/* Right Group: Puesto, Phone and Ticket grouped closer */}
+                                                            <div className="flex items-center space-x-4 md:space-x-8 shrink-0">
+                                                                {/* Rank and Phone */}
+                                                                <div className="flex flex-col items-center justify-center">
+                                                                    <p className={`text-[10px] font-black uppercase mb-1 whitespace-nowrap ${isDeleted ? 'text-gray-400' : (isManual ? 'text-amber-500' : 'text-primary')}`}>
+                                                                        Puesto #{(() => {
+                                                                            const subset = winnersList.filter(w => Boolean(w.isManualWinner) === isManual);
+                                                                            const winIndexInSubset = subset.indexOf(win);
+                                                                            return subset.length - winIndexInSubset;
+                                                                        })()}
+                                                                    </p>
+                                                                    <div className="flex items-center space-x-2">
+                                                                        <span className={`text-sm md:text-base font-bold font-mono tracking-tighter italic transition-all ${isDeleted ? 'text-gray-400' : 'text-gray-500'} ${!isDeleted && (isManual ? 'group-hover/card:text-amber-500' : 'group-hover/card:text-[#8b00ff]')}`}>
+                                                                            {buyerPhone}
+                                                                        </span>
+                                                                        {buyerPhone && buyerPhone !== 'Sin tel.' && (
+                                                                            <Phone className={`w-5 h-5 md:w-6 md:h-6 transition-all ${isDeleted ? 'text-gray-300' : (isManual ? 'text-amber-500' : 'text-[#ff00de]')} ${!isDeleted && 'group-hover/card:scale-125 group-hover/card:rotate-12'}`} />
+                                                                        )}
+                                                                    </div>
+                                                                </div>
 
-                                                            {/* Right Section: Ticket Number */}
-                                                            <div className="w-1/3 flex justify-end">
-                                                                <div className={`bg-white w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg border border-gray-100 font-black text-3xl italic transition-all ${isDeleted
+                                                                {/* Ticket Number */}
+                                                                <div className={`bg-white w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center shadow-lg border border-gray-100 font-black text-2xl md:text-3xl italic transition-all shrink-0 ${isDeleted
                                                                     ? 'text-gray-300 shadow-none'
                                                                     : (isManual
                                                                         ? 'text-amber-500 group-hover/card:shadow-[0_0_20px_rgba(245,158,11,0.25)] group-hover/card:border-amber-400/30'
                                                                         : 'text-primary group-hover/card:shadow-[0_0_20px_rgba(139,0,255,0.2)] group-hover/card:border-[#8b00ff]/30')
                                                                     }`}>
-
                                                                     {ticketNum}
                                                                 </div>
                                                             </div>
@@ -1061,12 +1051,7 @@ const RaffleManagement = () => {
                         <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => handleCloseModal()}></div>
                         <div className="relative bg-white w-full max-w-lg md:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden animate-slide-up md:animate-scale-in max-h-[95vh] flex flex-col">
                             <div className="bg-gradient-to-r from-primary to-secondary p-6 md:p-8 text-white relative shrink-0">
-                                <button
-                                    onClick={() => handleCloseModal()}
-                                    className="absolute top-4 md:top-6 right-4 md:right-6 p-2 hover:bg-white/20 rounded-xl transition-colors"
-                                >
-                                    <X className="w-5 h-5 md:w-6 md:h-6" />
-                                </button>
+                                <CloseButton onClick={() => handleCloseModal()} />
                                 <h2 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase mb-1 md:mb-2">Ajustes de la Rifa</h2>
                                 <p className="text-white/80 font-bold text-xs md:text-sm">Modifica los detalles de tu sorteo</p>
                             </div>
@@ -1147,7 +1132,7 @@ const RaffleManagement = () => {
                                             />
                                         </div>
                                         <div className="space-y-1.5 opacity-60">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Total Boletas (No editable)</label>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Total Boletas</label>
                                             <div className="relative group">
                                                 <Ticket className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                                 <input
@@ -1163,16 +1148,19 @@ const RaffleManagement = () => {
 
                                     <div className="space-y-1.5">
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Fecha de sorteo</label>
-                                        <input
-                                            type="date"
-                                            required
-                                            disabled={isEnded}
-                                            className="input-field bg-gray-50 border-gray-100 focus:bg-white disabled:opacity-70 text-gray-900"
-                                            value={updatedRaffleInfo.endDate}
-                                            onChange={(e) => setUpdatedRaffleInfo({ ...updatedRaffleInfo, endDate: e.target.value })}
-                                            onInvalid={(e) => e.target.setCustomValidity('Por favor, selecciona la fecha del sorteo')}
-                                            onInput={(e) => e.target.setCustomValidity('')}
-                                        />
+                                        <div className="relative group">
+                                            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-primary transition-colors pointer-events-none" />
+                                            <input
+                                                type="date"
+                                                required
+                                                disabled={isEnded}
+                                                className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white disabled:opacity-70 text-gray-900 appearance-none"
+                                                value={updatedRaffleInfo.endDate}
+                                                onChange={(e) => setUpdatedRaffleInfo({ ...updatedRaffleInfo, endDate: e.target.value })}
+                                                onInvalid={(e) => e.target.setCustomValidity('Por favor, selecciona la fecha del sorteo')}
+                                                onInput={(e) => e.target.setCustomValidity('')}
+                                            />
+                                        </div>
                                     </div>
 
                                 </div>
@@ -1220,12 +1208,12 @@ const RaffleManagement = () => {
                 showDeleteConfirm && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-md animate-fade-in" onClick={() => setShowDeleteConfirm(false)}></div>
-                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-[2rem] p-6 md:p-10 shadow-2xl border-2 border-white/50 animate-scale-in text-center flex flex-col max-h-[95vh] overflow-visible">
+                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-[2rem] pt-16 md:pt-20 px-6 md:px-10 pb-6 md:pb-10 shadow-2xl border-2 border-white/50 animate-scale-in text-center flex flex-col max-h-[95vh] overflow-visible">
                             <button
                                 onClick={() => setShowDeleteConfirm(false)}
-                                className="absolute top-6 right-6 p-2 hover:bg-gray-50 rounded-xl transition-colors z-20"
+                                className="absolute top-6 right-6 p-2 bg-red-50 hover:bg-red-500 rounded-xl transition-all group z-20"
                             >
-                                <X className="w-6 h-6 text-gray-400" />
+                                <X className="w-6 h-6 text-red-500 group-hover:text-white transition-colors" />
                             </button>
                             <div className="overflow-y-auto custom-scrollbar flex-1 overflow-x-visible">
                                 <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 relative">
@@ -1256,7 +1244,7 @@ const RaffleManagement = () => {
                 showTicketUpdateSuccess && (
                     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-md animate-fade-in" onClick={() => setShowTicketUpdateSuccess(false)}></div>
-                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-[2rem] p-8 shadow-2xl border-2 border-white/50 animate-scale-in text-center overflow-visible">
+                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-[2rem] pt-16 md:pt-20 px-6 md:px-10 pb-8 shadow-2xl border-2 border-white/50 animate-scale-in text-center overflow-visible">
                             <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 relative">
                                 <div className="absolute inset-0 border-4 border-green-100 rounded-full animate-ping opacity-20"></div>
                                 <CheckCircle className="w-10 h-10 text-green-500" />
@@ -1288,12 +1276,12 @@ const RaffleManagement = () => {
                 showStatusConfirm && pendingStatusUpdate && (
                     <div className="fixed inset-0 z-[250] flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-md animate-fade-in" onClick={() => setShowStatusConfirm(false)}></div>
-                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-[2rem] p-6 md:p-10 shadow-2xl border-2 border-white/50 animate-scale-in text-center flex flex-col max-h-[95vh] overflow-visible">
+                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-[2rem] pt-16 md:pt-20 px-6 md:px-10 pb-6 md:pb-10 shadow-2xl border-2 border-white/50 animate-scale-in text-center flex flex-col max-h-[95vh] overflow-visible">
                             <button
                                 onClick={() => setShowStatusConfirm(false)}
-                                className="absolute top-6 right-6 p-2 hover:bg-gray-50 rounded-xl transition-colors z-20"
+                                className="absolute top-6 right-6 p-2 bg-red-50 hover:bg-red-500 rounded-xl transition-all group z-20"
                             >
-                                <X className="w-6 h-6 text-gray-400" />
+                                <X className="w-6 h-6 text-red-500 group-hover:text-white transition-colors" />
                             </button>
                             <div className="overflow-y-auto custom-scrollbar flex-1 overflow-x-visible">
                                 <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 relative">
@@ -1325,12 +1313,12 @@ const RaffleManagement = () => {
                 showCustomErrorModal && (
                     <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md animate-fade-in" onClick={() => setShowCustomErrorModal(false)}></div>
-                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-[2.5rem] p-6 md:p-10 shadow-3xl border-2 border-white/50 animate-scale-in text-center flex flex-col max-h-[95vh] overflow-visible">
+                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-[2.5rem] pt-16 md:pt-20 px-6 md:px-10 pb-6 md:pb-10 shadow-3xl border-2 border-white/50 animate-scale-in text-center flex flex-col max-h-[95vh] overflow-visible">
                             <button
                                 onClick={() => setShowCustomErrorModal(false)}
-                                className="absolute top-6 right-6 p-2 hover:bg-gray-50 rounded-xl transition-colors z-20"
+                                className="absolute top-6 right-6 p-2 bg-red-50 hover:bg-red-500 rounded-xl transition-all group z-20"
                             >
-                                <X className="w-6 h-6 text-gray-400" />
+                                <X className="w-6 h-6 text-red-500 group-hover:text-white transition-colors" />
                             </button>
                             <div className="overflow-y-auto custom-scrollbar flex-1 overflow-x-visible">
                                 <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 relative">
@@ -1364,12 +1352,7 @@ const RaffleManagement = () => {
                     <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4">
                         <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setShowQRModal(false)}></div>
                         <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm md:rounded-[2rem] rounded-t-3xl shadow-2xl border-2 border-white/50 animate-slide-up md:animate-scale-in text-center flex flex-col max-h-[95vh] overflow-hidden">
-                            <button
-                                onClick={() => setShowQRModal(false)}
-                                className="absolute top-6 right-6 p-2 hover:bg-gray-50 rounded-xl transition-colors z-20"
-                            >
-                                <X className="w-6 h-6 text-gray-400" />
-                            </button>
+                            <CloseButton onClick={() => setShowQRModal(false)} />
                             <div className="overflow-y-auto custom-scrollbar flex-1 p-8 pt-12">
                                 <div className="mb-6">
 

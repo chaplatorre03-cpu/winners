@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import WinnersLogo from '../components/WinnersLogo';
 import AdminSidebar from '../components/AdminSidebar';
+import CloseButton from '../components/CloseButton';
 
 import { API_URL } from '../config';
 
@@ -145,8 +146,9 @@ const PublicRaffle = () => {
 
     const paidCount = raffle.tickets?.filter(t => t.status === 'PAGADO').length || 0;
     const allTicketsCount = raffle.tickets?.length || 0;
-    const progress = token
-        ? (paidCount / raffle.totalTickets) * 100
+    const paidPercentage = (paidCount / raffle.totalTickets) * 100;
+    const progress = (isEnded || token)
+        ? paidPercentage
         : (allTicketsCount / raffle.totalTickets) * 100;
 
 
@@ -163,8 +165,9 @@ const PublicRaffle = () => {
             )}
 
             <div className="flex-1 flex flex-col min-w-0">
-                <nav className="h-16 md:h-20 bg-[#111] shadow-sm border-b border-gray-800 flex items-center justify-between px-4 md:px-8 sticky top-0 z-50">
-                    <div className="flex items-center flex-1 max-w-xl">
+                <nav className="h-auto py-1 md:h-20 bg-[#111] shadow-sm border-b border-gray-800 flex flex-col md:flex-row items-center justify-between px-4 md:px-8 sticky top-0 z-50 gap-0">
+                    {/* Search Section - Bottom on mobile (order-2), Left on desktop (order-1) */}
+                    <div className="order-2 md:order-1 flex items-center w-full max-w-xl">
                         <div className="relative flex-1 group">
                             <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 w-3.5 md:w-4 h-3.5 md:h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
                             <input
@@ -176,16 +179,17 @@ const PublicRaffle = () => {
                             />
                         </div>
                     </div>
-                    <div className="hidden md:flex items-center space-x-2 lg:space-x-4">
 
-                        <div className="translate-x-10 translate-y-1 scale-90 lg:scale-100 origin-right transition-transform hover:scale-110 duration-500">
+                    {/* Logo and Actions Section - Top on mobile (order-1), Right on desktop (order-2) */}
+                    <div className="order-1 md:order-2 flex items-center space-x-2 md:space-x-4">
+                        <div className="md:translate-x-10 md:translate-y-1 scale-90 md:scale-90 lg:scale-100 transition-transform hover:scale-110 duration-500">
                             <WinnersLogo size="small" />
                         </div>
 
                         {!token && (
                             <button
                                 onClick={() => navigate('/login')}
-                                className="flex items-center space-x-2 px-4 lg:px-5 py-2 lg:py-3 bg-gradient-to-r from-[#8b00ff] to-[#ff00de] hover:brightness-110 rounded-xl text-white transition-all shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 whitespace-nowrap"
+                                className="hidden md:flex items-center space-x-2 px-4 lg:px-5 py-2 lg:py-3 bg-gradient-to-r from-[#8b00ff] to-[#ff00de] hover:brightness-110 rounded-xl text-white transition-all shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 whitespace-nowrap"
                             >
                                 <span className="text-[10px] lg:text-xs font-black tracking-widest uppercase italic">Ingresar</span>
                                 <Lock className="w-4 h-4 shrink-0" />
@@ -218,8 +222,8 @@ const PublicRaffle = () => {
                                     onClick={() => setShowHowToModal(true)}
                                     className="flex flex-col items-center justify-center p-4 bg-[#1a1a1a] rounded-xl hover:bg-primary/5 transition-colors border border-transparent hover:border-primary/20"
                                 >
-                                    <Info className="w-6 h-6 text-primary mb-2" />
-                                    <span className="text-[10px] font-bold text-gray-700 uppercase">Cómo participar</span>
+                                    <Info className="w-6 h-6 text-[#fbbf24] mb-2" />
+                                    <span className="text-[10px] font-bold text-white uppercase tracking-widest">Cómo participar</span>
                                 </button>
                                 {!isEnded && (
                                     <button
@@ -254,21 +258,21 @@ const PublicRaffle = () => {
                                 href={`https://api.whatsapp.com/send?phone=57${(raffle.creator?.phone || raffle.organizerPhone || '3204446733').replace(/\D/g, '').slice(-10)}&text=${encodeURIComponent(`Hola, deseo informacion sobre el sorteo: ${raffle.title}`)}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="p-4 border-2 border-[#d000ff] bg-[#fdf2ff] rounded-2xl flex items-center space-x-4 hover:shadow-xl hover:shadow-[#d000ff]/10 hover:-translate-y-0.5 transition-all cursor-pointer group/organizer"
+                                className="p-4 border-2 border-primary bg-primary/5 rounded-2xl flex items-center space-x-4 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-0.5 transition-all cursor-pointer group/organizer"
                             >
-                                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm group-hover/organizer:scale-110 transition-transform border border-[#d000ff]/20">
-                                    <span className="font-black text-[#d000ff] text-lg">
+                                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm group-hover/organizer:scale-110 transition-transform border border-primary/20">
+                                    <span className="font-black text-primary text-lg">
                                         {(raffle.creator?.name || raffle.organizerName || 'W').charAt(0).toUpperCase()}
                                     </span>
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-[10px] text-[#d000ff] uppercase font-black tracking-[0.15em] leading-none mb-1.5 opacity-80">Organizador</p>
-                                    <p className="text-base font-black text-gray-900 group-hover/organizer:text-[#d000ff] transition-colors">{raffle.creator?.name || raffle.organizerName || 'Winners'}</p>
+                                    <p className="text-[10px] text-primary uppercase font-black tracking-[0.15em] leading-none mb-1.5 opacity-80">Organizador</p>
+                                    <p className="text-base font-black text-white group-hover/organizer:text-primary transition-colors">{raffle.creator?.name || raffle.organizerName || 'Winners'}</p>
                                     <div className="flex items-center space-x-2 mt-1 opacity-70">
-                                        <div className="w-5 h-5 bg-[#d000ff] rounded-full flex items-center justify-center">
+                                        <div className="w-5 h-5 bg-[#00ff00] rounded-full flex items-center justify-center">
                                             <Phone className="w-3 h-3 text-white" />
                                         </div>
-                                        <span className="text-xs font-black text-gray-500 font-mono tracking-widest">{raffle.creator?.phone || raffle.organizerPhone || '3204446733'}</span>
+                                        <span className="text-xs font-black text-gray-400 font-mono tracking-widest">{raffle.creator?.phone || raffle.organizerPhone || '3204446733'}</span>
                                     </div>
                                 </div>
                             </a>
@@ -276,20 +280,20 @@ const PublicRaffle = () => {
 
                             <div className="grid grid-cols-2 md:grid-cols-1 lg:grid-cols-2 gap-2">
                                 <div className="text-center p-2 md:p-3 bg-[#1a1a1a] rounded-xl border border-gray-800">
-                                    <p className="text-xs md:text-sm font-black text-primary">
+                                    <p className="text-xs md:text-sm font-black text-sky-400">
                                         {raffle.tickets?.length || 0}
                                     </p>
                                     <p className="text-[7px] md:text-[8px] text-gray-400 font-black uppercase tracking-widest">Participantes</p>
                                 </div>
                                 <div className="text-center p-2 md:p-3 bg-[#1a1a1a] rounded-xl border border-gray-800">
-                                    <p className="text-xs md:text-sm font-black text-primary">
+                                    <p className="text-xs md:text-sm font-black text-sky-400">
                                         {new Date(raffle.endDate).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', timeZone: 'UTC' })}
                                     </p>
                                     <p className="text-[7px] md:text-[8px] text-gray-400 font-black uppercase tracking-widest">Sorteo</p>
                                 </div>
                                 {token ? (
                                     <div className="col-span-2 md:col-span-1 lg:col-span-2 text-center p-2 md:p-3 bg-[#1a1a1a] rounded-xl border border-gray-800">
-                                        <p className="text-xs md:text-sm font-black text-primary break-words px-0.5 leading-tight">
+                                        <p className="text-xs md:text-sm font-black text-sky-400 break-words px-0.5 leading-tight">
                                             ${((raffle.tickets?.filter(t => t.status === 'PAGADO').length || 0) * Number(raffle.price || 0)).toLocaleString('es-CO')}
                                         </p>
                                         <p className="text-[7px] md:text-[8px] text-gray-400 font-black uppercase tracking-widest">Recaudado ({raffle.tickets?.filter(t => t.status === 'PAGADO').length || 0} Pagados)</p>
@@ -329,8 +333,8 @@ const PublicRaffle = () => {
                                             </button>
                                         )}
                                         <div className="flex items-center gap-2">
-                                            <span className={`${isEnded ? 'bg-gray-800 text-gray-500' : 'bg-[#ff00de]/10 text-[#ff00de] border-2 border-[#ff00de]/20'} text-xs font-black px-6 py-2.5 rounded-2xl uppercase tracking-widest whitespace-nowrap flex-1 text-center`}>
-                                                {isEnded ? 'COMPLETADO' : `${Math.round(progress)}% Vendido`}
+                                            <span className={`${isEnded ? 'bg-sky-400/10 text-sky-400 border-2 border-sky-400/20 shadow-[0_0_15_rgba(56,189,248,0.1)]' : 'bg-[#ff00de]/10 text-[#ff00de] border-2 border-[#ff00de]/20'} text-xs font-black px-6 py-2.5 rounded-2xl uppercase tracking-widest whitespace-nowrap flex-1 text-center`}>
+                                                {isEnded ? `${Math.round(paidPercentage)}% PAGADO` : `${Math.round(progress)}% Vendido`}
                                             </span>
                                             {selectedNumbers.length > 0 && (
                                                 <button
@@ -378,9 +382,9 @@ const PublicRaffle = () => {
                       aspect-square rounded-xl flex items-center justify-center font-bold text-sm transition-all duration-300
                       ${status === 'AVAILABLE' && !isSelected ? 'bg-[#1a1a1a] border-2 border-gray-800 text-gray-500 hover:border-[#8b00ff] hover:text-[#8b00ff] hover:scale-105 hover:shadow-lg active:scale-95' : ''}
                       ${isSelected ? 'bg-gradient-to-br from-[#8b00ff] to-[#ff00de] text-gray-900 scale-110 shadow-[0_0_15px_rgba(139,0,255,0.5)] z-10 animate-bounce-selected' : ''}
-                       ${status === 'PAGADO' ? 'bg-[#d000ff]/10 text-[#d000ff] border-2 border-solid border-[#d000ff]/50' : ''}
-                       ${status === 'REVISANDO' ? 'bg-[#ff00de]/10 text-[#ff00de] border-2 border-dashed border-[#ff00de]/50' : ''}
-                       ${status === 'APARTADO' ? 'bg-[#8b00ff]/10 text-[#8b00ff] border-2 border-dotted border-[#8b00ff]/50' : ''}
+                        ${status === 'PAGADO' && !isSelected ? 'bg-[#00ff00]/10 text-[#00ff00] border-2 border-solid border-[#00ff00]/50 shadow-[0_0_10px_rgba(0,255,0,0.2)]' : ''}
+                       ${status === 'REVISANDO' && !isSelected ? 'bg-[#ff00de]/10 text-[#ff00de] border-2 border-dashed border-[#ff00de]/50' : ''}
+                       ${status === 'APARTADO' && !isSelected ? 'bg-[#8b00ff]/10 text-[#8b00ff] border-2 border-dotted border-[#8b00ff]/50' : ''}
                        ${isEnded && status === 'AVAILABLE' ? 'opacity-40 grayscale pointer-events-none' : ''}
                     `}
                                             >
@@ -426,13 +430,8 @@ const PublicRaffle = () => {
                     <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center p-0 md:p-4">
                         <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setShowPurchaseModal(false)}></div>
                         <div className="relative bg-white w-full max-w-md md:rounded-3xl rounded-t-3xl shadow-2xl animate-slide-up md:animate-scale-in flex flex-col max-h-[95vh] overflow-hidden">
-                            <div className="p-6 md:p-8 space-y-4 md:space-y-6 relative overflow-y-auto custom-scrollbar">
-                                <button
-                                    onClick={() => setShowPurchaseModal(false)}
-                                    className="absolute top-4 md:top-6 right-4 md:right-6 p-2 hover:bg-gray-50 rounded-xl transition-colors z-20"
-                                >
-                                    <X className="w-5 h-5 md:w-6 md:h-6 text-gray-400" />
-                                </button>
+                            <div className="pt-16 md:pt-20 px-6 md:px-8 pb-6 md:pb-8 space-y-4 md:space-y-6 relative overflow-y-auto custom-scrollbar">
+                                <CloseButton onClick={() => setShowPurchaseModal(false)} />
                                 <div className="text-center space-y-1 md:space-y-2">
                                     <h3 className="text-xl md:text-2xl font-black text-gray-900">Finalizar reserva</h3>
                                     <p className="text-gray-500 text-xs md:text-sm">Ingresa tus datos para apartar tus números</p>
@@ -594,11 +593,9 @@ const PublicRaffle = () => {
                     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-md animate-fade-in" onClick={() => setShowHowToModal(false)}></div>
                         <div className="relative bg-[#F2F2F2] backdrop-blur-xl w-full max-w-md rounded-2xl md:rounded-[2rem] shadow-2xl border-2 border-white/50 animate-scale-in flex flex-col max-h-[90vh]">
-                            <div className="flex items-center justify-between p-6 md:p-8 shrink-0">
+                            <div className="flex items-center justify-between pt-16 md:pt-20 px-6 md:px-8 pb-6 md:pb-8 shrink-0">
                                 <h3 className="text-xl md:text-2xl font-black text-gray-900 uppercase italic tracking-tighter">Participar</h3>
-                                <button onClick={() => setShowHowToModal(false)} className="p-2 hover:bg-white/50 rounded-xl transition-colors">
-                                    <X className="w-5 h-5 md:w-6 md:h-6 text-gray-400" />
-                                </button>
+                                <CloseButton onClick={() => setShowHowToModal(false)} />
                             </div>
                             <div className="overflow-y-auto custom-scrollbar flex-1 px-6 md:px-8 space-y-6 md:space-y-8 pb-8">
                                 <div className="flex items-start space-x-4">
@@ -651,10 +648,8 @@ const PublicRaffle = () => {
                 {showRandomModal && (
                     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-md animate-fade-in" onClick={() => setShowRandomModal(false)}></div>
-                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-[2rem] p-8 shadow-2xl border-2 border-white/50 animate-scale-in text-center flex flex-col max-h-[95vh]">
-                            <button onClick={() => setShowRandomModal(false)} className="absolute top-6 right-6 p-2 hover:bg-gray-50 rounded-xl transition-colors z-20">
-                                <X className="w-6 h-6 text-gray-400" />
-                            </button>
+                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-[2rem] pt-16 md:pt-20 px-8 pb-8 shadow-2xl border-2 border-white/50 animate-scale-in text-center flex flex-col max-h-[95vh]">
+                            <CloseButton onClick={() => setShowRandomModal(false)} />
                             <div className="mb-8">
                                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Generar números</p>
                                 <p className="text-sm text-gray-500 font-medium">Selecciona números al azar</p>
@@ -691,10 +686,8 @@ const PublicRaffle = () => {
                     <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center p-0 md:p-4">
                         <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-md animate-fade-in" onClick={() => setShowPaymentModal(false)}></div>
                         <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-md md:rounded-[2rem] rounded-t-[2rem] shadow-2xl border-2 border-white/50 animate-slide-up md:animate-scale-in flex flex-col max-h-[95vh]">
-                            <div className="p-6 md:p-8 shrink-0 relative border-b border-gray-100/50">
-                                <button onClick={() => setShowPaymentModal(false)} className="absolute top-4 md:top-6 right-4 md:right-6 p-2 hover:bg-gray-50 rounded-xl transition-colors z-20">
-                                    <X className="w-6 h-6 text-gray-400" />
-                                </button>
+                            <div className="pt-16 md:pt-20 px-6 md:px-8 pb-6 md:pb-8 shrink-0 relative border-b border-gray-100/50">
+                                <CloseButton onClick={() => setShowPaymentModal(false)} />
                                 <div className="text-center">
                                     <h3 className="text-xl md:text-2xl font-black text-gray-900 uppercase italic tracking-tighter mb-1">Medios de Pago</h3>
                                     <p className="text-xs md:text-sm text-gray-500 font-medium">Selecciona tu método preferido</p>
