@@ -158,7 +158,7 @@ exports.login = async (req, res) => {
         // Find user
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user) {
-            return res.status(401).json({ error: 'Credenciales inválidas' });
+            return res.status(404).json({ error: 'El correo electrónico no está registrado' });
         }
 
         if (!user.isVerified) {
@@ -168,7 +168,7 @@ exports.login = async (req, res) => {
         // Check password
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) {
-            return res.status(401).json({ error: 'Credenciales inválidas' });
+            return res.status(401).json({ error: 'Contraseña incorrecta' });
         }
 
         // Generate token
