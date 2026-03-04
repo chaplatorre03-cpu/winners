@@ -7,8 +7,28 @@ import {
 } from 'lucide-react';
 import WinnersLogo from '../components/WinnersLogo';
 import CloseButton from '../components/CloseButton';
+import LoadingOverlay, { LoadingSpinner } from '../components/LoadingOverlay';
 
 import { API_URL } from '../config';
+
+const INITIAL_PROFILE_STATE = {
+    name: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: ''
+};
+
+const INITIAL_RAFFLE_STATE = {
+    title: '',
+    description: '',
+    price: '',
+    totalTickets: '',
+    endDate: '',
+    image: ''
+};
+
+const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/;
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -24,24 +44,11 @@ const Dashboard = () => {
     const [showEditProfileModal, setShowEditProfileModal] = useState(false);
     const [currentUser, setCurrentUser] = useState(JSON.parse(localStorage.getItem('user') || '{}'));
     const [phoneError, setPhoneError] = useState('');
-    const [editProfileForm, setEditProfileForm] = useState({
-        name: '',
-        email: '',
-        phone: '',
-        password: '',
-        confirmPassword: ''
-    });
+    const [editProfileForm, setEditProfileForm] = useState(INITIAL_PROFILE_STATE);
     const [showPassword, setShowPassword] = useState(false);
     const [profileError, setProfileError] = useState('');
 
-    const [newRaffle, setNewRaffle] = useState({
-        title: '',
-        description: '',
-        price: '',
-        totalTickets: '',
-        endDate: '',
-        image: ''
-    });
+    const [newRaffle, setNewRaffle] = useState(INITIAL_RAFFLE_STATE);
 
     const token = localStorage.getItem('token');
 
@@ -58,11 +65,10 @@ const Dashboard = () => {
     useEffect(() => {
         if (showEditProfileModal) {
             setEditProfileForm({
+                ...INITIAL_PROFILE_STATE,
                 name: currentUser.name || '',
                 email: currentUser.email || '',
                 phone: currentUser.phone || '',
-                password: '',
-                confirmPassword: ''
             });
             setPhoneError('');
             setProfileError('');
@@ -162,8 +168,7 @@ const Dashboard = () => {
                 return;
             }
 
-            const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/;
-            if (!passwordRegex.test(editProfileForm.password)) {
+            if (!PASSWORD_REGEX.test(editProfileForm.password)) {
                 setProfileError('La contraseña no cumple con los requisitos de seguridad');
                 return;
             }
@@ -205,6 +210,8 @@ const Dashboard = () => {
 
     const activeRaffles = raffles.filter(r => r.status === 'ACTIVE');
     const finalizedRaffles = raffles.filter(r => r.status === 'COMPLETED');
+
+    if (loading) return <LoadingOverlay />;
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -264,11 +271,7 @@ const Dashboard = () => {
                     </button>
                 </div>
 
-                {loading ? (
-                    <div className="flex justify-center py-20">
-                        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                ) : activeRaffles.length === 0 ? (
+                {activeRaffles.length === 0 ? (
                     <div className="bg-white rounded-3xl p-12 text-center border-2 border-dashed border-gray-100">
                         <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
                             <Layout className="w-10 h-10 text-gray-300" />
@@ -319,7 +322,8 @@ const Dashboard = () => {
 
                         })}
                     </div >
-                )}
+                )
+                }
 
                 {/* Finalized Raffles */}
                 {
@@ -382,8 +386,8 @@ const Dashboard = () => {
                     <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center p-0 md:p-4">
                         <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setShowCreateModal(false)}></div>
                         <div className="relative bg-white w-full max-w-lg md:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden animate-slide-up md:animate-scale-in max-h-[95vh] flex flex-col">
-                            <div className="bg-gradient-to-r from-primary to-secondary pt-16 md:pt-20 px-6 md:px-8 pb-6 md:pb-8 text-white relative shrink-0">
-                                <CloseButton onClick={() => setShowCreateModal(false)} />
+                            <CloseButton onClick={() => setShowCreateModal(false)} />
+                            <div className="bg-gradient-to-r from-primary to-secondary pt-20 md:pt-24 px-6 md:px-8 pb-6 md:pb-8 text-white relative shrink-0">
                                 <h2 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase mb-1 md:mb-2">Nueva ronda</h2>
                                 <p className="text-white/80 font-bold text-xs md:text-sm">Configura tu próximo sorteo</p>
                             </div>
@@ -453,21 +457,22 @@ const Dashboard = () => {
                                         <div className="space-y-1.5">
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Total de números</label>
                                             <div className="relative group">
-                                                <Ticket className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-primary transition-colors" />
-                                                <input
-                                                    type="text"
+                                                <Ticket className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-primary transition-colors pointer-events-none z-10" />
+                                                <select
                                                     required
-                                                    placeholder="100"
-                                                    className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900"
+                                                    className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900 appearance-none cursor-pointer"
                                                     value={newRaffle.totalTickets}
-                                                    onChange={(e) => {
-                                                        const val = e.target.value.replace(/\D/g, '');
-                                                        const formatted = val.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-                                                        setNewRaffle({ ...newRaffle, totalTickets: formatted });
-                                                    }}
-                                                    onInvalid={(e) => e.target.setCustomValidity('Por favor, ingresa el total de números')}
-                                                    onInput={(e) => e.target.setCustomValidity('')}
-                                                />
+                                                    onChange={(e) => setNewRaffle({ ...newRaffle, totalTickets: e.target.value })}
+                                                >
+                                                    <option value="" disabled>Seleccionar</option>
+                                                    <option value="10">10 (0-9)</option>
+                                                    <option value="100">100 (00-99)</option>
+                                                    <option value="1000">1.000 (000-999)</option>
+                                                    <option value="10000">10.000 (0000-9999)</option>
+                                                </select>
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-focus-within:text-primary">
+                                                    <ChevronDown className="w-4 h-4" />
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -504,8 +509,8 @@ const Dashboard = () => {
                     <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center p-0 md:p-4">
                         <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setShowEditProfileModal(false)}></div>
                         <div className="relative bg-white w-full max-w-lg md:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden animate-scale-in max-h-[95vh] flex flex-col">
-                            <div className="bg-gradient-to-r from-primary to-secondary pt-16 md:pt-20 px-6 md:px-8 pb-6 md:pb-8 text-white relative shrink-0">
-                                <CloseButton onClick={() => setShowEditProfileModal(false)} />
+                            <CloseButton onClick={() => setShowEditProfileModal(false)} />
+                            <div className="bg-gradient-to-r from-primary to-secondary pt-20 md:pt-24 px-6 md:px-8 pb-6 md:pb-8 text-white relative shrink-0">
                                 <h2 className="text-3xl font-black italic tracking-tighter uppercase mb-2">Mi Perfil</h2>
                                 <p className="text-white/80 font-bold text-sm">Actualiza tu información personal</p>
                                 {profileError && (
@@ -663,7 +668,7 @@ const Dashboard = () => {
                 showLogoutConfirm && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-md transition-opacity" onClick={() => setShowLogoutConfirm(false)}></div>
-                        <div className="relative bg-white/90 backdrop-blur-2xl w-full max-w-md rounded-[3rem] pt-16 md:pt-20 px-10 pb-10 shadow-[0_40px_100px_rgba(0,0,0,0.2)] border-2 border-gray-100 overflow-hidden animate-scale-in">
+                        <div className="relative bg-white/90 backdrop-blur-2xl w-full max-w-md rounded-[3rem] pt-16 md:pt-24 px-10 pb-10 shadow-[0_40px_100px_rgba(0,0,0,0.2)] border-2 border-gray-100 overflow-hidden animate-scale-in">
                             <CloseButton onClick={() => setShowLogoutConfirm(false)} />
                             {/* Design details */}
 
@@ -683,7 +688,7 @@ const Dashboard = () => {
                                         onClick={handleLogout}
                                         className="w-full px-6 py-4 bg-gradient-to-r from-red-500 to-red-600 text-white font-black rounded-2xl hover:shadow-[0_10px_30px_rgba(239,68,68,0.4)] transition-all uppercase tracking-widest italic text-sm border-b-4 border-red-700 active:border-b-0 active:translate-y-1"
                                     >
-                                        Salir
+                                        CONTINUAR
                                     </button>
                                 </div>
                             </div>

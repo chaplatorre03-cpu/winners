@@ -13,6 +13,17 @@ import CloseButton from '../components/CloseButton';
 
 import { API_URL } from '../config';
 
+const INITIAL_RAFFLE_INFO = {
+    title: '',
+    description: '',
+    image: '',
+    price: 0,
+    totalTickets: 0,
+    endDate: ''
+};
+
+import LoadingOverlay from '../components/LoadingOverlay';
+
 const RaffleManagement = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
@@ -52,14 +63,7 @@ const RaffleManagement = () => {
     const [showCustomErrorModal, setShowCustomErrorModal] = useState(false);
     const [customErrorMessage, setCustomErrorMessage] = useState('');
 
-    const [updatedRaffleInfo, setUpdatedRaffleInfo] = useState({
-        title: '',
-        description: '',
-        image: '',
-        price: 0,
-        totalTickets: 0,
-        endDate: ''
-    });
+    const [updatedRaffleInfo, setUpdatedRaffleInfo] = useState(INITIAL_RAFFLE_INFO);
 
 
     const token = localStorage.getItem('token');
@@ -145,6 +149,12 @@ const RaffleManagement = () => {
             setError(err.message);
             setLoading(false);
         }
+    };
+
+    const formatNumber = (num) => {
+        if (!raffle?.totalTickets) return num;
+        const padding = raffle.totalTickets.toString().length - 1;
+        return num.toString().padStart(padding, '0');
     };
 
     const handleStatusClick = (ticket, newStatus) => {
@@ -281,28 +291,34 @@ const RaffleManagement = () => {
         };
     };
 
-    const stats = getStats();
-    const currentStatCount = statusFilter === 'APARTADO' ? stats.apartado : statusFilter === 'REVISANDO' ? stats.revisando : statusFilter === 'PAGADO' ? stats.pagado : stats.totalSold;
-    const progress = raffle ? (currentStatCount / raffle.totalTickets) * 100 : 0;
+    const stats = React.useMemo(() => getStats(), [tickets]);
 
-    const filteredTickets = tickets.filter(t => {
-        const date = new Date(t.createdAt);
-        const day = date.getDate().toString();
-        const month = (date.getMonth() + 1).toString();
-        const year = date.getFullYear().toString();
-        const fullDate = date.toLocaleDateString();
+    const currentStatCount = React.useMemo(() => {
+        return statusFilter === 'APARTADO' ? stats.apartado : statusFilter === 'REVISANDO' ? stats.revisando : statusFilter === 'PAGADO' ? stats.pagado : stats.totalSold;
+    }, [statusFilter, stats]);
 
-        const matchesSearch = t.buyerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            t.number.toString().includes(searchQuery) ||
-            (t.buyerPhone && t.buyerPhone.includes(searchQuery)) ||
-            day.includes(searchQuery) ||
-            month.includes(searchQuery) ||
-            year.includes(searchQuery) ||
-            fullDate.includes(searchQuery);
+    const progress = React.useMemo(() => raffle ? (currentStatCount / raffle.totalTickets) * 100 : 0, [raffle, currentStatCount]);
 
-        const matchesStatus = statusFilter ? t.status === statusFilter : true;
-        return matchesSearch && matchesStatus;
-    });
+    const filteredTickets = React.useMemo(() => {
+        return tickets.filter(t => {
+            const date = new Date(t.createdAt);
+            const day = date.getDate().toString();
+            const month = (date.getMonth() + 1).toString();
+            const year = date.getFullYear().toString();
+            const fullDate = date.toLocaleDateString();
+
+            const matchesSearch = t.buyerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                t.number.toString().includes(searchQuery) ||
+                (t.buyerPhone && t.buyerPhone.includes(searchQuery)) ||
+                day.includes(searchQuery) ||
+                month.includes(searchQuery) ||
+                year.includes(searchQuery) ||
+                fullDate.includes(searchQuery);
+
+            const matchesStatus = statusFilter ? t.status === statusFilter : true;
+            return matchesSearch && matchesStatus;
+        });
+    }, [tickets, searchQuery, statusFilter]);
 
     const handleCloseModal = () => {
         if (window.history.state && window.history.state.idx > 0) {
@@ -336,21 +352,17 @@ const RaffleManagement = () => {
                 fetchRaffleDetails();
             } else {
                 const errorData = await response.json();
-                alert('Error al actualizar: ' + (errorData.error || response.statusText));
+                setCustomErrorMessage(errorData.error || response.statusText);
+                setShowCustomErrorModal(true);
             }
         } catch (err) {
             console.error('Error updating raffle:', err);
-            alert('Error de conexión al actualizar la rifa');
+            setCustomErrorMessage('Error de conexión al actualizar la rifa');
+            setShowCustomErrorModal(true);
         }
     };
 
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <div className="w-12 h-12 border-4 border-[#8b00ff] border-t-transparent rounded-full animate-spin"></div>
-            </div>
-        );
-    }
+    if (loading) return <LoadingOverlay />;
 
     if (error) {
         return (
@@ -509,7 +521,7 @@ const RaffleManagement = () => {
                                                             ${ticket.status === 'REVISANDO' ? 'bg-[#ff00de]/10 text-[#ff00de]' : ''}
                                                             ${ticket.status === 'APARTADO' ? 'bg-[#8b00ff]/10 text-[#8b00ff]' : ''}
                                                           `}>
-                                                        {ticket.number}
+                                                        {formatNumber(ticket.number)}
                                                     </div>
                                                     <div className="min-w-0">
                                                         <p className={`font-bold text-gray-900 transition-colors text-xs md:text-sm truncate
@@ -596,15 +608,15 @@ const RaffleManagement = () => {
             {selectedTicket && (
                 <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
                     <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setSelectedTicket(null)}></div>
-                    <div className="relative bg-white w-full max-w-sm md:rounded-[2.5rem] rounded-t-3xl shadow-2xl animate-slide-up md:animate-scale-in max-h-[95vh] flex flex-col">
+                    <div className="relative bg-white w-full max-w-sm md:rounded-[2.5rem] rounded-t-3xl shadow-2xl animate-slide-up md:animate-scale-in max-h-[95vh] flex flex-col overflow-hidden">
                         <CloseButton onClick={() => setSelectedTicket(null)} />
                         <div className="overflow-y-auto overflow-x-visible custom-scrollbar flex-1">
-                            <div className="pt-16 md:pt-20 px-6 md:px-10 text-center space-y-4 md:space-y-6 pb-8">
+                            <div className="pt-16 md:pt-20 px-14 md:px-10 text-center space-y-4 md:space-y-6 pb-8">
 
 
                                 <div>
                                     <h3 className="text-3xl font-black tracking-tight text-gray-900 uppercase italic">{selectedTicket.buyerName || 'Participante'}</h3>
-                                    <p className="text-gray-500 font-bold text-sm uppercase tracking-widest mt-1">NÚMERO {selectedTicket.number}</p>
+                                    <p className="text-gray-500 font-bold text-sm uppercase tracking-widest mt-1">NÚMERO {formatNumber(selectedTicket.number)}</p>
                                 </div>
 
                                 {(() => {
@@ -649,12 +661,12 @@ const RaffleManagement = () => {
                                             <a
                                                 href={`https://api.whatsapp.com/send?phone=57${selectedTicket.buyerPhone.replace(/\D/g, '').slice(-10)}&text=${encodeURIComponent(
                                                     (selectedTicket.status === 'APARTADO' || selectedTicket.status === 'RESERVED')
-                                                        ? `Hola ${selectedTicket.buyerName || ''}, te escribo de Winners. Tu número ${selectedTicket.number} debe ser pagado o se liberará para que otro cliente pueda tomarlo. Si ya pagaste envíanos tu comprobante.`
+                                                        ? `Hola ${selectedTicket.buyerName || ''}, te escribo de Winners. Tu número ${formatNumber(selectedTicket.number)} debe ser pagado o se liberará para que otro cliente pueda tomarlo. Si ya pagaste envíanos tu comprobante.`
                                                         : (selectedTicket.status === 'REVISANDO' || selectedTicket.status === 'REVIEWING')
-                                                            ? `Hola ${selectedTicket.buyerName || ''}, te escribo de Winners. La revisión de tu comprobante de pago para el número ${selectedTicket.number} fue exitosa. ¡Mucha suerte en el sorteo!`
+                                                            ? `Hola ${selectedTicket.buyerName || ''}, te escribo de Winners. La revisión de tu comprobante de pago para el número ${formatNumber(selectedTicket.number)} fue exitosa. ¡Mucha suerte en el sorteo!`
                                                             : (selectedTicket.status === 'PAGADO' || selectedTicket.status === 'PAID')
-                                                                ? `Hola ${selectedTicket.buyerName || ''}, te escribo de Winners. ¡Felicidades! Has ganado el sorteo con el número ${selectedTicket.number}. Por favor contáctanos para reclamar tu premio.`
-                                                                : `Hola ${selectedTicket.buyerName || ''}, te escribo de Winners sobre tu número ${selectedTicket.number}.`
+                                                                ? `Hola ${selectedTicket.buyerName || ''}, te escribo de Winners. ¡Felicidades! Has ganado el sorteo con el número ${formatNumber(selectedTicket.number)}. Por favor contáctanos para reclamar tu premio.`
+                                                                : `Hola ${selectedTicket.buyerName || ''}, te escribo de Winners sobre tu número ${formatNumber(selectedTicket.number)}.`
                                                 )}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
@@ -748,7 +760,7 @@ const RaffleManagement = () => {
                 <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
                     <div className="absolute inset-0 bg-gray-900/80 backdrop-blur-md" onClick={() => !isDrawing && handleCloseModal()}></div>
                     <div className="relative bg-white w-full max-w-md md:rounded-[2.5rem] rounded-t-3xl shadow-2xl overflow-hidden animate-slide-up md:animate-scale-in flex flex-col max-h-[95vh]">
-                        <div className="bg-gradient-to-r from-primary to-secondary p-8 text-white relative text-center shrink-0">
+                        <div className="bg-gradient-to-r from-primary to-secondary p-8 px-14 text-white relative text-center shrink-0">
                             <CloseButton
                                 onClick={() => {
                                     if (isDrawing) return;
@@ -857,8 +869,8 @@ const RaffleManagement = () => {
                                                         <input
                                                             type="number"
                                                             placeholder="Número ganador"
-                                                            min="1"
-                                                            max={raffle?.totalTickets || 999}
+                                                            min="0"
+                                                            max={raffle?.totalTickets ? raffle.totalTickets - 1 : 999}
                                                             className="input-field pl-11 bg-gray-50 border-gray-100 text-gray-900 focus:border-[#ff00de] focus:ring-2 focus:ring-[#ff00de]/20"
                                                             value={manualWinnerNumber}
                                                             onChange={(e) => setManualWinnerNumber(e.target.value)}
@@ -875,7 +887,7 @@ const RaffleManagement = () => {
                                                             const manualNum = parseInt(manualWinnerNumber);
                                                             // Permitir si ya ganó al azar, pero no si ya se ingresó manualmente
                                                             if (winnersList.some(w => w.ticketNumber === manualNum && Boolean(w.isManualWinner))) {
-                                                                setCustomErrorMessage(`El número ${manualNum} ya ha sido registrado manualmente como ganador.`);
+                                                                setCustomErrorMessage(`El número ${formatNumber(manualNum)} ya ha sido registrado manualmente como ganador.`);
                                                                 setShowCustomErrorModal(true);
                                                                 return;
                                                             }
@@ -945,7 +957,7 @@ const RaffleManagement = () => {
                                             <div className="space-y-3 min-w-[340px]">
                                                 {winnersList.map((win, idx) => {
                                                     const isManual = win && Boolean(win.isManualWinner);
-                                                    const ticketNum = win?.ticketNumber || '??';
+                                                    const ticketNum = win?.ticketNumber !== undefined ? formatNumber(win.ticketNumber) : '??';
                                                     const buyerName = win?.buyer?.name || 'Anónimo';
                                                     const buyerPhone = win?.buyer?.phone || 'Sin tel.';
                                                     const isDeleted = !win?.buyer;
@@ -1050,8 +1062,8 @@ const RaffleManagement = () => {
                     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
                         <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => handleCloseModal()}></div>
                         <div className="relative bg-white w-full max-w-lg md:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden animate-slide-up md:animate-scale-in max-h-[95vh] flex flex-col">
-                            <div className="bg-gradient-to-r from-primary to-secondary p-6 md:p-8 text-white relative shrink-0">
-                                <CloseButton onClick={() => handleCloseModal()} />
+                            <CloseButton onClick={() => handleCloseModal()} />
+                            <div className="bg-gradient-to-r from-primary to-secondary pt-16 md:pt-20 px-14 md:px-8 pb-6 md:pb-8 text-white relative shrink-0">
                                 <h2 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase mb-1 md:mb-2">Ajustes de la Rifa</h2>
                                 <p className="text-white/80 font-bold text-xs md:text-sm">Modifica los detalles de tu sorteo</p>
                             </div>
@@ -1181,7 +1193,7 @@ const RaffleManagement = () => {
                 showSuccessModal && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-md animate-fade-in" onClick={() => setShowSuccessModal(false)}></div>
-                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-[2rem] p-8 shadow-2xl border-2 border-white/50 animate-scale-in text-center overflow-visible">
+                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-[2rem] p-8 shadow-2xl border-2 border-white/50 animate-scale-in text-center overflow-hidden">
                             <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 relative">
                                 <div className="absolute inset-0 border-4 border-green-100 rounded-full animate-ping opacity-20"></div>
                                 <CheckCircle className="w-10 h-10 text-green-500" />
@@ -1208,13 +1220,8 @@ const RaffleManagement = () => {
                 showDeleteConfirm && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-md animate-fade-in" onClick={() => setShowDeleteConfirm(false)}></div>
-                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-[2rem] pt-16 md:pt-20 px-6 md:px-10 pb-6 md:pb-10 shadow-2xl border-2 border-white/50 animate-scale-in text-center flex flex-col max-h-[95vh] overflow-visible">
-                            <button
-                                onClick={() => setShowDeleteConfirm(false)}
-                                className="absolute top-6 right-6 p-2 bg-red-50 hover:bg-red-500 rounded-xl transition-all group z-20"
-                            >
-                                <X className="w-6 h-6 text-red-500 group-hover:text-white transition-colors" />
-                            </button>
+                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-[2rem] pt-16 md:pt-20 px-14 md:px-10 pb-6 md:pb-10 shadow-2xl border-2 border-white/50 animate-scale-in text-center flex flex-col max-h-[95vh] overflow-hidden">
+                            <CloseButton onClick={() => setShowDeleteConfirm(false)} />
                             <div className="overflow-y-auto custom-scrollbar flex-1 overflow-x-visible">
                                 <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 relative">
                                     <div className="absolute inset-0 border-4 border-red-100 rounded-full animate-ping opacity-20"></div>
@@ -1244,7 +1251,7 @@ const RaffleManagement = () => {
                 showTicketUpdateSuccess && (
                     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-md animate-fade-in" onClick={() => setShowTicketUpdateSuccess(false)}></div>
-                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-[2rem] pt-16 md:pt-20 px-6 md:px-10 pb-8 shadow-2xl border-2 border-white/50 animate-scale-in text-center overflow-visible">
+                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-[2rem] pt-16 md:pt-20 px-14 md:px-10 pb-8 shadow-2xl border-2 border-white/50 animate-scale-in text-center overflow-hidden">
                             <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 relative">
                                 <div className="absolute inset-0 border-4 border-green-100 rounded-full animate-ping opacity-20"></div>
                                 <CheckCircle className="w-10 h-10 text-green-500" />
@@ -1276,13 +1283,8 @@ const RaffleManagement = () => {
                 showStatusConfirm && pendingStatusUpdate && (
                     <div className="fixed inset-0 z-[250] flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-md animate-fade-in" onClick={() => setShowStatusConfirm(false)}></div>
-                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-[2rem] pt-16 md:pt-20 px-6 md:px-10 pb-6 md:pb-10 shadow-2xl border-2 border-white/50 animate-scale-in text-center flex flex-col max-h-[95vh] overflow-visible">
-                            <button
-                                onClick={() => setShowStatusConfirm(false)}
-                                className="absolute top-6 right-6 p-2 bg-red-50 hover:bg-red-500 rounded-xl transition-all group z-20"
-                            >
-                                <X className="w-6 h-6 text-red-500 group-hover:text-white transition-colors" />
-                            </button>
+                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-[2rem] pt-16 md:pt-20 px-14 md:px-10 pb-6 md:pb-10 shadow-2xl border-2 border-white/50 animate-scale-in text-center flex flex-col max-h-[95vh] overflow-hidden">
+                            <CloseButton onClick={() => setShowStatusConfirm(false)} />
                             <div className="overflow-y-auto custom-scrollbar flex-1 overflow-x-visible">
                                 <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 relative">
                                     <div className="absolute inset-0 border-4 border-primary/10 rounded-full animate-ping opacity-20"></div>
@@ -1313,13 +1315,8 @@ const RaffleManagement = () => {
                 showCustomErrorModal && (
                     <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md animate-fade-in" onClick={() => setShowCustomErrorModal(false)}></div>
-                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-[2.5rem] pt-16 md:pt-20 px-6 md:px-10 pb-6 md:pb-10 shadow-3xl border-2 border-white/50 animate-scale-in text-center flex flex-col max-h-[95vh] overflow-visible">
-                            <button
-                                onClick={() => setShowCustomErrorModal(false)}
-                                className="absolute top-6 right-6 p-2 bg-red-50 hover:bg-red-500 rounded-xl transition-all group z-20"
-                            >
-                                <X className="w-6 h-6 text-red-500 group-hover:text-white transition-colors" />
-                            </button>
+                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-[2.5rem] pt-16 md:pt-20 px-14 md:px-10 pb-6 md:pb-10 shadow-3xl border-2 border-white/50 animate-scale-in text-center flex flex-col max-h-[95vh] overflow-hidden">
+                            <CloseButton onClick={() => setShowCustomErrorModal(false)} />
                             <div className="overflow-y-auto custom-scrollbar flex-1 overflow-x-visible">
                                 <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 relative">
                                     <div className="absolute inset-0 border-4 border-red-100 rounded-full animate-ping opacity-20"></div>
@@ -1353,7 +1350,7 @@ const RaffleManagement = () => {
                         <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setShowQRModal(false)}></div>
                         <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm md:rounded-[2rem] rounded-t-3xl shadow-2xl border-2 border-white/50 animate-slide-up md:animate-scale-in text-center flex flex-col max-h-[95vh] overflow-hidden">
                             <CloseButton onClick={() => setShowQRModal(false)} />
-                            <div className="overflow-y-auto custom-scrollbar flex-1 p-8 pt-12">
+                            <div className="overflow-y-auto custom-scrollbar flex-1 p-8 pt-16 md:pt-20">
                                 <div className="mb-6">
 
                                     <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">

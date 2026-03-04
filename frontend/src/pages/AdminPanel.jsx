@@ -355,7 +355,7 @@ const AdminPanel = () => {
                                     onClick={handleLogout}
                                     className="px-6 py-4 bg-gradient-to-r from-red-500 to-red-600 text-white font-black rounded-2xl hover:shadow-[0_10px_30px_rgba(239,68,68,0.4)] transition-all uppercase tracking-widest italic text-sm border-b-4 border-red-700 active:border-b-0 active:translate-y-1"
                                 >
-                                    Salir
+                                    CONTINUAR
                                 </button>
                             </div>
                         </div>

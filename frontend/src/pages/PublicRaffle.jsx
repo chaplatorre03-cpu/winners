@@ -3,13 +3,16 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
     Users, DollarSign, Calendar, Info, CheckCircle, CheckCircle2,
     QrCode, ArrowLeft, Menu, Lock, X, Grid, Layout, Settings, Trophy, Home, Eye, EyeOff, Search, Filter,
-    Banknote, MousePointer2, Send, Award, Ticket, Dices, Phone, CreditCard, Wallet, RotateCcw
+    Banknote, MousePointer2, Send, Award, Ticket, Phone, CreditCard, Wallet, RotateCcw
 } from 'lucide-react';
 import WinnersLogo from '../components/WinnersLogo';
 import AdminSidebar from '../components/AdminSidebar';
 import CloseButton from '../components/CloseButton';
+import LoadingOverlay from '../components/LoadingOverlay';
 
 import { API_URL } from '../config';
+
+const INITIAL_PURCHASE_STATE = { name: '', phone: '', email: '' };
 
 const PublicRaffle = () => {
     const { id } = useParams();
@@ -20,7 +23,7 @@ const PublicRaffle = () => {
     const [selectedNumbers, setSelectedNumbers] = useState([]);
     const [showPurchaseModal, setShowPurchaseModal] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
-    const [purchaseForm, setPurchaseForm] = useState({ name: '', phone: '', email: '' });
+    const [purchaseForm, setPurchaseForm] = useState(INITIAL_PURCHASE_STATE);
     const [purchaseError, setPurchaseError] = useState('');
     const [purchasing, setPurchasing] = useState(false);
     const [showOnlyAvailable, setShowOnlyAvailable] = useState(false);
@@ -74,7 +77,7 @@ const PublicRaffle = () => {
 
     const handleRandomSelect = () => {
         if (isEnded) return;
-        const availableNumbers = Array.from({ length: raffle?.totalTickets || 0 }, (_, i) => i + 1)
+        const availableNumbers = Array.from({ length: raffle?.totalTickets || 0 }, (_, i) => i)
             .filter(num => !isTicketSold(num) && !selectedNumbers.includes(num) && !randomSelection.includes(num));
 
         if (availableNumbers.length === 0) return;
@@ -107,31 +110,35 @@ const PublicRaffle = () => {
         });
     };
 
+    const ticketMap = React.useMemo(() => {
+        const map = new Map();
+        if (raffle?.tickets) {
+            raffle.tickets.forEach(t => map.set(t.number, t));
+        }
+        return map;
+    }, [raffle?.tickets]);
 
-    const isTicketSold = (num) => {
-        return raffle?.tickets?.some(t => t.number === num);
+    const isTicketSold = (num) => ticketMap.has(num);
+
+    const formatNumber = (num) => {
+        if (!raffle?.totalTickets) return num;
+        const padding = raffle.totalTickets.toString().length - 1;
+        return num.toString().padStart(padding, '0');
     };
 
-    const getTicketByNumber = (num) => {
-        return raffle?.tickets?.find(t => t.number === num);
-    };
+    const getTicketByNumber = (num) => ticketMap.get(num);
 
     const getTicketStatus = (num) => {
         const ticket = getTicketByNumber(num);
         return ticket ? ticket.status : 'AVAILABLE';
     };
 
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-            </div>
-        );
-    }
+    if (loading || purchasing) return <LoadingOverlay />;
 
     if (error) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+            <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center pt-20 pb-12 p-4 overflow-y-auto h-screen relative">
+                {/* Animated background elements */}
                 <div className="bg-white p-8 rounded-2xl shadow-xl text-center max-w-sm">
                     <div className="bg-red-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Lock className="w-8 h-8 text-red-500" />
@@ -172,7 +179,7 @@ const PublicRaffle = () => {
                             <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 w-3.5 md:w-4 h-3.5 md:h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
                             <input
                                 type="text"
-                                placeholder="Buscar número..."
+                                placeholder="Buscar..."
                                 className="w-full text-sm md:text-base input-field pl-9 md:pl-10 h-10 md:h-12 bg-[#222] border-gray-700 transition-all hover:bg-[#2a2a2a] focus:bg-[#333] focus:ring-4 focus:ring-primary/10 text-white placeholder-gray-500"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -359,7 +366,7 @@ const PublicRaffle = () => {
 
                             {/* Ticket Grid */}
                             <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
-                                {Array.from({ length: raffle.totalTickets }, (_, i) => i + 1)
+                                {Array.from({ length: raffle.totalTickets }, (_, i) => i)
                                     .filter(num => {
                                         const status = getTicketStatus(num);
                                         if (showOnlyAvailable && status !== 'AVAILABLE') return false;
@@ -388,7 +395,7 @@ const PublicRaffle = () => {
                        ${isEnded && status === 'AVAILABLE' ? 'opacity-40 grayscale pointer-events-none' : ''}
                     `}
                                             >
-                                                {num}
+                                                {formatNumber(num)}
                                             </button>
                                         );
                                     })}
@@ -407,7 +414,7 @@ const PublicRaffle = () => {
                                             <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest hidden md:inline-block">Total</p>
                                         </div>
                                         <div className="text-xs text-primary font-bold whitespace-normal break-words max-h-16 overflow-y-auto custom-scrollbar">
-                                            {selectedNumbers.length} {selectedNumbers.length === 1 ? 'Número' : 'Números'}: <span className="text-gray-400 font-medium">{[...selectedNumbers].sort((a, b) => a - b).join(', ')}</span>
+                                            {selectedNumbers.length} {selectedNumbers.length === 1 ? 'Número' : 'Números'}: <span className="text-gray-400 font-medium">{[...selectedNumbers].sort((a, b) => a - b).map(formatNumber).join(', ')}</span>
                                         </div>
                                     </div>
                                     <button
@@ -430,8 +437,8 @@ const PublicRaffle = () => {
                     <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center p-0 md:p-4">
                         <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setShowPurchaseModal(false)}></div>
                         <div className="relative bg-white w-full max-w-md md:rounded-3xl rounded-t-3xl shadow-2xl animate-slide-up md:animate-scale-in flex flex-col max-h-[95vh] overflow-hidden">
-                            <div className="pt-16 md:pt-20 px-6 md:px-8 pb-6 md:pb-8 space-y-4 md:space-y-6 relative overflow-y-auto custom-scrollbar">
-                                <CloseButton onClick={() => setShowPurchaseModal(false)} />
+                            <CloseButton onClick={() => setShowPurchaseModal(false)} />
+                            <div className="pt-20 md:pt-24 px-6 md:px-8 pb-6 md:pb-8 space-y-4 md:space-y-6 relative overflow-y-auto custom-scrollbar">
                                 <div className="text-center space-y-1 md:space-y-2">
                                     <h3 className="text-xl md:text-2xl font-black text-gray-900">Finalizar reserva</h3>
                                     <p className="text-gray-500 text-xs md:text-sm">Ingresa tus datos para apartar tus números</p>
@@ -469,7 +476,7 @@ const PublicRaffle = () => {
                                                 // WhatsApp Redirection - Definitive Fix
                                                 const organizerPhone = raffle.creator?.phone || raffle.organizerPhone || '3204446733';
                                                 const cleanPhone = organizerPhone.replace(/\D/g, '').slice(-10);
-                                                const numbersText = selectedNumbers.join(', ');
+                                                const numbersText = selectedNumbers.map(formatNumber).join(', ');
 
                                                 const message = `Hola! He reservado los numeros ${numbersText} para el sorteo ${raffle.title} a nombre de ${purchaseForm.name}. Adjunto el comprobante de pago para validar mi participacion.`;
 
@@ -482,7 +489,7 @@ const PublicRaffle = () => {
                                                 }
 
                                                 setShowSuccessModal(true);
-                                                setPurchaseForm({ name: '', phone: '', email: '' });
+                                                setPurchaseForm(INITIAL_PURCHASE_STATE);
                                                 setSelectedNumbers([]);
                                                 fetchRaffle();
                                             } else {
@@ -593,9 +600,9 @@ const PublicRaffle = () => {
                     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-md animate-fade-in" onClick={() => setShowHowToModal(false)}></div>
                         <div className="relative bg-[#F2F2F2] backdrop-blur-xl w-full max-w-md rounded-2xl md:rounded-[2rem] shadow-2xl border-2 border-white/50 animate-scale-in flex flex-col max-h-[90vh]">
-                            <div className="flex items-center justify-between pt-16 md:pt-20 px-6 md:px-8 pb-6 md:pb-8 shrink-0">
+                            <CloseButton onClick={() => setShowHowToModal(false)} />
+                            <div className="flex items-center justify-between pt-20 md:pt-24 px-6 md:px-8 pb-6 md:pb-8 shrink-0">
                                 <h3 className="text-xl md:text-2xl font-black text-gray-900 uppercase italic tracking-tighter">Participar</h3>
-                                <CloseButton onClick={() => setShowHowToModal(false)} />
                             </div>
                             <div className="overflow-y-auto custom-scrollbar flex-1 px-6 md:px-8 space-y-6 md:space-y-8 pb-8">
                                 <div className="flex items-start space-x-4">
@@ -648,7 +655,7 @@ const PublicRaffle = () => {
                 {showRandomModal && (
                     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-md animate-fade-in" onClick={() => setShowRandomModal(false)}></div>
-                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-[2rem] pt-16 md:pt-20 px-8 pb-8 shadow-2xl border-2 border-white/50 animate-scale-in text-center flex flex-col max-h-[95vh]">
+                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-[2rem] pt-20 md:pt-24 px-8 pb-8 shadow-2xl border-2 border-white/50 animate-scale-in text-center flex flex-col max-h-[95vh]">
                             <CloseButton onClick={() => setShowRandomModal(false)} />
                             <div className="mb-8">
                                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Generar números</p>
@@ -663,14 +670,19 @@ const PublicRaffle = () => {
                                     {randomSelection.length === 0 ? (
                                         <p className="text-[10px] text-gray-400 font-bold uppercase italic m-auto">Ningún número generado</p>
                                     ) : (
-                                        randomSelection.map(num => (
-                                            <div key={num} className="flex items-center space-x-2 bg-primary text-white px-3 py-1.5 rounded-lg animate-scale-in">
-                                                <span className="font-black text-sm">{num}</span>
-                                                <button onClick={() => setRandomSelection(prev => prev.filter(n => n !== num))} className="hover:text-white/70 transition-colors">
-                                                    <X className="w-3 h-3" />
-                                                </button>
+                                        <>
+                                            <h3 className="text-lg md:text-xl font-black text-[#8b00ff] uppercase italic tracking-[0.2em]">Números Elegidos</h3>
+                                            <div className="flex flex-wrap gap-2">
+                                                {randomSelection.map(num => (
+                                                    <div key={num} className="flex items-center space-x-2 bg-primary text-white px-3 py-1.5 rounded-lg animate-scale-in">
+                                                        <span className="font-black text-sm">{formatNumber(num)}</span>
+                                                        <button onClick={() => setRandomSelection(prev => prev.filter(n => n !== num))} className="hover:text-white/70 transition-colors">
+                                                            <X className="w-3 h-3" />
+                                                        </button>
+                                                    </div>
+                                                ))}
                                             </div>
-                                        ))
+                                        </>
                                     )}
                                 </div>
                             </div>
@@ -686,8 +698,8 @@ const PublicRaffle = () => {
                     <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center p-0 md:p-4">
                         <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-md animate-fade-in" onClick={() => setShowPaymentModal(false)}></div>
                         <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-md md:rounded-[2rem] rounded-t-[2rem] shadow-2xl border-2 border-white/50 animate-slide-up md:animate-scale-in flex flex-col max-h-[95vh]">
-                            <div className="pt-16 md:pt-20 px-6 md:px-8 pb-6 md:pb-8 shrink-0 relative border-b border-gray-100/50">
-                                <CloseButton onClick={() => setShowPaymentModal(false)} />
+                            <CloseButton onClick={() => setShowPaymentModal(false)} />
+                            <div className="pt-20 md:pt-24 px-6 md:px-8 pb-6 md:pb-8 shrink-0 relative border-b border-gray-100/50">
                                 <div className="text-center">
                                     <h3 className="text-xl md:text-2xl font-black text-gray-900 uppercase italic tracking-tighter mb-1">Medios de Pago</h3>
                                     <p className="text-xs md:text-sm text-gray-500 font-medium">Selecciona tu método preferido</p>

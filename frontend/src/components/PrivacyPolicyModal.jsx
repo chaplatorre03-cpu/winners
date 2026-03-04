@@ -18,12 +18,12 @@ const PrivacyPolicyModal = ({ onClose, onAccept, initialAccepted = false }) => {
     return (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-[#0a0a0a] w-full max-w-4xl max-h-[90vh] rounded-2xl border border-gray-800 flex flex-col shadow-2xl relative">
+                <CloseButton onClick={onClose} />
                 {/* Header */}
-                <div className="flex items-center justify-between pt-16 md:pt-20 px-6 pb-6 border-b border-gray-800 bg-[#0a0a0a] rounded-t-2xl z-10">
+                <div className="flex items-center justify-between pt-20 md:pt-24 px-6 pb-6 border-b border-gray-800 bg-[#0a0a0a] rounded-t-2xl z-10">
                     <div className="flex items-center">
                         <WinnersLogo size="small" />
                     </div>
-                    <CloseButton onClick={onClose} />
                 </div>
 
                 {/* Content */}

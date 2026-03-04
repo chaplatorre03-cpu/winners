@@ -15,7 +15,7 @@ const CloseButton = ({ onClick, className = "" }) => {
         <button
             onClick={onClick}
             type="button"
-            className={`absolute top-4 md:top-6 right-4 md:right-6 w-10 h-10 md:w-8 md:h-8 flex items-center justify-center bg-[#ff4d4d] hover:bg-[#ff1a1a] text-white rounded-full shadow-lg shadow-red-500/25 transition-all duration-500 hover:rotate-90 hover:scale-110 active:scale-95 z-[60] group ${className}`}
+            className={`absolute top-7 md:top-8 right-5 md:right-8 w-11 h-11 md:w-10 md:h-10 flex items-center justify-center bg-[#ff4d4d] hover:bg-[#ff1a1a] text-white rounded-full shadow-lg shadow-red-500/30 transition-all duration-500 hover:rotate-90 hover:scale-110 active:scale-95 z-[70] group ${className}`}
             aria-label="Cerrar"
         >
             <X className="w-6 h-6 md:w-5 md:h-5 text-white transition-transform group-active:scale-90" />

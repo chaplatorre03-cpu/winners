@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import WinnersLogo from '../components/WinnersLogo';
+import { LoadingSpinner } from '../components/LoadingOverlay';
 
 import { API_URL } from '../config';
+
+const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/;
 
 const Login = () => {
     const navigate = useNavigate();
@@ -153,8 +156,7 @@ const Login = () => {
             return;
         }
 
-        const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/;
-        if (!passwordRegex.test(newPassword)) {
+        if (!PASSWORD_REGEX.test(newPassword)) {
             setError('La contraseña no cumple con los requisitos de seguridad');
             setLoading(false);
             return;
@@ -312,8 +314,8 @@ const Login = () => {
                 >
                     {loading ? (
                         <div className="flex items-center justify-center space-x-2">
-                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                            <span>Ingresando...</span>
+                            <LoadingSpinner size="small" />
+                            <span>ENTRANDO...</span>
                         </div>
                     ) : (
                         'INGRESAR'
@@ -601,6 +603,7 @@ const Login = () => {
 
     return (
         <div className="relative min-h-screen bg-[#0a0a0a] flex flex-col items-center pt-20 pb-12 p-4 overflow-y-auto">
+            {loading && <LoadingOverlay />}
             {/* Animated background elements */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
                 <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-primary/20 rounded-full blur-[140px] animate-pulse"></div>

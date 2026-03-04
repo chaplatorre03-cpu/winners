@@ -3,20 +3,25 @@ import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, Eye, EyeOff, Phone } from 'lucide-react';
 import WinnersLogo from '../components/WinnersLogo';
 import PrivacyPolicyModal from '../components/PrivacyPolicyModal';
+import { LoadingSpinner } from '../components/LoadingOverlay';
 
 import { API_URL } from '../config';
 
+const INITIAL_FORM_STATE = {
+    name: '',
+    email: '',
+    confirmEmail: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+    acceptPolicy: false
+};
+
+const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/;
+
 const Register = () => {
     const navigate = useNavigate();
-    const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        confirmEmail: '',
-        phone: '',
-        password: '',
-        confirmPassword: '',
-        acceptPolicy: false
-    });
+    const [formData, setFormData] = useState(INITIAL_FORM_STATE);
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -101,8 +106,7 @@ const Register = () => {
             return;
         }
 
-        const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}<>]{8,}$/;
-        if (!passwordRegex.test(formData.password)) {
+        if (!PASSWORD_REGEX.test(formData.password)) {
             setError('La contraseña no cumple con los requisitos de seguridad');
             setLoading(false);
             return;
@@ -134,21 +138,14 @@ const Register = () => {
                 throw new Error(data.error || 'Error al registrarse');
             }
 
-            // Instead of navigating, show OTP modal
+            // OTP State
             setOtpCode(data.code);
-            setOtp(''); // Clear previous input
+            setOtp('');
             setShowOTP(true);
             setTimer(120);
 
-            // Generate the WhatsApp link with "Secret Code" hack - Using underscores to force preview truncation
-            const longMessage = `¡Hola! Deseo verificar mi cuenta en Winners.\n\nINSTRUCCIONES: Abre este chat para encontrar tu código de verificación al final del mensaje.\n\n__________________________________________________\n\n__________________________________________________\n\n__________________________________________________\n\n__________________________________________________\n\n__________________________________________________\n\n__________________________________________________\n\nEN CUANTO UNO DE NUESTROS ASESORES ESTÉ DISPONIBLE, LO CONTACTARÁ POR ESTE MEDIO. ¡¡¡ES UN PLACER PARA NOSOTROS QUE DESEE SER MIEMBRO DE WINNERS!!!\n\nCÓDIGO DE VERIFICACIÓN: ${data.code}`;
-            const waMessage = encodeURIComponent(longMessage);
-            // Volvemos a https://wa.me porque whatsapp:// puede fallar si no hay app instalada
-            // Usamos window.open de nuevo, el "blank screen" anterior era por whatsapp:// en _blank
-            const waLink = `https://api.whatsapp.com/send?phone=57${formData.phone.replace(/\D/g, '').slice(-10)}&text=${waMessage}`;
-
-            // Abrir en nueva pestaña
-            window.open(waLink, '_blank');
+            // Open WhatsApp using the unified function
+            handleOpenWhatsApp(data.code);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -156,8 +153,10 @@ const Register = () => {
         }
     };
 
-    const handleOpenWhatsApp = () => {
-        const longMessage = `¡Hola! Deseo verificar mi cuenta en Winners.\n\nINSTRUCCIONES: Abre este chat para encontrar tu código de verificación al final del mensaje.\n\n__________________________________________________\n\n__________________________________________________\n\n__________________________________________________\n\n__________________________________________________\n\n__________________________________________________\n\n__________________________________________________\n\nEN CUANTO UNO DE NUESTROS ASESORES ESTÉ DISPONIBLE, LO CONTACTARÁ POR ESTE MEDIO. ¡¡¡ES UN PLACER PARA NOSOTROS QUE DESEE SER MIEMBRO DE WINNERS!!!\n\nCÓDIGO DE VERIFICACIÓN: ${otpCode}`;
+    const handleOpenWhatsApp = (code) => {
+        // If code is not a string (e.g. it's an event object from onClick), use otpCode state
+        const verificationCode = typeof code === 'string' ? code : otpCode;
+        const longMessage = `¡Hola! Deseo verificar mi cuenta en Winners.\n\nINSTRUCCIONES: Abre este chat para encontrar tu código de verificación al final del mensaje.\n\nEN CUANTO UNO DE NUESTROS ASESORES ESTÉ DISPONIBLE, LO CONTACTARÁ POR ESTE MEDIO. ¡¡¡ES UN PLACER PARA NOSOTROS QUE DESEE SER MIEMBRO DE WINNERS!!!\n\nCÓDIGO DE VERIFICACIÓN: ${verificationCode}`;
         const waMessage = encodeURIComponent(longMessage);
         const waLink = `https://api.whatsapp.com/send?phone=57${formData.phone.replace(/\D/g, '').slice(-10)}&text=${waMessage}`;
         window.open(waLink, '_blank');
@@ -203,7 +202,8 @@ const Register = () => {
     };
 
     return (
-        <div ref={containerRef} className="min-h-screen bg-[#0a0a0a] flex flex-col items-center pt-20 pb-12 p-4 overflow-y-auto h-screen">
+        <div ref={containerRef} className="min-h-screen bg-[#0a0a0a] flex flex-col items-center pt-20 pb-12 p-4 overflow-y-auto h-screen relative">
+            {(loading || otpLoading) && <LoadingOverlay />}
             {/* Animated background elements */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
                 <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-primary/20 rounded-full blur-[140px] animate-pulse"></div>
@@ -419,7 +419,12 @@ const Register = () => {
                                     disabled={loading}
                                     className="w-full btn-primary py-4"
                                 >
-                                    {loading ? 'Validando datos...' : 'REGISTRARSE'}
+                                    {loading ? (
+                                        <div className="flex items-center justify-center space-x-2">
+                                            <LoadingSpinner size="small" />
+                                            <span>Validando...</span>
+                                        </div>
+                                    ) : 'REGISTRARSE'}
                                 </button>
                             </form>
                         </>
