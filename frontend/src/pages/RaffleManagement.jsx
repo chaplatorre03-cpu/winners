@@ -4,7 +4,7 @@ import {
     Home, Grid, Settings, Trophy, Plus, Search,
     Filter, AlertTriangle, ExternalLink, User as UserIcon,
     ChevronRight, ArrowLeft, X, Check, Clock, AlertCircle, Layout, Trash2, Calendar,
-    Image as ImageIcon, Ticket, CheckCircle, Phone, QrCode, Copy
+    Image as ImageIcon, Ticket, CheckCircle, Phone, QrCode, Copy, DollarSign
 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import WinnersLogo from '../components/WinnersLogo';
@@ -760,21 +760,21 @@ const RaffleManagement = () => {
                 <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
                     <div className="absolute inset-0 bg-gray-900/80 backdrop-blur-md" onClick={() => !isDrawing && handleCloseModal()}></div>
                     <div className="relative bg-white w-full max-w-md md:rounded-[2.5rem] rounded-t-3xl shadow-2xl overflow-hidden animate-slide-up md:animate-scale-in flex flex-col max-h-[95vh]">
-                        <div className="bg-gradient-to-r from-primary to-secondary p-8 px-14 text-white relative text-center shrink-0">
-                            <CloseButton
-                                onClick={() => {
-                                    if (isDrawing) return;
-                                    if (showWinnersView) {
-                                        setShowWinnersView(false);
-                                    } else {
-                                        handleCloseModal();
-                                    }
-                                }}
-                            />
-                            <h3 className="text-2xl font-black italic tracking-tighter uppercase">
+                        <CloseButton
+                            onClick={() => {
+                                if (isDrawing) return;
+                                if (showWinnersView) {
+                                    setShowWinnersView(false);
+                                } else {
+                                    handleCloseModal();
+                                }
+                            }}
+                        />
+                        <div className="bg-gradient-to-r from-primary to-secondary pt-16 md:pt-20 px-14 md:px-8 pb-6 md:pb-8 text-white relative text-center shrink-0">
+                            <h3 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase mb-1">
                                 Ganadores Seleccionados
                             </h3>
-                            <p className="text-white/80 font-bold text-sm">
+                            <p className="text-white/80 font-bold text-xs md:text-sm">
                                 Se han registrado {winnersList.length} ganadores
                             </p>
                         </div>
@@ -953,7 +953,7 @@ const RaffleManagement = () => {
                                     className="p-8 space-y-8 animate-bounce-in overflow-y-auto custom-scrollbar flex-1"
                                 >
                                     <div className="space-y-4">
-                                        <div className="overflow-x-auto -mx-8 px-8 pb-4">
+                                        <div className="overflow-x-auto -mx-8 px-8 pt-4 pb-12">
                                             <div className="space-y-3 min-w-[340px]">
                                                 {winnersList.map((win, idx) => {
                                                     const isManual = win && Boolean(win.isManualWinner);
@@ -987,7 +987,7 @@ const RaffleManagement = () => {
                                                             </div>
 
                                                             {/* Right Group: Puesto, Phone and Ticket grouped closer */}
-                                                            <div className="flex items-center space-x-4 md:space-x-8 shrink-0">
+                                                            <div className="flex items-center space-x-6 md:space-x-8 shrink-0">
                                                                 {/* Rank and Phone */}
                                                                 <div className="flex flex-col items-center justify-center">
                                                                     <p className={`text-[10px] font-black uppercase mb-1 whitespace-nowrap ${isDeleted ? 'text-gray-400' : (isManual ? 'text-amber-500' : 'text-primary')}`}>
@@ -1125,26 +1125,29 @@ const RaffleManagement = () => {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-4">
                                         <div className="space-y-1.5">
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Precio por número</label>
-                                            <input
-                                                type="text"
-                                                required
-                                                disabled={isEnded}
-                                                className="input-field bg-gray-50 border-gray-100 focus:bg-white disabled:opacity-70 text-gray-900"
-                                                value={updatedRaffleInfo.price}
-                                                onChange={(e) => {
-                                                    const val = e.target.value.replace(/\D/g, '');
-                                                    const formatted = val.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-                                                    setUpdatedRaffleInfo({ ...updatedRaffleInfo, price: formatted });
-                                                }}
-                                                onInvalid={(e) => e.target.setCustomValidity('Por favor, ingresa el precio por número')}
-                                                onInput={(e) => e.target.setCustomValidity('')}
-                                            />
+                                            <div className="relative group">
+                                                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-primary transition-colors pointer-events-none" />
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    disabled={isEnded}
+                                                    className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white disabled:opacity-70 text-gray-900"
+                                                    value={updatedRaffleInfo.price}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value.replace(/\D/g, '');
+                                                        const formatted = val.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                                                        setUpdatedRaffleInfo({ ...updatedRaffleInfo, price: formatted });
+                                                    }}
+                                                    onInvalid={(e) => e.target.setCustomValidity('Por favor, ingresa el precio por número')}
+                                                    onInput={(e) => e.target.setCustomValidity('')}
+                                                />
+                                            </div>
                                         </div>
                                         <div className="space-y-1.5 opacity-60">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Total Boletas</label>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Total de números</label>
                                             <div className="relative group">
                                                 <Ticket className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                                 <input

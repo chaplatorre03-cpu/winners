@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import WinnersLogo from '../components/WinnersLogo';
-import { LoadingSpinner } from '../components/LoadingOverlay';
+import LoadingOverlay, { LoadingSpinner } from '../components/LoadingOverlay';
 
 import { API_URL } from '../config';
 

@@ -433,7 +433,7 @@ const Dashboard = () => {
                                         />
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-4">
                                         <div className="space-y-1.5">
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Precio por número</label>
                                             <div className="relative group">
@@ -460,19 +460,17 @@ const Dashboard = () => {
                                                 <Ticket className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-primary transition-colors pointer-events-none z-10" />
                                                 <select
                                                     required
-                                                    className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900 appearance-none cursor-pointer"
+                                                    className="input-field bg-gray-50 border-gray-100 focus:bg-white text-gray-900 appearance-none cursor-pointer"
+                                                    style={{ textIndent: '32px' }}
                                                     value={newRaffle.totalTickets}
                                                     onChange={(e) => setNewRaffle({ ...newRaffle, totalTickets: e.target.value })}
                                                 >
-                                                    <option value="" disabled>Seleccionar</option>
-                                                    <option value="10">10 (0-9)</option>
-                                                    <option value="100">100 (00-99)</option>
-                                                    <option value="1000">1.000 (000-999)</option>
-                                                    <option value="10000">10.000 (0000-9999)</option>
+                                                    <option value="" disabled hidden style={{ textIndent: '0' }}></option>
+                                                    <option value="10" style={{ textIndent: '0' }}>10 (0-9)</option>
+                                                    <option value="100" style={{ textIndent: '0' }}>100 (00-99)</option>
+                                                    <option value="1000" style={{ textIndent: '0' }}>1.000 (000-999)</option>
+                                                    <option value="10000" style={{ textIndent: '0' }}>10.000 (0000-9999)</option>
                                                 </select>
-                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-focus-within:text-primary">
-                                                    <ChevronDown className="w-4 h-4" />
-                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -484,7 +482,7 @@ const Dashboard = () => {
                                             <input
                                                 type="date"
                                                 required
-                                                className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900"
+                                                className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900 appearance-none"
                                                 value={newRaffle.endDate}
                                                 onChange={(e) => setNewRaffle({ ...newRaffle, endDate: e.target.value })}
                                                 onInvalid={(e) => e.target.setCustomValidity('Por favor, selecciona la fecha del sorteo')}

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
     Users, DollarSign, Calendar, Info, CheckCircle, CheckCircle2,
     QrCode, ArrowLeft, Menu, Lock, X, Grid, Layout, Settings, Trophy, Home, Eye, EyeOff, Search, Filter,
-    Banknote, MousePointer2, Send, Award, Ticket, Phone, CreditCard, Wallet, RotateCcw
+    Banknote, MousePointer2, Send, Award, Ticket, Phone, CreditCard, Wallet, RotateCcw, Dices
 } from 'lucide-react';
 import WinnersLogo from '../components/WinnersLogo';
 import AdminSidebar from '../components/AdminSidebar';
@@ -227,10 +227,10 @@ const PublicRaffle = () => {
                             <div className="grid grid-cols-1 gap-3">
                                 <button
                                     onClick={() => setShowHowToModal(true)}
-                                    className="flex flex-col items-center justify-center p-4 bg-[#1a1a1a] rounded-xl hover:bg-primary/5 transition-colors border border-transparent hover:border-primary/20"
+                                    className="flex flex-col items-center justify-center p-4 bg-[#1a1a1a] rounded-xl transition-all border border-transparent hover:border-[#fbbf24] group/howto"
                                 >
-                                    <Info className="w-6 h-6 text-[#fbbf24] mb-2" />
-                                    <span className="text-[10px] font-bold text-white uppercase tracking-widest">Cómo participar</span>
+                                    <Info className="w-6 h-6 text-[#fbbf24] mb-2 transition-colors group-hover/howto:text-[#ff00de]" />
+                                    <span className="text-[10px] font-bold text-white group-hover/howto:text-[#ff00de] uppercase tracking-widest transition-colors">Cómo participar</span>
                                 </button>
                                 {!isEnded && (
                                     <button
@@ -238,7 +238,7 @@ const PublicRaffle = () => {
                                             setRandomSelection([]);
                                             setShowRandomModal(true);
                                         }}
-                                        className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl border border-primary/20 shadow-inner group hover:shadow-lg hover:shadow-primary/10 transition-all cursor-pointer overflow-hidden relative"
+                                        className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl border border-primary/20 shadow-inner group hover:shadow-lg hover:shadow-primary/10 hover:border-white transition-all cursor-pointer overflow-hidden relative"
                                     >
                                         <div className="absolute -right-2 -top-2 p-4 opacity-5 group-hover:opacity-10 transition-opacity rotate-12">
                                             <Ticket className="w-12 h-12 text-primary" />
@@ -253,10 +253,27 @@ const PublicRaffle = () => {
                                 )}
 
                                 {isEnded && (
-                                    <div className="flex flex-col items-center justify-center p-4 bg-gray-50 rounded-xl border border-gray-100 text-center">
-                                        <Trophy className="w-6 h-6 text-yellow-500 mb-2" />
-                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-tight">Valor por boleta</span>
-                                        <span className="text-xl font-black text-gray-900 italic tracking-tighter mt-1">${Number(raffle.price || 0).toLocaleString('es-CO')}</span>
+                                    <div className="flex flex-col items-center justify-center p-6 bg-white rounded-3xl border-4 border-gray-100 text-center shadow-2xl relative overflow-hidden group">
+                                        <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                                        <Trophy className="w-8 h-8 text-yellow-500 mb-3 relative z-10 animate-pulse" />
+                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] leading-tight mb-4 relative z-10">Números Ganadores</span>
+                                        <div className="flex flex-wrap justify-center gap-3 relative z-10">
+                                            {raffle.winnerTickets?.length > 0 ? (
+                                                [...raffle.winnerTickets].reverse().map((win, idx) => {
+                                                    const isManual = Boolean(win.isManualWinner);
+                                                    return (
+                                                        <div
+                                                            key={idx}
+                                                            className={`bg-white w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg border border-gray-100 font-black text-2xl italic ${isManual ? 'text-amber-500' : 'text-[#8b00ff]'}`}
+                                                        >
+                                                            {formatNumber(win.ticketNumber)}
+                                                        </div>
+                                                    );
+                                                })
+                                            ) : (
+                                                <span className="text-gray-400 font-black italic tracking-tighter uppercase text-sm">Próximamente...</span>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -265,53 +282,48 @@ const PublicRaffle = () => {
                                 href={`https://api.whatsapp.com/send?phone=57${(raffle.creator?.phone || raffle.organizerPhone || '3204446733').replace(/\D/g, '').slice(-10)}&text=${encodeURIComponent(`Hola, deseo informacion sobre el sorteo: ${raffle.title}`)}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="p-4 border-2 border-primary bg-primary/5 rounded-2xl flex items-center space-x-4 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-0.5 transition-all cursor-pointer group/organizer"
+                                className="p-6 border-2 border-primary bg-primary/5 rounded-2xl flex flex-col items-center hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-0.5 transition-all cursor-pointer group/organizer"
                             >
-                                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm group-hover/organizer:scale-110 transition-transform border border-primary/20">
-                                    <span className="font-black text-primary text-lg">
-                                        {(raffle.creator?.name || raffle.organizerName || 'W').charAt(0).toUpperCase()}
-                                    </span>
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-[10px] text-primary uppercase font-black tracking-[0.15em] leading-none mb-1.5 opacity-80">Organizador</p>
-                                    <p className="text-base font-black text-white group-hover/organizer:text-primary transition-colors">{raffle.creator?.name || raffle.organizerName || 'Winners'}</p>
-                                    <div className="flex items-center space-x-2 mt-1 opacity-70">
-                                        <div className="w-5 h-5 bg-[#00ff00] rounded-full flex items-center justify-center">
-                                            <Phone className="w-3 h-3 text-white" />
+                                <div className="text-center">
+                                    <p className="text-[10px] text-primary uppercase font-black tracking-[0.15em] leading-none mb-2 opacity-80">Organizador</p>
+                                    <p className="text-lg font-black text-white group-hover/organizer:text-primary transition-colors uppercase">{raffle.creator?.name || raffle.organizerName || 'Winners'}</p>
+                                    <div className="flex items-center justify-center space-x-3 mt-3 opacity-90">
+                                        <div className="w-6 h-6 bg-[#00ff00] rounded-full flex items-center justify-center shadow-[0_0_10px_rgba(0,255,0,0.3)]">
+                                            <Phone className="w-3.5 h-3.5 text-white" />
                                         </div>
-                                        <span className="text-xs font-black text-gray-400 font-mono tracking-widest">{raffle.creator?.phone || raffle.organizerPhone || '3204446733'}</span>
+                                        <span className="text-sm font-black text-gray-400 font-mono tracking-widest transition-colors group-hover/organizer:text-[#00ff00]">{raffle.creator?.phone || raffle.organizerPhone || '3204446733'}</span>
                                     </div>
                                 </div>
                             </a>
 
 
-                            <div className="grid grid-cols-2 md:grid-cols-1 lg:grid-cols-2 gap-2">
-                                <div className="text-center p-2 md:p-3 bg-[#1a1a1a] rounded-xl border border-gray-800">
-                                    <p className="text-xs md:text-sm font-black text-sky-400">
+                            <div className="grid grid-cols-1 gap-2">
+                                <div className="text-center p-4 md:p-3 bg-[#1a1a1a] rounded-xl border border-gray-800 flex flex-col items-center justify-center min-h-[70px]">
+                                    <p className="text-lg md:text-sm font-black text-[#ff00de]">
                                         {raffle.tickets?.length || 0}
                                     </p>
-                                    <p className="text-[7px] md:text-[8px] text-gray-400 font-black uppercase tracking-widest">Participantes</p>
+                                    <p className="text-[10px] md:text-[8px] text-gray-400 font-black uppercase tracking-widest">Participantes</p>
                                 </div>
-                                <div className="text-center p-2 md:p-3 bg-[#1a1a1a] rounded-xl border border-gray-800">
-                                    <p className="text-xs md:text-sm font-black text-sky-400">
-                                        {new Date(raffle.endDate).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', timeZone: 'UTC' })}
+                                <div className="text-center p-4 md:p-3 bg-[#1a1a1a] rounded-xl border border-gray-800 flex flex-col items-center justify-center min-h-[70px]">
+                                    <p className="text-lg md:text-sm font-black text-[#ff00de] uppercase">
+                                        {new Date(raffle.endDate).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' }).replace('.', '')}
                                     </p>
-                                    <p className="text-[7px] md:text-[8px] text-gray-400 font-black uppercase tracking-widest">Sorteo</p>
+                                    <p className="text-[10px] md:text-[8px] text-gray-400 font-black uppercase tracking-widest">Sorteo</p>
                                 </div>
                                 {token ? (
-                                    <div className="col-span-2 md:col-span-1 lg:col-span-2 text-center p-2 md:p-3 bg-[#1a1a1a] rounded-xl border border-gray-800">
-                                        <p className="text-xs md:text-sm font-black text-sky-400 break-words px-0.5 leading-tight">
+                                    <div className="text-center p-4 md:p-3 bg-[#1a1a1a] rounded-xl border border-gray-800 flex flex-col items-center justify-center min-h-[70px]">
+                                        <p className="text-lg md:text-sm font-black text-[#ff00de] break-words px-0.5 leading-tight uppercase">
                                             ${((raffle.tickets?.filter(t => t.status === 'PAGADO').length || 0) * Number(raffle.price || 0)).toLocaleString('es-CO')}
                                         </p>
-                                        <p className="text-[7px] md:text-[8px] text-gray-400 font-black uppercase tracking-widest">Recaudado ({raffle.tickets?.filter(t => t.status === 'PAGADO').length || 0} Pagados)</p>
+                                        <p className="text-[10px] md:text-[8px] text-gray-400 font-black uppercase tracking-widest">Recaudado</p>
                                     </div>
                                 ) : (
                                     <button
                                         onClick={() => setShowPaymentModal(true)}
-                                        className="col-span-2 md:col-span-1 lg:col-span-2 flex flex-col items-center justify-center p-2 md:p-3 bg-gradient-to-br from-[#8b00ff]/20 to-[#ff00de]/20 hover:from-[#8b00ff]/30 hover:to-[#ff00de]/30 rounded-xl border border-[#8b00ff]/50 transition-all cursor-pointer group"
+                                        className="flex flex-col items-center justify-center p-4 md:p-3 bg-gradient-to-br from-[#8b00ff]/20 to-[#ff00de]/20 hover:from-[#8b00ff]/30 hover:to-[#ff00de]/30 rounded-xl border border-[#8b00ff]/50 transition-all cursor-pointer group min-h-[70px]"
                                     >
-                                        <CreditCard className="w-5 h-5 text-[#ff00de] mb-1 group-hover:scale-110 transition-transform" />
-                                        <span className="text-[8px] md:text-[9px] font-black text-white uppercase tracking-widest">MEDIOS DE PAGO</span>
+                                        <CreditCard className="w-7 h-7 md:w-5 md:h-5 text-[#ff00de] mb-1 group-hover:scale-110 transition-transform" />
+                                        <span className="text-[11px] md:text-[9px] font-black text-white uppercase tracking-widest">MEDIOS DE PAGO</span>
                                     </button>
                                 )}
                             </div>

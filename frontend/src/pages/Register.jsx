@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, Eye, EyeOff, Phone } from 'lucide-react';
 import WinnersLogo from '../components/WinnersLogo';
 import PrivacyPolicyModal from '../components/PrivacyPolicyModal';
-import { LoadingSpinner } from '../components/LoadingOverlay';
+import LoadingOverlay, { LoadingSpinner } from '../components/LoadingOverlay';
 
 import { API_URL } from '../config';
 
