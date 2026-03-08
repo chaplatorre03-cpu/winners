@@ -657,7 +657,7 @@ const RaffleManagement = () => {
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block text-left ml-2">Editar Teléfono</label>
                                     <div className="relative group">
-                                        {selectedTicket.buyerPhone ? (
+                                        {selectedTicket.buyerPhone && !isEnded ? (
                                             <a
                                                 href={`https://api.whatsapp.com/send?phone=57${selectedTicket.buyerPhone.replace(/\D/g, '').slice(-10)}&text=${encodeURIComponent(
                                                     (selectedTicket.status === 'APARTADO' || selectedTicket.status === 'RESERVED')

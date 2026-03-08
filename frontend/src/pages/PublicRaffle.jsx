@@ -351,17 +351,17 @@ const PublicRaffle = () => {
                                                 <span className="uppercase tracking-widest">Disponibles</span>
                                             </button>
                                         )}
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 w-full">
                                             <span className={`${isEnded ? 'bg-sky-400/10 text-sky-400 border-2 border-sky-400/20 shadow-[0_0_15_rgba(56,189,248,0.1)]' : 'bg-[#ff00de]/10 text-[#ff00de] border-2 border-[#ff00de]/20'} text-xs font-black px-6 py-2.5 rounded-2xl uppercase tracking-widest whitespace-nowrap flex-1 text-center`}>
                                                 {isEnded ? `${Math.round(paidPercentage)}% PAGADO` : `${Math.round(progress)}% Vendido`}
                                             </span>
                                             {selectedNumbers.length > 0 && (
                                                 <button
                                                     onClick={() => setSelectedNumbers([])}
-                                                    className="p-2.5 bg-sky-500/10 border-2 border-sky-500/20 text-sky-500 rounded-2xl hover:bg-sky-500 hover:text-white transition-all shadow-lg shadow-sky-500/10 active:scale-95 group"
+                                                    className="p-4 md:p-2.5 bg-sky-500/10 border-2 border-sky-500/20 text-sky-500 rounded-2xl hover:bg-sky-500 hover:text-white transition-all shadow-lg shadow-sky-500/10 active:scale-95 group"
                                                     title="Reiniciar selección"
                                                 >
-                                                    <RotateCcw className="w-4 h-4 group-hover:-rotate-180 transition-transform duration-500" />
+                                                    <RotateCcw className="w-6 h-6 md:w-4 md:h-4 group-hover:-rotate-180 transition-transform duration-500" />
                                                 </button>
                                             )}
                                         </div>
