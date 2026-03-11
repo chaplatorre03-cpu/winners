@@ -11,6 +11,10 @@ const WinnersLogo = ({ size = 'medium', className = '' }) => {
     large: { scale: 1.305 }
   };
 
+  // 20% bigger on mobile only
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const mobileMultiplier = isMobile ? 1.2 : 1;
+
   const { scale } = sizes[size] || sizes.medium;
 
   useEffect(() => {
@@ -69,7 +73,7 @@ const WinnersLogo = ({ size = 'medium', className = '' }) => {
   return (
     <div
       className={`relative group cursor-pointer z-[100] ${className}`}
-      style={{ transform: `scale(${scale})`, transformOrigin: 'center center' }}
+      style={{ transform: `scale(${scale * mobileMultiplier})`, transformOrigin: 'center center' }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => {
         setIsHovered(false);

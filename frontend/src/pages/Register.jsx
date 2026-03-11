@@ -344,48 +344,52 @@ const Register = () => {
                                             {showPassword ? <EyeOff className="h-5 w-5 text-gray-400" /> : <Eye className="h-5 w-5 text-gray-400" />}
                                         </button>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-2 mt-2">
-                                        <div className={`text-xs flex items-center ${formData.password.length >= 8 ? 'text-green-500 font-bold' : 'text-gray-400'}`}>
-                                            <div className={`w-1.5 h-1.5 rounded-full mr-2 ${formData.password.length >= 8 ? 'bg-green-500' : 'bg-gray-600'}`} />
-                                            Mínimo 8 caracteres
+                                    {formData.password && (
+                                        <div className="grid grid-cols-2 gap-2 mt-2">
+                                            <div className={`text-xs flex items-center ${formData.password.length >= 8 ? 'text-green-500 font-bold' : 'text-gray-400'}`}>
+                                                <div className={`w-1.5 h-1.5 rounded-full mr-2 ${formData.password.length >= 8 ? 'bg-green-500' : 'bg-gray-600'}`} />
+                                                Mínimo 8 caracteres
+                                            </div>
+                                            <div className={`text-xs flex items-center ${/[A-Z]/.test(formData.password) ? 'text-green-500 font-bold' : 'text-gray-400'}`}>
+                                                <div className={`w-1.5 h-1.5 rounded-full mr-2 ${/[A-Z]/.test(formData.password) ? 'bg-green-500' : 'bg-gray-600'}`} />
+                                                Una mayúscula
+                                            </div>
+                                            <div className={`text-xs flex items-center ${/\d/.test(formData.password) ? 'text-green-500 font-bold' : 'text-gray-400'}`}>
+                                                <div className={`w-1.5 h-1.5 rounded-full mr-2 ${/\d/.test(formData.password) ? 'bg-green-500' : 'bg-gray-600'}`} />
+                                                Un número
+                                            </div>
+                                            <div className={`text-xs flex items-center ${/[!@#$%^&*(),.?":{}|<>]/.test(formData.password) ? 'text-green-500 font-bold' : 'text-gray-400'}`}>
+                                                <div className={`w-1.5 h-1.5 rounded-full mr-2 ${/[!@#$%^&*(),.?":{}|<>]/.test(formData.password) ? 'bg-green-500' : 'bg-gray-600'}`} />
+                                                Un carácter especial
+                                            </div>
                                         </div>
-                                        <div className={`text-xs flex items-center ${/[A-Z]/.test(formData.password) ? 'text-green-500 font-bold' : 'text-gray-400'}`}>
-                                            <div className={`w-1.5 h-1.5 rounded-full mr-2 ${/[A-Z]/.test(formData.password) ? 'bg-green-500' : 'bg-gray-600'}`} />
-                                            Una mayúscula
-                                        </div>
-                                        <div className={`text-xs flex items-center ${/\d/.test(formData.password) ? 'text-green-500 font-bold' : 'text-gray-400'}`}>
-                                            <div className={`w-1.5 h-1.5 rounded-full mr-2 ${/\d/.test(formData.password) ? 'bg-green-500' : 'bg-gray-600'}`} />
-                                            Un número
-                                        </div>
-                                        <div className={`text-xs flex items-center ${/[!@#$%^&*(),.?":{}|<>]/.test(formData.password) ? 'text-green-500 font-bold' : 'text-gray-400'}`}>
-                                            <div className={`w-1.5 h-1.5 rounded-full mr-2 ${/[!@#$%^&*(),.?":{}|<>]/.test(formData.password) ? 'bg-green-500' : 'bg-gray-600'}`} />
-                                            Un carácter especial
-                                        </div>
-                                    </div>
+                                    )}
                                 </div>
 
-                                {/* Confirm Password */}
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-semibold text-gray-300">Confirmar contraseña</label>
-                                    <div className="relative group">
-                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-primary transition-colors" />
-                                        <input
-                                            name="confirmPassword"
-                                            type={showPassword ? 'text' : 'password'}
-                                            required
-                                            spellCheck="false"
-                                            autoCorrect="off"
-                                            autoCapitalize="off"
-                                            value={formData.confirmPassword}
-                                            onChange={handleChange}
-                                            autoComplete="new-password"
-                                            className="input-field pl-10"
-                                            placeholder="••••••••"
-                                            onInvalid={(e) => e.target.setCustomValidity('Por favor, confirma tu contraseña')}
-                                            onInput={(e) => e.target.setCustomValidity('')}
-                                        />
+                                {/* Confirm Password - Only show when password has content */}
+                                {formData.password && (
+                                    <div className="space-y-2">
+                                        <label className="block text-sm font-semibold text-gray-300">Confirmar contraseña</label>
+                                        <div className="relative group">
+                                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-primary transition-colors" />
+                                            <input
+                                                name="confirmPassword"
+                                                type={showPassword ? 'text' : 'password'}
+                                                required
+                                                spellCheck="false"
+                                                autoCorrect="off"
+                                                autoCapitalize="off"
+                                                value={formData.confirmPassword}
+                                                onChange={handleChange}
+                                                autoComplete="new-password"
+                                                className="input-field pl-10"
+                                                placeholder="••••••••"
+                                                onInvalid={(e) => e.target.setCustomValidity('Por favor, confirma tu contraseña')}
+                                                onInput={(e) => e.target.setCustomValidity('')}
+                                            />
+                                        </div>
                                     </div>
-                                </div>
+                                )}
 
                                 {/* Privacy Policy Checkbox */}
                                 <div className="flex items-start space-x-3 pt-2">

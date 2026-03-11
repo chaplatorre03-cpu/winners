@@ -50,16 +50,17 @@ const Dashboard = () => {
 
     const [newRaffle, setNewRaffle] = useState(INITIAL_RAFFLE_STATE);
 
-    const token = localStorage.getItem('token');
+
 
     useEffect(() => {
+        const token = localStorage.getItem('token');
         if (!token) {
             navigate('/login');
             return;
         }
         fetchRaffles();
         fetchUserProfile();
-    }, []);
+    }, [navigate]);
 
     // Update form when modal opens or user changes
     useEffect(() => {
@@ -93,6 +94,8 @@ const Dashboard = () => {
     }, [showCreateModal, showLogoutConfirm, showSuccessModal, showEditProfileModal]);
 
     const fetchUserProfile = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
         try {
             const response = await fetch(`${API_URL}/auth/me`, {
                 headers: {
@@ -112,6 +115,8 @@ const Dashboard = () => {
     };
 
     const fetchRaffles = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
         setLoading(true);
         try {
             const response = await fetch(`${API_URL}/raffles`, {
@@ -119,10 +124,20 @@ const Dashboard = () => {
                     'Authorization': `Bearer ${token}`
                 }
             });
+            if (!response.ok) {
+                if (response.status === 401) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    navigate('/login');
+                    return;
+                }
+                throw new Error('Error al obtener las rifas');
+            }
             const data = await response.json();
-            setRaffles(data);
+            setRaffles(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error('Error fetching raffles:', err);
+            setRaffles([]);
         } finally {
             setLoading(false);
         }
@@ -569,8 +584,7 @@ const Dashboard = () => {
                                         </div>
                                     </div>
 
-                                    <div className="border-t border-gray-100 my-4 pt-4">
-                                        <h4 className="text-sm font-bold text-gray-500 mb-4 uppercase tracking-wider">Seguridad</h4>
+                                    <div className="my-4 pt-4">
                                         <div className="space-y-4">
                                             <div className="space-y-1.5">
                                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Nueva Contraseña (Opcional)</label>
@@ -582,7 +596,7 @@ const Dashboard = () => {
                                                         spellCheck="false"
                                                         autoCorrect="off"
                                                         autoCapitalize="off"
-                                                        placeholder="Dejar vacía para no cambiar"
+                                                        placeholder="Llenar para cambiar"
                                                         className="input-field pl-12 pr-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900"
                                                         value={editProfileForm.password}
                                                         onChange={(e) => {
@@ -634,7 +648,7 @@ const Dashboard = () => {
                                                             spellCheck="false"
                                                             autoCorrect="off"
                                                             autoCapitalize="off"
-                                                            placeholder="Repite tu nueva contraseña"
+                                                            placeholder="Repite contraseña"
                                                             className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900"
                                                             value={editProfileForm.confirmPassword}
                                                             onChange={(e) => {

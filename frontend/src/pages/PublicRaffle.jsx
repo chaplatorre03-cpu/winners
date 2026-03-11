@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
     Users, DollarSign, Calendar, Info, CheckCircle, CheckCircle2,
     QrCode, ArrowLeft, Menu, Lock, X, Grid, Layout, Settings, Trophy, Home, Eye, EyeOff, Search, Filter,
-    Banknote, MousePointer2, Send, Award, Ticket, Phone, CreditCard, Wallet, RotateCcw, Dices
+    Banknote, MousePointer2, Send, Award, Ticket, Phone, CreditCard, Wallet, RotateCcw, Dices, Copy
 } from 'lucide-react';
 import WinnersLogo from '../components/WinnersLogo';
 import AdminSidebar from '../components/AdminSidebar';
@@ -35,9 +35,18 @@ const PublicRaffle = () => {
     const [showRandomModal, setShowRandomModal] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [randomSelection, setRandomSelection] = useState([]);
+    const [paymentDetailView, setPaymentDetailView] = useState(null);
+    const [copiedField, setCopiedField] = useState(null);
 
     const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
 
+    const isOwner = raffle && user && (
+        raffle.creatorId === user._id ||
+        raffle.creatorId === user.id ||
+        raffle.creator?._id === user._id ||
+        raffle.creator?._id === user.id
+    );
     const isEnded = raffle?.status === 'COMPLETED';
 
     useEffect(() => {
@@ -282,7 +291,7 @@ const PublicRaffle = () => {
                                 href={`https://api.whatsapp.com/send?phone=57${(raffle.creator?.phone || raffle.organizerPhone || '3204446733').replace(/\D/g, '').slice(-10)}&text=${encodeURIComponent(`Hola, deseo informacion sobre el sorteo: ${raffle.title}`)}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="p-6 border-2 border-primary bg-primary/5 rounded-2xl flex flex-col items-center hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-0.5 transition-all cursor-pointer group/organizer"
+                                className="p-6 border-[1.2px] border-primary bg-primary/5 rounded-2xl flex flex-col items-center hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-0.5 transition-all cursor-pointer group/organizer"
                             >
                                 <div className="text-center">
                                     <p className="text-[10px] text-primary uppercase font-black tracking-[0.15em] leading-none mb-2 opacity-80">Organizador</p>
@@ -338,32 +347,36 @@ const PublicRaffle = () => {
                                     <h3 className="text-lg md:text-xl font-black text-white italic uppercase tracking-tighter">
                                         {isEnded ? 'SORTEO FINALIZADO' : 'Escoge tus números'}
                                     </h3>
-                                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:space-x-3">
-                                        {!isEnded && (
-                                            <button
-                                                onClick={() => setShowOnlyAvailable(!showOnlyAvailable)}
-                                                className={`flex items-center space-x-2 px-6 py-2.5 rounded-2xl text-xs font-black transition-all border-2 ${showOnlyAvailable
-                                                    ? 'bg-[#8b00ff] border-[#8b00ff] text-white shadow-[0_0_20px_rgba(139,0,255,0.4)]'
-                                                    : 'bg-[#1a1a1a] border-gray-800 text-gray-400 hover:border-[#8b00ff]/50 hover:text-white'
-                                                    }`}
-                                            >
-                                                {showOnlyAvailable ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                                <span className="uppercase tracking-widest">Disponibles</span>
-                                            </button>
-                                        )}
-                                        <div className="flex items-center gap-2 w-full">
-                                            <span className={`${isEnded ? 'bg-sky-400/10 text-sky-400 border-2 border-sky-400/20 shadow-[0_0_15_rgba(56,189,248,0.1)]' : 'bg-[#ff00de]/10 text-[#ff00de] border-2 border-[#ff00de]/20'} text-xs font-black px-6 py-2.5 rounded-2xl uppercase tracking-widest whitespace-nowrap flex-1 text-center`}>
-                                                {isEnded ? `${Math.round(paidPercentage)}% PAGADO` : `${Math.round(progress)}% Vendido`}
-                                            </span>
-                                            {selectedNumbers.length > 0 && (
-                                                <button
-                                                    onClick={() => setSelectedNumbers([])}
-                                                    className="p-4 md:p-2.5 bg-sky-500/10 border-2 border-sky-500/20 text-sky-500 rounded-2xl hover:bg-sky-500 hover:text-white transition-all shadow-lg shadow-sky-500/10 active:scale-95 group"
-                                                    title="Reiniciar selección"
-                                                >
-                                                    <RotateCcw className="w-6 h-6 md:w-4 md:h-4 group-hover:-rotate-180 transition-transform duration-500" />
-                                                </button>
-                                            )}
+                                    <div className="flex flex-col items-stretch sm:items-end gap-3 min-w-0">
+                                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                                            <div className="flex flex-col gap-3 flex-1 sm:w-64 min-w-0">
+                                                {!isEnded && (
+                                                    <button
+                                                        onClick={() => setShowOnlyAvailable(!showOnlyAvailable)}
+                                                        className={`flex items-center justify-center space-x-2 px-6 py-2.5 rounded-2xl text-xs font-black transition-all border-2 w-full ${showOnlyAvailable
+                                                            ? 'bg-[#8b00ff] border-[#8b00ff] text-white shadow-[0_0_20px_rgba(139,0,255,0.4)]'
+                                                            : 'bg-[#1a1a1a] border-gray-800 text-gray-400 hover:border-[#8b00ff]/50 hover:text-white'
+                                                            }`}
+                                                    >
+                                                        {showOnlyAvailable ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                        <span className="uppercase tracking-widest">Disponibles</span>
+                                                    </button>
+                                                )}
+                                                <span className={`${isEnded ? 'bg-sky-400/10 text-sky-400 border-2 border-sky-400/20 shadow-[0_0_15_rgba(56,189,248,0.1)]' : 'bg-[#ff00de]/10 text-[#ff00de] border-2 border-[#ff00de]/20'} text-xs font-black px-6 py-2.5 rounded-2xl uppercase tracking-widest whitespace-nowrap text-center block w-full`}>
+                                                    {isEnded ? `${Math.round(paidPercentage)}% PAGADO` : `${Math.round(progress)}% Vendido`}
+                                                </span>
+                                            </div>
+                                            <div className="flex-shrink-0 w-12 h-12 md:w-10 md:h-10 flex items-center justify-center">
+                                                {selectedNumbers.length > 0 && (
+                                                    <button
+                                                        onClick={() => setSelectedNumbers([])}
+                                                        className="w-full h-full flex items-center justify-center bg-sky-500/10 border-2 border-sky-500/20 text-sky-500 rounded-2xl hover:bg-sky-500 hover:text-white transition-all shadow-lg shadow-sky-500/10 active:scale-95 group"
+                                                        title="Reiniciar selección"
+                                                    >
+                                                        <RotateCcw className="w-6 h-6 md:w-4 md:h-4 group-hover:-rotate-180 transition-transform duration-500" />
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -650,7 +663,7 @@ const PublicRaffle = () => {
                                     </div>
                                     <div>
                                         <p className="font-bold text-gray-900"><span className="text-primary italic">04.</span> Espera los resultados</p>
-                                        <p className="text-sm text-gray-500 uppercase">Día: <span className="text-primary font-black">{new Date(raffle.endDate).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}</span></p>
+                                        <p className="text-sm text-gray-500 uppercase">Día: <span className="text-primary font-black">{new Date(raffle.endDate).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' }).replace('.', '')}</span></p>
                                     </div>
                                 </div>
                             </div>
@@ -708,48 +721,160 @@ const PublicRaffle = () => {
                 {/* Payment Methods Modal */}
                 {showPaymentModal && (
                     <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center p-0 md:p-4">
-                        <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-md animate-fade-in" onClick={() => setShowPaymentModal(false)}></div>
+                        <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-md animate-fade-in" onClick={() => { setShowPaymentModal(false); setPaymentDetailView(null); }}></div>
                         <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-md md:rounded-[2rem] rounded-t-[2rem] shadow-2xl border-2 border-white/50 animate-slide-up md:animate-scale-in flex flex-col max-h-[95vh]">
-                            <CloseButton onClick={() => setShowPaymentModal(false)} />
-                            <div className="pt-20 md:pt-24 px-6 md:px-8 pb-6 md:pb-8 shrink-0 relative border-b border-gray-100/50">
-                                <div className="text-center">
-                                    <h3 className="text-xl md:text-2xl font-black text-gray-900 uppercase italic tracking-tighter mb-1">Medios de Pago</h3>
-                                    <p className="text-xs md:text-sm text-gray-500 font-medium">Selecciona tu método preferido</p>
-                                </div>
-                            </div>
-                            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8">
-                                <div className="space-y-3">
-                                    {/* Simplified payment methods for clarity */}
-                                    <div onClick={() => window.open('https://www.wompi.co/', '_blank')} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer">
-                                        <CreditCard className="w-6 h-6 text-[#8b00ff]" />
-                                        <p className="font-bold text-gray-900 text-sm">Tarjeta Débito / Crédito</p>
+                            <CloseButton onClick={() => { setShowPaymentModal(false); setPaymentDetailView(null); }} />
+
+                            {!paymentDetailView ? (
+                                /* Main payment methods list */
+                                <>
+                                    <div className="pt-20 md:pt-24 px-6 md:px-8 pb-6 md:pb-8 shrink-0 relative border-b border-gray-100/50">
+                                        <div className="text-center">
+                                            <h3 className="text-xl md:text-2xl font-black text-gray-900 uppercase italic tracking-tighter mb-1">Medios de Pago</h3>
+                                            <p className="text-xs md:text-sm text-gray-500 font-medium">Selecciona tu método preferido</p>
+                                        </div>
                                     </div>
-                                    <div onClick={() => window.open('https://www.pse.com.co/', '_blank')} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer">
-                                        <MousePointer2 className="w-6 h-6 text-[#ff00de]" />
-                                        <p className="font-bold text-gray-900 text-sm">PSE</p>
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8">
+                                        <div className="space-y-3">
+                                            <div onClick={() => window.open('https://www.wompi.co/', '_blank')} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer">
+                                                <CreditCard className="w-6 h-6 text-[#8b00ff]" />
+                                                <p className="font-bold text-gray-900 text-sm">Tarjeta Débito / Crédito</p>
+                                            </div>
+                                            <div onClick={() => window.open('https://www.pse.com.co/', '_blank')} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer">
+                                                <MousePointer2 className="w-6 h-6 text-[#ff00de]" />
+                                                <p className="font-bold text-gray-900 text-sm">PSE</p>
+                                            </div>
+                                            <div onClick={() => { setPaymentDetailView('nequi'); setCopiedField(null); }} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer">
+                                                <Phone className="w-6 h-6 text-[#8b00ff]" />
+                                                <p className="font-bold text-gray-900 text-sm">Nequi</p>
+                                            </div>
+                                            <div onClick={() => { setPaymentDetailView('daviplata'); setCopiedField(null); }} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer">
+                                                <Wallet className="w-6 h-6 text-[#ff0000]" />
+                                                <p className="font-bold text-gray-900 text-sm">Daviplata</p>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div onClick={() => window.open('https://www.nequi.com.co/', '_blank')} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer">
-                                        <Phone className="w-6 h-6 text-[#8b00ff]" />
-                                        <p className="font-bold text-gray-900 text-sm">Nequi</p>
+                                    <div className="p-6 md:p-8 shrink-0">
+                                        <button onClick={() => setShowPaymentModal(false)} className="w-full btn-primary py-4 rounded-xl shadow-lg shadow-primary/20 text-sm font-black tracking-widest uppercase relative z-10">
+                                            CERRAR
+                                        </button>
                                     </div>
-                                    <div onClick={() => window.open('https://www.daviplata.com/', '_blank')} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer">
-                                        <Wallet className="w-6 h-6 text-[#ff0000]" />
-                                        <p className="font-bold text-gray-900 text-sm">Daviplata</p>
+                                </>
+                            ) : (
+                                /* Nequi / Daviplata detail sub-view */
+                                <>
+                                    <div className="pt-20 md:pt-24 px-6 md:px-8 pb-6 md:pb-8 shrink-0 relative border-b border-gray-100/50">
+                                        <div className="text-center">
+                                            <h3 className="text-xl md:text-2xl font-black text-gray-900 uppercase italic tracking-tighter mb-1">
+                                                {paymentDetailView === 'nequi' ? 'Pago por Nequi' : 'Pago por Daviplata'}
+                                            </h3>
+                                            <p className="text-xs md:text-sm text-gray-500 font-medium">Copia los datos y abre la app</p>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                            <div className="p-6 md:p-8 shrink-0">
-                                <button onClick={() => setShowPaymentModal(false)} className="w-full btn-primary py-4 rounded-xl shadow-lg shadow-primary/20 text-sm font-black tracking-widest uppercase relative z-10">
-                                    CERRAR
-                                </button>
-                            </div>
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8">
+                                        <div className="space-y-4">
+                                            {/* Phone number */}
+                                            <div className="bg-gray-50 rounded-2xl border border-gray-100 p-4">
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Enviar a número</p>
+                                                <div className="flex items-center justify-between">
+                                                    <p className="text-xl font-black text-gray-900 font-mono tracking-wider">
+                                                        {raffle.creator?.phone || raffle.organizerPhone || '3204446733'}
+                                                    </p>
+                                                    <button
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(raffle.creator?.phone || raffle.organizerPhone || '3204446733');
+                                                            setCopiedField('phone');
+                                                            setTimeout(() => setCopiedField(null), 2000);
+                                                        }}
+                                                        className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${copiedField === 'phone' ? 'bg-green-100 text-green-600' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}
+                                                    >
+                                                        {copiedField === 'phone' ? (
+                                                            <><CheckCircle className="w-3.5 h-3.5" /><span>Copiado</span></>
+                                                        ) : (
+                                                            <><Copy className="w-3.5 h-3.5" /><span>Copiar</span></>
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Amount */}
+                                            <div className="bg-gray-50 rounded-2xl border border-gray-100 p-4">
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Monto a pagar</p>
+                                                <div className="flex items-center justify-between">
+                                                    <p className="text-xl font-black text-gray-900 tracking-tighter">
+                                                        ${(selectedNumbers.length * Number(raffle.price || 0)).toLocaleString('es-CO')}
+                                                    </p>
+                                                    <button
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(String(selectedNumbers.length * Number(raffle.price || 0)));
+                                                            setCopiedField('amount');
+                                                            setTimeout(() => setCopiedField(null), 2000);
+                                                        }}
+                                                        className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${copiedField === 'amount' ? 'bg-green-100 text-green-600' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}
+                                                    >
+                                                        {copiedField === 'amount' ? (
+                                                            <><CheckCircle className="w-3.5 h-3.5" /><span>Copiado</span></>
+                                                        ) : (
+                                                            <><Copy className="w-3.5 h-3.5" /><span>Copiar</span></>
+                                                        )}
+                                                    </button>
+                                                </div>
+                                                {selectedNumbers.length > 0 && (
+                                                    <p className="text-[10px] text-gray-400 mt-1">{selectedNumbers.length} {selectedNumbers.length === 1 ? 'número' : 'números'} × ${Number(raffle.price || 0).toLocaleString('es-CO')}</p>
+                                                )}
+                                            </div>
+
+                                            {/* Open App Button */}
+                                            <button
+                                                onClick={() => {
+                                                    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                                                    if (paymentDetailView === 'nequi') {
+                                                        const deepLink = 'nequi://';
+                                                        const fallback = isIOS
+                                                            ? 'https://apps.apple.com/co/app/nequi/id1010765891'
+                                                            : 'https://play.google.com/store/apps/details?id=com.nequi.MobileApp';
+                                                        const start = Date.now();
+                                                        window.location.href = deepLink;
+                                                        setTimeout(() => {
+                                                            if (Date.now() - start < 2000) window.open(fallback, '_blank');
+                                                        }, 1500);
+                                                    } else {
+                                                        const deepLink = 'daviplata://';
+                                                        const fallback = isIOS
+                                                            ? 'https://apps.apple.com/co/app/daviplata/id1220379146'
+                                                            : 'https://play.google.com/store/apps/details?id=com.davivienda.daviplata';
+                                                        const start = Date.now();
+                                                        window.location.href = deepLink;
+                                                        setTimeout(() => {
+                                                            if (Date.now() - start < 2000) window.open(fallback, '_blank');
+                                                        }, 1500);
+                                                    }
+                                                }}
+                                                className={`w-full py-4 rounded-2xl text-white font-black text-sm uppercase tracking-widest flex items-center justify-center space-x-2 transition-all active:scale-95 shadow-lg ${paymentDetailView === 'nequi'
+                                                    ? 'bg-gradient-to-r from-[#E6007E] to-[#D4145A] shadow-[#E6007E]/30 hover:brightness-110'
+                                                    : 'bg-gradient-to-r from-[#ED1C24] to-[#C41017] shadow-[#ED1C24]/30 hover:brightness-110'
+                                                    }`}
+                                            >
+                                                {paymentDetailView === 'nequi' ? <Phone className="w-5 h-5" /> : <Wallet className="w-5 h-5" />}
+                                                <span>Abrir {paymentDetailView === 'nequi' ? 'Nequi' : 'Daviplata'}</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="p-6 md:p-8 shrink-0">
+                                        <button onClick={() => { setPaymentDetailView(null); setCopiedField(null); }} className="w-full flex items-center justify-center space-x-2 py-4 rounded-xl border-2 border-gray-200 text-gray-600 font-black text-sm uppercase tracking-widest hover:bg-gray-50 transition-all">
+                                            <ArrowLeft className="w-4 h-4" />
+                                            <span>Volver</span>
+                                        </button>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* Mobile Bottom Navigation - Only visible when authenticated */}
-            {token && (
+            {/* Mobile Bottom Navigation - Only visible when authenticated AND OWNER */}
+            {token && isOwner && (
                 <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-gray-100 z-50 px-6 py-4 pb-8 flex items-center justify-between shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
                     <button
                         onClick={() => navigate(`/panel?raffle=${id}`)}

@@ -66,10 +66,11 @@ const RaffleManagement = () => {
     const [updatedRaffleInfo, setUpdatedRaffleInfo] = useState(INITIAL_RAFFLE_INFO);
 
 
-    const token = localStorage.getItem('token');
+
     const [phoneError, setPhoneError] = useState('');
 
     useEffect(() => {
+        const token = localStorage.getItem('token');
         if (!token) {
             navigate('/login');
             return;
@@ -79,7 +80,7 @@ const RaffleManagement = () => {
         } else {
             navigate('/dashboard');
         }
-    }, [raffleId]);
+    }, [raffleId, navigate]);
 
     useEffect(() => {
         const action = searchParams.get('action');
@@ -122,6 +123,8 @@ const RaffleManagement = () => {
     }, [showWinnersView, winnersList]);
 
     const fetchRaffleDetails = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
         try {
             const response = await fetch(`${API_URL}/raffles/${raffleId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -169,6 +172,8 @@ const RaffleManagement = () => {
 
     const confirmStatusUpdate = async () => {
         if (!pendingStatusUpdate) return;
+        const token = localStorage.getItem('token');
+        if (!token) return;
 
         try {
             const response = await fetch(`${API_URL}/raffles/tickets/${pendingStatusUpdate.id}`, {
@@ -194,6 +199,8 @@ const RaffleManagement = () => {
     };
 
     const handleUpdateStatus = async (ticketId, updates) => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
         try {
             const body = typeof updates === 'string' ? { status: updates } : updates;
             const response = await fetch(`${API_URL}/raffles/tickets/${ticketId}`, {
@@ -228,6 +235,8 @@ const RaffleManagement = () => {
 
     const confirmDeleteTicket = async () => {
         if (!ticketToDelete) return;
+        const token = localStorage.getItem('token');
+        if (!token) return;
 
         try {
             const response = await fetch(`${API_URL}/raffles/tickets/${ticketToDelete}`, {
@@ -252,6 +261,11 @@ const RaffleManagement = () => {
 
     const startDraw = async (winnersCount = 1, onlyPaid = true) => {
         setIsDrawing(true);
+        const token = localStorage.getItem('token');
+        if (!token) {
+            setIsDrawing(false);
+            return;
+        }
 
         try {
             const response = await fetch(`${API_URL}/raffles/${raffleId}/draw`, {
@@ -330,6 +344,9 @@ const RaffleManagement = () => {
 
     const handleUpdateRaffle = async (e) => {
         e.preventDefault();
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
         try {
             const response = await fetch(`${API_URL}/raffles/${raffleId}`, {
                 method: 'PATCH',
