@@ -38,15 +38,40 @@ const PublicRaffle = () => {
     const [paymentDetailView, setPaymentDetailView] = useState(null);
     const [copiedField, setCopiedField] = useState(null);
 
-    const token = localStorage.getItem('token');
-    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    const [session, setSession] = useState({
+        token: localStorage.getItem('token'),
+        user: JSON.parse(localStorage.getItem('user') || 'null')
+    });
 
-    const isOwner = raffle && user && (
-        raffle.creatorId === user._id ||
-        raffle.creatorId === user.id ||
-        raffle.creator?._id === user._id ||
-        raffle.creator?._id === user.id
-    );
+    // Reactive session sync across tabs
+    useEffect(() => {
+        const syncSession = () => {
+            setSession({
+                token: localStorage.getItem('token'),
+                user: JSON.parse(localStorage.getItem('user') || 'null')
+            });
+        };
+        window.addEventListener('storage', syncSession);
+        // Also check when window gets focus
+        window.addEventListener('focus', syncSession);
+        return () => {
+            window.removeEventListener('storage', syncSession);
+            window.removeEventListener('focus', syncSession);
+        };
+    }, []);
+
+    const { token, user } = session;
+
+    // Strict owner check with validation and string casting
+    const isOwner = React.useMemo(() => {
+        if (!raffle || !user) return false;
+        const raffleCreatorId = raffle.creatorId || raffle.creator?._id || raffle.creator?.id;
+        const currentUserId = user._id || user.id;
+        
+        if (!raffleCreatorId || !currentUserId) return false;
+        return String(raffleCreatorId) === String(currentUserId);
+    }, [raffle, user]);
+
     const isEnded = raffle?.status === 'COMPLETED';
 
     useEffect(() => {
@@ -735,22 +760,26 @@ const PublicRaffle = () => {
                                         </div>
                                     </div>
                                     <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8">
-                                        <div className="space-y-3">
-                                            <div onClick={() => window.open('https://www.wompi.co/', '_blank')} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer">
+                                        <div className="flex flex-col space-y-3">
+                                            <div onClick={() => window.open('https://www.wompi.co/', '_blank')} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer w-full">
                                                 <CreditCard className="w-6 h-6 text-[#8b00ff]" />
                                                 <p className="font-bold text-gray-900 text-sm">Tarjeta Débito / Crédito</p>
                                             </div>
-                                            <div onClick={() => window.open('https://www.pse.com.co/', '_blank')} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer">
+                                            <div onClick={() => window.open('https://www.pse.com.co/', '_blank')} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer w-full">
                                                 <MousePointer2 className="w-6 h-6 text-[#ff00de]" />
                                                 <p className="font-bold text-gray-900 text-sm">PSE</p>
                                             </div>
-                                            <div onClick={() => { setPaymentDetailView('nequi'); setCopiedField(null); }} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer">
+                                            <div onClick={() => { setPaymentDetailView('nequi'); setCopiedField(null); }} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer w-full">
                                                 <Phone className="w-6 h-6 text-[#8b00ff]" />
                                                 <p className="font-bold text-gray-900 text-sm">Nequi</p>
                                             </div>
-                                            <div onClick={() => { setPaymentDetailView('daviplata'); setCopiedField(null); }} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer">
+                                            <div onClick={() => { setPaymentDetailView('daviplata'); setCopiedField(null); }} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer w-full">
                                                 <Wallet className="w-6 h-6 text-[#ff0000]" />
                                                 <p className="font-bold text-gray-900 text-sm">Daviplata</p>
+                                            </div>
+                                            <div onClick={() => { setPaymentDetailView('breb'); setCopiedField(null); }} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer w-full">
+                                                <Send className="w-6 h-6 text-[#ffcc00]" />
+                                                <p className="font-bold text-gray-900 text-sm">Bre-B</p>
                                             </div>
                                         </div>
                                     </div>
@@ -761,19 +790,18 @@ const PublicRaffle = () => {
                                     </div>
                                 </>
                             ) : (
-                                /* Nequi / Daviplata detail sub-view */
+                                /* Detail sub-view */
                                 <>
                                     <div className="pt-20 md:pt-24 px-6 md:px-8 pb-6 md:pb-8 shrink-0 relative border-b border-gray-100/50">
                                         <div className="text-center">
                                             <h3 className="text-xl md:text-2xl font-black text-gray-900 uppercase italic tracking-tighter mb-1">
-                                                {paymentDetailView === 'nequi' ? 'Pago por Nequi' : 'Pago por Daviplata'}
+                                                {paymentDetailView === 'nequi' ? 'Pago por Nequi' : paymentDetailView === 'daviplata' ? 'Pago por Daviplata' : 'Pago por Bre-B'}
                                             </h3>
-                                            <p className="text-xs md:text-sm text-gray-500 font-medium">Copia los datos y abre la app</p>
+                                            <p className="text-xs md:text-sm text-gray-500 font-medium tracking-tight">Copia los datos</p>
                                         </div>
                                     </div>
                                     <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8">
                                         <div className="space-y-4">
-                                            {/* Phone number */}
                                             <div className="bg-gray-50 rounded-2xl border border-gray-100 p-4">
                                                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Enviar a número</p>
                                                 <div className="flex items-center justify-between">
@@ -797,52 +825,24 @@ const PublicRaffle = () => {
                                                 </div>
                                             </div>
 
-                                            {/* Amount */}
-                                            <div className="bg-gray-50 rounded-2xl border border-gray-100 p-4">
-                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Monto a pagar</p>
-                                                <div className="flex items-center justify-between">
-                                                    <p className="text-xl font-black text-gray-900 tracking-tighter">
-                                                        ${(selectedNumbers.length * Number(raffle.price || 0)).toLocaleString('es-CO')}
-                                                    </p>
-                                                    <button
-                                                        onClick={() => {
-                                                            navigator.clipboard.writeText(String(selectedNumbers.length * Number(raffle.price || 0)));
-                                                            setCopiedField('amount');
-                                                            setTimeout(() => setCopiedField(null), 2000);
-                                                        }}
-                                                        className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${copiedField === 'amount' ? 'bg-green-100 text-green-600' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}
-                                                    >
-                                                        {copiedField === 'amount' ? (
-                                                            <><CheckCircle className="w-3.5 h-3.5" /><span>Copiado</span></>
-                                                        ) : (
-                                                            <><Copy className="w-3.5 h-3.5" /><span>Copiar</span></>
-                                                        )}
-                                                    </button>
-                                                </div>
-                                                {selectedNumbers.length > 0 && (
-                                                    <p className="text-[10px] text-gray-400 mt-1">{selectedNumbers.length} {selectedNumbers.length === 1 ? 'número' : 'números'} × ${Number(raffle.price || 0).toLocaleString('es-CO')}</p>
-                                                )}
-                                            </div>
-
-                                            {/* Open App Button */}
-                                            <button
-                                                onClick={() => {
+                                            {paymentDetailView !== 'breb' && (
+                                                <button
+                                                    onClick={() => {
                                                     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-                                                    if (paymentDetailView === 'nequi') {
-                                                        const deepLink = 'nequi://';
-                                                        const fallback = isIOS
-                                                            ? 'https://apps.apple.com/co/app/nequi/id1010765891'
-                                                            : 'https://play.google.com/store/apps/details?id=com.nequi.MobileApp';
-                                                        const start = Date.now();
-                                                        window.location.href = deepLink;
-                                                        setTimeout(() => {
-                                                            if (Date.now() - start < 2000) window.open(fallback, '_blank');
-                                                        }, 1500);
+                                                    const isAndroid = /Android/.test(navigator.userAgent);
+
+                                                    if (isAndroid) {
+                                                        // Using explicit MAIN action and LAUNCHER category is more reliable to open the app 
+                                                        // exactly like clicking the icon, avoiding deep-link bugs and double login issues.
+                                                        const packageId = paymentDetailView === 'nequi' ? 'com.nequi.MobileApp' : 'com.davivienda.daviplataapp';
+                                                        window.location.href = `intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=${packageId};end`;
                                                     } else {
-                                                        const deepLink = 'daviplata://';
-                                                        const fallback = isIOS
-                                                            ? 'https://apps.apple.com/co/app/daviplata/id1220379146'
-                                                            : 'https://play.google.com/store/apps/details?id=com.davivienda.daviplata';
+                                                        // iOS and others use custom schemes with timeout fallback
+                                                        const deepLink = paymentDetailView === 'nequi' ? 'nequi://' : 'daviplata://';
+                                                        const fallback = paymentDetailView === 'nequi'
+                                                            ? (isIOS ? 'https://apps.apple.com/co/app/nequi/id1010765891' : 'https://play.google.com/store/apps/details?id=com.nequi.MobileApp')
+                                                            : (isIOS ? 'https://apps.apple.com/co/app/daviplata/id1220379146' : 'https://play.google.com/store/apps/details?id=com.davivienda.daviplataapp');
+
                                                         const start = Date.now();
                                                         window.location.href = deepLink;
                                                         setTimeout(() => {
@@ -851,20 +851,23 @@ const PublicRaffle = () => {
                                                     }
                                                 }}
                                                 className={`w-full py-4 rounded-2xl text-white font-black text-sm uppercase tracking-widest flex items-center justify-center space-x-2 transition-all active:scale-95 shadow-lg ${paymentDetailView === 'nequi'
-                                                    ? 'bg-gradient-to-r from-[#E6007E] to-[#D4145A] shadow-[#E6007E]/30 hover:brightness-110'
-                                                    : 'bg-gradient-to-r from-[#ED1C24] to-[#C41017] shadow-[#ED1C24]/30 hover:brightness-110'
+                                                        ? 'bg-gradient-to-r from-[#E6007E] to-[#D4145A] shadow-[#E6007E]/30'
+                                                        : 'bg-gradient-to-r from-[#ED1C24] to-[#C41017] shadow-[#ED1C24]/30'
                                                     }`}
                                             >
-                                                {paymentDetailView === 'nequi' ? <Phone className="w-5 h-5" /> : <Wallet className="w-5 h-5" />}
-                                                <span>Abrir {paymentDetailView === 'nequi' ? 'Nequi' : 'Daviplata'}</span>
+                                                    {paymentDetailView === 'nequi' ? <Phone className="w-5 h-5" /> : <Wallet className="w-5 h-5" />}
+                                                    <span>Abrir {paymentDetailView === 'nequi' ? 'Nequi' : 'Daviplata'}</span>
+                                                </button>
+                                            )}
+
+                                            <button
+                                                onClick={() => setPaymentDetailView(null)}
+                                                className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#8b00ff] to-[#ff00de] text-white font-black text-sm uppercase tracking-widest italic flex items-center justify-center space-x-2 transition-all active:scale-95 shadow-2xl shadow-primary/40 mt-4 group"
+                                            >
+                                                <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                                                <span>VOLVER</span>
                                             </button>
                                         </div>
-                                    </div>
-                                    <div className="p-6 md:p-8 shrink-0">
-                                        <button onClick={() => { setPaymentDetailView(null); setCopiedField(null); }} className="w-full flex items-center justify-center space-x-2 py-4 rounded-xl border-2 border-gray-200 text-gray-600 font-black text-sm uppercase tracking-widest hover:bg-gray-50 transition-all">
-                                            <ArrowLeft className="w-4 h-4" />
-                                            <span>Volver</span>
-                                        </button>
                                     </div>
                                 </>
                             )}
