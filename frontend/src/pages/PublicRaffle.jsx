@@ -188,7 +188,7 @@ const PublicRaffle = () => {
     const paidCount = raffle.tickets?.filter(t => t.status === 'PAGADO').length || 0;
     const allTicketsCount = raffle.tickets?.length || 0;
     const paidPercentage = (paidCount / raffle.totalTickets) * 100;
-    const progress = (isEnded || token)
+    const progress = (isEnded || (token && isOwner))
         ? paidPercentage
         : (allTicketsCount / raffle.totalTickets) * 100;
 
@@ -197,7 +197,7 @@ const PublicRaffle = () => {
     return (
         <div className="min-h-screen bg-[#0a0a0a] flex">
             {/* Sidebar (Admin Only) */}
-            {token && (
+            {token && isOwner && (
                 <AdminSidebar
                     raffleTitle={raffle?.title}
                     raffleId={id}
@@ -222,23 +222,31 @@ const PublicRaffle = () => {
                     </div>
 
                     {/* Logo and Actions Section - Top on mobile (order-1), Right on desktop (order-2) */}
-                    <div className="order-1 md:order-2 flex items-center space-x-2 md:space-x-4">
+                    <div className="order-1 md:order-2 flex items-center justify-center w-full md:w-auto relative py-2 md:py-0 space-x-2 md:space-x-4">
                         <div className="md:translate-x-10 md:translate-y-1 scale-90 md:scale-90 lg:scale-100 transition-transform hover:scale-110 duration-500">
                             <WinnersLogo size="small" />
                         </div>
 
                         {!token && (
-                            <button
-                                onClick={() => navigate('/login')}
-                                className="hidden md:flex items-center space-x-2 px-4 lg:px-5 py-2 lg:py-3 bg-gradient-to-r from-[#8b00ff] to-[#ff00de] hover:brightness-110 rounded-xl text-white transition-all shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 whitespace-nowrap"
-                            >
-                                <span className="text-[10px] lg:text-xs font-black tracking-widest uppercase italic">Ingresar</span>
-                                <Lock className="w-4 h-4 shrink-0" />
-                            </button>
+                            <>
+                                <button
+                                    onClick={() => navigate('/login')}
+                                    className="absolute right-0 md:hidden p-2.5 bg-gradient-to-r from-[#8b00ff] to-[#ff00de] rounded-xl text-white shadow-lg shadow-primary/20 active:scale-95"
+                                >
+                                    <Lock className="w-5 h-5" />
+                                </button>
+                                <button
+                                    onClick={() => navigate('/login')}
+                                    className="hidden md:flex items-center space-x-2 px-4 lg:px-5 py-2 lg:py-3 bg-gradient-to-r from-[#8b00ff] to-[#ff00de] hover:brightness-110 rounded-xl text-white transition-all shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 whitespace-nowrap"
+                                >
+                                    <span className="text-[10px] lg:text-xs font-black tracking-widest uppercase italic">Ingresar</span>
+                                    <Lock className="w-4 h-4 shrink-0" />
+                                </button>
+                            </>
                         )}
                     </div>
                 </nav>
-                <div className={`${token ? 'px-4 md:px-8 pb-40 md:pb-8' : 'max-w-7xl mx-auto md:px-8 pb-40 md:pb-8'} pt-8 md:grid md:grid-cols-12 md:gap-8`}>
+                <div className={`${token && isOwner ? 'px-4 md:px-8 pb-40 md:pb-8' : 'max-w-7xl mx-auto md:px-8 pb-40 md:pb-8'} pt-8 md:grid md:grid-cols-12 md:gap-8`}>
                     {/* Left Panel - Info */}
                     <div className="md:col-span-4 space-y-6 px-4 md:px-0">
                         <div className="bg-[#111] rounded-2xl shadow-sm border border-gray-800 p-6 space-y-6">
@@ -263,8 +271,8 @@ const PublicRaffle = () => {
                                     onClick={() => setShowHowToModal(true)}
                                     className="flex flex-col items-center justify-center p-4 bg-[#1a1a1a] rounded-xl transition-all border border-transparent hover:border-[#fbbf24] group/howto"
                                 >
-                                    <Info className="w-6 h-6 text-[#fbbf24] mb-2 transition-colors group-hover/howto:text-[#ff00de]" />
-                                    <span className="text-[10px] font-bold text-white group-hover/howto:text-[#ff00de] uppercase tracking-widest transition-colors">Cómo participar</span>
+                                    <Info className="w-6 h-6 text-[#fbbf24] mb-2 transition-colors group-hover/howto:text-[#8b00ff]" />
+                                    <span className="text-[10px] font-bold text-white group-hover/howto:text-[#8b00ff] uppercase tracking-widest transition-colors">Cómo participar</span>
                                 </button>
                                 {!isEnded && (
                                     <button
@@ -277,10 +285,10 @@ const PublicRaffle = () => {
                                         <div className="absolute -right-2 -top-2 p-4 opacity-5 group-hover:opacity-10 transition-opacity rotate-12">
                                             <Ticket className="w-12 h-12 text-primary" />
                                         </div>
-                                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1 group-hover:text-primary transition-colors">Precio por número</p>
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 group-hover:text-primary transition-colors">Precio por número</p>
                                         <div className="flex items-baseline space-x-1">
-                                            <span className="text-xs font-black text-primary">$</span>
-                                            <span className="text-2xl font-black text-primary tracking-tighter italic">{Number(raffle.price || 0).toLocaleString('es-CO')}</span>
+                                            <span className="text-sm font-black text-primary">$</span>
+                                            <span className="text-[29px] md:text-[31px] font-black text-primary tracking-tighter italic">{Number(raffle.price || 0).toLocaleString('es-CO')}</span>
                                         </div>
                                         <p className="text-sm font-black text-gray-400 uppercase tracking-tighter mt-2 bg-white px-4 py-1.5 rounded-full shadow-md group-hover:scale-105 transition-transform">¡TOCA PARA AZAR!</p>
                                     </button>
@@ -344,7 +352,7 @@ const PublicRaffle = () => {
                                     </p>
                                     <p className="text-[10px] md:text-[8px] text-gray-400 font-black uppercase tracking-widest">Sorteo</p>
                                 </div>
-                                {token ? (
+                                {token && isOwner ? (
                                     <div className="text-center p-4 md:p-3 bg-[#1a1a1a] rounded-xl border border-gray-800 flex flex-col items-center justify-center min-h-[70px]">
                                         <p className="text-lg md:text-sm font-black text-[#ff00de] break-words px-0.5 leading-tight uppercase">
                                             ${((raffle.tickets?.filter(t => t.status === 'PAGADO').length || 0) * Number(raffle.price || 0)).toLocaleString('es-CO')}
@@ -391,14 +399,14 @@ const PublicRaffle = () => {
                                                     {isEnded ? `${Math.round(paidPercentage)}% PAGADO` : `${Math.round(progress)}% Vendido`}
                                                 </span>
                                             </div>
-                                            <div className="flex-shrink-0 w-12 h-12 md:w-10 md:h-10 flex items-center justify-center">
+                                            <div className="flex-shrink-0 w-[52px] h-[52px] sm:w-[56px] sm:h-[56px] md:w-[60px] md:h-[60px] flex items-center justify-center">
                                                 {selectedNumbers.length > 0 && (
                                                     <button
                                                         onClick={() => setSelectedNumbers([])}
-                                                        className="w-full h-full flex items-center justify-center bg-sky-500/10 border-2 border-sky-500/20 text-sky-500 rounded-2xl hover:bg-sky-500 hover:text-white transition-all shadow-lg shadow-sky-500/10 active:scale-95 group"
+                                                        className="w-full h-full flex items-center justify-center bg-sky-500/10 border-2 border-sky-500/40 text-sky-500 rounded-xl hover:bg-sky-500 hover:text-white transition-all shadow-[0_0_15px_rgba(14,165,233,0.2)] hover:scale-105 active:scale-95 group"
                                                         title="Reiniciar selección"
                                                     >
-                                                        <RotateCcw className="w-6 h-6 md:w-4 md:h-4 group-hover:-rotate-180 transition-transform duration-500" />
+                                                        <RotateCcw className="w-5 h-5 sm:w-6 sm:h-6 group-hover:-rotate-180 transition-transform duration-500" />
                                                     </button>
                                                 )}
                                             </div>
@@ -439,9 +447,10 @@ const PublicRaffle = () => {
                       aspect-square rounded-xl flex items-center justify-center font-bold text-sm transition-all duration-300
                       ${status === 'AVAILABLE' && !isSelected ? 'bg-[#1a1a1a] border-2 border-gray-800 text-gray-500 hover:border-[#8b00ff] hover:text-[#8b00ff] hover:scale-105 hover:shadow-lg active:scale-95' : ''}
                       ${isSelected ? 'bg-gradient-to-br from-[#8b00ff] to-[#ff00de] text-gray-900 scale-110 shadow-[0_0_15px_rgba(139,0,255,0.5)] z-10 animate-bounce-selected' : ''}
-                        ${status === 'PAGADO' && !isSelected ? 'bg-[#00ff00]/10 text-[#00ff00] border-2 border-solid border-[#00ff00]/50 shadow-[0_0_10px_rgba(0,255,0,0.2)]' : ''}
-                       ${status === 'REVISANDO' && !isSelected ? 'bg-[#ff00de]/10 text-[#ff00de] border-2 border-dashed border-[#ff00de]/50' : ''}
-                       ${status === 'APARTADO' && !isSelected ? 'bg-[#8b00ff]/10 text-[#8b00ff] border-2 border-dotted border-[#8b00ff]/50' : ''}
+                        ${token && isOwner && status === 'PAGADO' && !isSelected ? 'bg-[#00ff00]/10 text-[#00ff00] border-2 border-solid border-[#00ff00]/50 shadow-[0_0_10px_rgba(0,255,0,0.2)]' : ''}
+                       ${token && isOwner && status === 'REVISANDO' && !isSelected ? 'bg-[#ff00de]/10 text-[#ff00de] border-2 border-dashed border-[#ff00de]/50' : ''}
+                       ${token && isOwner && status === 'APARTADO' && !isSelected ? 'bg-[#8b00ff]/10 text-[#8b00ff] border-2 border-dotted border-[#8b00ff]/50' : ''}
+                       ${!(token && isOwner) && status !== 'AVAILABLE' && !isSelected ? 'bg-[#ff00de]/10 border-2 border-solid border-[#ff00de]/20 text-[#ff00de]' : ''}
                        ${isEnded && status === 'AVAILABLE' ? 'opacity-40 grayscale pointer-events-none' : ''}
                     `}
                                             >
@@ -770,7 +779,10 @@ const PublicRaffle = () => {
                                                 <p className="font-bold text-gray-900 text-sm">PSE</p>
                                             </div>
                                             <div onClick={() => { setPaymentDetailView('nequi'); setCopiedField(null); }} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer w-full">
-                                                <Phone className="w-6 h-6 text-[#8b00ff]" />
+                                                <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M7.5 19.5V5h3.2l5.4 9.8V5h2.8v14.5h-3.2L10.3 9.7v9.8H7.5z" fill="#1f0e33" />
+                                                    <rect x="3.5" y="5" width="2.5" height="2.5" fill="#e3007b" />
+                                                </svg>
                                                 <p className="font-bold text-gray-900 text-sm">Nequi</p>
                                             </div>
                                             <div onClick={() => { setPaymentDetailView('daviplata'); setCopiedField(null); }} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer w-full">
@@ -831,22 +843,20 @@ const PublicRaffle = () => {
                                                     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
                                                     const isAndroid = /Android/.test(navigator.userAgent);
 
-                                                    if (isAndroid) {
-                                                        // Using explicit MAIN action and LAUNCHER category is more reliable to open the app 
-                                                        // exactly like clicking the icon, avoiding deep-link bugs and double login issues.
-                                                        const packageId = paymentDetailView === 'nequi' ? 'com.nequi.MobileApp' : 'com.davivienda.daviplataapp';
-                                                        window.location.href = `intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=${packageId};end`;
-                                                    } else {
-                                                        // iOS and others use custom schemes with timeout fallback
-                                                        const deepLink = paymentDetailView === 'nequi' ? 'nequi://' : 'daviplata://';
-                                                        const fallback = paymentDetailView === 'nequi'
-                                                            ? (isIOS ? 'https://apps.apple.com/co/app/nequi/id1010765891' : 'https://play.google.com/store/apps/details?id=com.nequi.MobileApp')
-                                                            : (isIOS ? 'https://apps.apple.com/co/app/daviplata/id1220379146' : 'https://play.google.com/store/apps/details?id=com.davivienda.daviplataapp');
+                                                    const appScheme = paymentDetailView === 'nequi' ? 'nequi' : 'daviplata';
+                                                    const packageId = paymentDetailView === 'nequi' ? 'com.nequi.MobileApp' : 'com.davivienda.daviplataapp';
+                                                    
+                                                    const fallbackUrl = paymentDetailView === 'nequi'
+                                                        ? (isIOS ? 'https://apps.apple.com/co/app/nequi/id1010765891' : 'https://play.google.com/store/apps/details?id=com.nequi.MobileApp')
+                                                        : (isIOS ? 'https://apps.apple.com/co/app/daviplata/id1220379146' : 'https://play.google.com/store/apps/details?id=com.davivienda.daviplataapp');
 
+                                                    if (isAndroid) {
+                                                        window.location.href = `intent://#Intent;scheme=${appScheme};package=${packageId};S.browser_fallback_url=${encodeURIComponent(fallbackUrl)};end`;
+                                                    } else {
                                                         const start = Date.now();
-                                                        window.location.href = deepLink;
+                                                        window.location.href = `${appScheme}://`;
                                                         setTimeout(() => {
-                                                            if (Date.now() - start < 2000) window.open(fallback, '_blank');
+                                                            if (Date.now() - start < 2000) window.open(fallbackUrl, '_blank');
                                                         }, 1500);
                                                     }
                                                 }}
@@ -855,7 +865,12 @@ const PublicRaffle = () => {
                                                         : 'bg-gradient-to-r from-[#ED1C24] to-[#C41017] shadow-[#ED1C24]/30'
                                                     }`}
                                             >
-                                                    {paymentDetailView === 'nequi' ? <Phone className="w-5 h-5" /> : <Wallet className="w-5 h-5" />}
+                                                    {paymentDetailView === 'nequi' ? (
+                                                        <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                            <path d="M7.5 19.5V5h3.2l5.4 9.8V5h2.8v14.5h-3.2L10.3 9.7v9.8H7.5z" fill="currentColor" />
+                                                            <rect x="3.5" y="5" width="2.5" height="2.5" fill="currentColor" />
+                                                        </svg>
+                                                    ) : <Wallet className="w-5 h-5" />}
                                                     <span>Abrir {paymentDetailView === 'nequi' ? 'Nequi' : 'Daviplata'}</span>
                                                 </button>
                                             )}

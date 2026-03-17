@@ -335,6 +335,7 @@ const RaffleManagement = () => {
     }, [tickets, searchQuery, statusFilter]);
 
     const handleCloseModal = () => {
+        setShowWinnersView(false);
         if (window.history.state && window.history.state.idx > 0) {
             navigate(-1);
         } else {
@@ -496,7 +497,7 @@ const RaffleManagement = () => {
                                 <span className={`text-3xl md:text-5xl font-black ${s.text} tracking-tighter relative z-10 transition-all duration-300`}>{s.val}</span>
                                 <div className="flex items-center justify-between mt-2 md:mt-4 relative z-10">
                                     <span className={`text-[8px] md:text-[10px] font-black ${s.text} uppercase tracking-widest transition-all duration-300`}>{s.label}</span>
-                                    <div className={`${s.badge} text-gray-900 text-[6px] md:text-[8px] px-2 py-0.5 rounded-full font-black transition-all duration-300`}>{s.code}</div>
+                                    <div className={`${s.badge} text-gray-900 w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl flex items-center justify-center font-black transition-all duration-300 shadow-sm shrink-0 text-xs md:text-base`}>{s.code}</div>
                                 </div>
                             </div>
                         ))}
@@ -564,14 +565,16 @@ const RaffleManagement = () => {
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-2 md:px-6 py-4 text-right">
-                                                <span className={`text-[8px] md:text-[10px] font-black uppercase tracking-widest px-2 md:px-3 py-1 md:py-1.5 rounded-full
-                                                  ${ticket.status === 'PAGADO' ? 'bg-[#00ff00]/20 text-[#00ff00]' : ''}
-                                                  ${ticket.status === 'REVISANDO' ? 'bg-[#ff00de]/20 text-[#ff00de]' : ''}
-                                                  ${ticket.status === 'APARTADO' ? 'bg-[#8b00ff]/20 text-[#8b00ff]' : ''}
-                                                `}>
-                                                    {ticket.status === 'REVISANDO' ? 'RE' : ticket.status === 'APARTADO' ? 'AP' : 'OK'}
-                                                </span>
+                                            <td className="px-2 md:px-6 py-4">
+                                                <div className="flex justify-end">
+                                                    <div className={`w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl flex items-center justify-center font-black transition-all group-hover:scale-110 shadow-sm shrink-0 text-xs md:text-base
+                                                      ${ticket.status === 'PAGADO' ? 'bg-[#00ff00]/10 text-[#00ff00]' : ''}
+                                                      ${ticket.status === 'REVISANDO' ? 'bg-[#ff00de]/10 text-[#ff00de]' : ''}
+                                                      ${ticket.status === 'APARTADO' ? 'bg-[#8b00ff]/10 text-[#8b00ff]' : ''}
+                                                    `}>
+                                                        {ticket.status === 'REVISANDO' ? 'RE' : ticket.status === 'APARTADO' ? 'AP' : 'OK'}
+                                                    </div>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -780,11 +783,7 @@ const RaffleManagement = () => {
                         <CloseButton
                             onClick={() => {
                                 if (isDrawing) return;
-                                if (showWinnersView) {
-                                    setShowWinnersView(false);
-                                } else {
-                                    handleCloseModal();
-                                }
+                                handleCloseModal();
                             }}
                         />
                         <div className="bg-gradient-to-r from-primary to-secondary pt-16 md:pt-20 px-14 md:px-8 pb-6 md:pb-8 text-white relative text-center shrink-0">
@@ -958,8 +957,8 @@ const RaffleManagement = () => {
                                         <span className="font-black italic uppercase tracking-tighter text-sm">Volver</span>
                                     </button>
                                     <div className="flex flex-col items-end">
-                                        <span className="text-[10px] font-black text-gray-900 uppercase tracking-widest italic leading-none">Resultados</span>
-                                        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter mt-1">
+                                        <span className="text-[11px] font-black text-gray-900 uppercase tracking-widest italic leading-none">Resultados</span>
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mt-1">
                                             {winnersList.length} registrados
                                         </span>
                                     </div>
@@ -1007,7 +1006,7 @@ const RaffleManagement = () => {
                                                             <div className="flex items-center space-x-6 md:space-x-8 shrink-0">
                                                                 {/* Rank and Phone */}
                                                                 <div className="flex flex-col items-center justify-center">
-                                                                    <p className={`text-[10px] font-black uppercase mb-1 whitespace-nowrap ${isDeleted ? 'text-gray-400' : (isManual ? 'text-amber-500' : 'text-primary')}`}>
+                                                                    <p className={`text-[11px] font-black uppercase mb-1 whitespace-nowrap ${isDeleted ? 'text-gray-400' : (isManual ? 'text-amber-500' : 'text-primary')}`}>
                                                                         Puesto #{(() => {
                                                                             const subset = winnersList.filter(w => Boolean(w.isManualWinner) === isManual);
                                                                             const winIndexInSubset = subset.indexOf(win);
@@ -1015,7 +1014,7 @@ const RaffleManagement = () => {
                                                                         })()}
                                                                     </p>
                                                                     <div className="flex items-center space-x-2">
-                                                                        <span className={`text-sm md:text-base font-bold font-mono tracking-tighter italic transition-all ${isDeleted ? 'text-gray-400' : 'text-gray-500'} ${!isDeleted && (isManual ? 'group-hover/card:text-amber-500' : 'group-hover/card:text-[#8b00ff]')}`}>
+                                                                        <span className={`text-[15px] md:text-[18px] font-bold font-mono tracking-tighter italic transition-all ${isDeleted ? 'text-gray-400' : 'text-gray-500'} ${!isDeleted && (isManual ? 'group-hover/card:text-amber-500' : 'group-hover/card:text-[#8b00ff]')}`}>
                                                                             {buyerPhone}
                                                                         </span>
                                                                         {buyerPhone && buyerPhone !== 'Sin tel.' && (
