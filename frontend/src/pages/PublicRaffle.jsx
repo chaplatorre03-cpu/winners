@@ -852,16 +852,21 @@ const PublicRaffle = () => {
                                                             ? (isIOS ? 'https://apps.apple.com/co/app/nequi/id1010765891' : 'https://play.google.com/store/apps/details?id=com.nequi.MobileApp')
                                                             : (isIOS ? 'https://apps.apple.com/co/app/daviplata/id1220379146' : 'https://play.google.com/store/apps/details?id=com.davivienda.daviplataapp');
 
-                                                        if (isAndroid) {
-                                                            // Definitive Fix for Android Auto-Close:
-                                                            // launchFlags=0x14000000 (FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TOP)
-                                                            // This forces the app to open in its own separate task instead of inside the browser's task.
-                                                            const intentUrl = `intent://#Intent;scheme=${appScheme};package=${packageId};action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;launchFlags=0x14000000;S.browser_fallback_url=${encodeURIComponent(fallbackUrl)};end`;
-                                                            window.location.replace(intentUrl);
-                                                        } else if (isIOS) {
-                                                            // For iOS, try the scheme and fallback to store if it doesn't open within 2.5s
+                                                        if (isAndroid || isIOS) {
+                                                            // Ultimate Fix: Anchor Tag Injection
+                                                            // Instead of replacing the window location (which causes Android to suspend the browser tab
+                                                            // and link the App's lifecycle to the tab's lifecycle, causing auto-close), we simulate a real
+                                                            // user click on a deep-link anchor tag, which the OS intercepts properly as a standalone launch.
                                                             const start = Date.now();
-                                                            window.location.assign(`${appScheme}://`);
+                                                            const a = document.createElement('a');
+                                                            a.href = `${appScheme}://`;
+                                                            // iOS might require external target, Android works best with standard or _top
+                                                            if (isIOS) a.target = '_top'; 
+                                                            document.body.appendChild(a);
+                                                            a.click();
+                                                            document.body.removeChild(a);
+
+                                                            // Fallback to store if the app is not installed
                                                             setTimeout(() => {
                                                                 if (Date.now() - start < 3000) {
                                                                     window.location.assign(fallbackUrl);
