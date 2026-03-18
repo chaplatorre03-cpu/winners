@@ -852,28 +852,35 @@ const PublicRaffle = () => {
                                                             ? (isIOS ? 'https://apps.apple.com/co/app/nequi/id1010765891' : 'https://play.google.com/store/apps/details?id=com.nequi.MobileApp')
                                                             : (isIOS ? 'https://apps.apple.com/co/app/daviplata/id1220379146' : 'https://play.google.com/store/apps/details?id=com.davivienda.daviplataapp');
 
-                                                        if (isAndroid || isIOS) {
-                                                            // Ultimate Fix: Anchor Tag Injection
-                                                            // Instead of replacing the window location (which causes Android to suspend the browser tab
-                                                            // and link the App's lifecycle to the tab's lifecycle, causing auto-close), we simulate a real
-                                                            // user click on a deep-link anchor tag, which the OS intercepts properly as a standalone launch.
-                                                            const start = Date.now();
-                                                            const a = document.createElement('a');
-                                                            a.href = `${appScheme}://`;
-                                                            // iOS might require external target, Android works best with standard or _top
-                                                            if (isIOS) a.target = '_top'; 
-                                                            document.body.appendChild(a);
-                                                            a.click();
-                                                            document.body.removeChild(a);
-
-                                                            // Fallback to store if the app is not installed
-                                                            setTimeout(() => {
-                                                                if (Date.now() - start < 3000) {
+                                                        if (isAndroid) {
+                                                            // SOLUCIÓN TOTALMENTE DEFINITIVA PARA ANDROID:
+                                                            // Nequi se cierra porque al usar el deeplink (nequi://), la app 
+                                                            // procesa el login mercantil temporal y luego destruye la actividad.
+                                                            // Para evitarlo, invocaremos el Intent de "Lanzamiento Principal" (MAIN LAUNCHER), 
+                                                            // que es exactamente el mismo comando que ejecuta Android cuando tocas el icono de Nequi.
+                                                            // Esto abre la app en estado puro sin conectarla como una tarea web de Chrome.
+                                                            const intentUrl = `intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=${packageId};S.browser_fallback_url=${encodeURIComponent(fallbackUrl)};end`;
+                                                            window.location.href = intentUrl;
+                                                        } else if (isIOS) {
+                                                            // En iOS sí funciona el scheme directo sin self-close
+                                                            let iOSFallbackCleared = false;
+                                                            const fallbackTimer = setTimeout(() => {
+                                                                if (!iOSFallbackCleared) {
                                                                     window.location.assign(fallbackUrl);
                                                                 }
                                                             }, 2500);
+
+                                                            // Prevenir redirección si el usuario sí pudo abrir la app
+                                                            const onVisChange = () => {
+                                                                if (document.hidden) {
+                                                                    iOSFallbackCleared = true;
+                                                                    clearTimeout(fallbackTimer);
+                                                                }
+                                                            };
+                                                            document.addEventListener('visibilitychange', onVisChange, { once: true });
+                                                            
+                                                            window.location.assign(`${appScheme}://`);
                                                         } else {
-                                                            // Desktop: Just open the store link
                                                             window.open(fallbackUrl, '_blank');
                                                         }
                                                     }}
