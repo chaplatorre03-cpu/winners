@@ -839,27 +839,38 @@ const PublicRaffle = () => {
 
                                             {paymentDetailView !== 'breb' && (
                                                 <button
-                                                    onClick={() => {
-                                                    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-                                                    const isAndroid = /Android/.test(navigator.userAgent);
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        const ua = navigator.userAgent || navigator.vendor || window.opera;
+                                                        const isAndroid = /android/i.test(ua);
+                                                        const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-                                                    const appScheme = paymentDetailView === 'nequi' ? 'nequi' : 'daviplata';
-                                                    const packageId = paymentDetailView === 'nequi' ? 'com.nequi.MobileApp' : 'com.davivienda.daviplataapp';
-                                                    
-                                                    const fallbackUrl = paymentDetailView === 'nequi'
-                                                        ? (isIOS ? 'https://apps.apple.com/co/app/nequi/id1010765891' : 'https://play.google.com/store/apps/details?id=com.nequi.MobileApp')
-                                                        : (isIOS ? 'https://apps.apple.com/co/app/daviplata/id1220379146' : 'https://play.google.com/store/apps/details?id=com.davivienda.daviplataapp');
+                                                        const appScheme = paymentDetailView === 'nequi' ? 'nequi' : 'daviplata';
+                                                        const packageId = paymentDetailView === 'nequi' ? 'com.nequi.MobileApp' : 'com.davivienda.daviplataapp';
+                                                        
+                                                        const fallbackUrl = paymentDetailView === 'nequi'
+                                                            ? (isIOS ? 'https://apps.apple.com/co/app/nequi/id1010765891' : 'https://play.google.com/store/apps/details?id=com.nequi.MobileApp')
+                                                            : (isIOS ? 'https://apps.apple.com/co/app/daviplata/id1220379146' : 'https://play.google.com/store/apps/details?id=com.davivienda.daviplataapp');
 
-                                                    if (isAndroid) {
-                                                        window.location.href = `intent://#Intent;scheme=${appScheme};package=${packageId};S.browser_fallback_url=${encodeURIComponent(fallbackUrl)};end`;
-                                                    } else {
-                                                        const start = Date.now();
-                                                        window.location.href = `${appScheme}://`;
-                                                        setTimeout(() => {
-                                                            if (Date.now() - start < 2000) window.open(fallbackUrl, '_blank');
-                                                        }, 1500);
-                                                    }
-                                                }}
+                                                        if (isAndroid) {
+                                                            // Definitive Fix for Android: Use high-compatibility intent format
+                                                            // window.location.replace prevents the browser from staying on the intent URL in history
+                                                            const intentUrl = `intent://#Intent;scheme=${appScheme};package=${packageId};action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;S.browser_fallback_url=${encodeURIComponent(fallbackUrl)};end`;
+                                                            window.location.replace(intentUrl);
+                                                        } else if (isIOS) {
+                                                            // For iOS, try the scheme and fallback to store if it doesn't open within 2.5s
+                                                            const start = Date.now();
+                                                            window.location.assign(`${appScheme}://`);
+                                                            setTimeout(() => {
+                                                                if (Date.now() - start < 3000) {
+                                                                    window.location.assign(fallbackUrl);
+                                                                }
+                                                            }, 2500);
+                                                        } else {
+                                                            // Desktop: Just open the store link
+                                                            window.open(fallbackUrl, '_blank');
+                                                        }
+                                                    }}
                                                 className={`w-full py-4 rounded-2xl text-white font-black text-sm uppercase tracking-widest flex items-center justify-center space-x-2 transition-all active:scale-95 shadow-lg ${paymentDetailView === 'nequi'
                                                         ? 'bg-gradient-to-r from-[#E6007E] to-[#D4145A] shadow-[#E6007E]/30'
                                                         : 'bg-gradient-to-r from-[#ED1C24] to-[#C41017] shadow-[#ED1C24]/30'
