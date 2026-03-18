@@ -853,9 +853,10 @@ const PublicRaffle = () => {
                                                             : (isIOS ? 'https://apps.apple.com/co/app/daviplata/id1220379146' : 'https://play.google.com/store/apps/details?id=com.davivienda.daviplataapp');
 
                                                         if (isAndroid) {
-                                                            // Definitive Fix for Android: Use high-compatibility intent format
-                                                            // window.location.replace prevents the browser from staying on the intent URL in history
-                                                            const intentUrl = `intent://#Intent;scheme=${appScheme};package=${packageId};action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;S.browser_fallback_url=${encodeURIComponent(fallbackUrl)};end`;
+                                                            // Definitive Fix for Android Auto-Close:
+                                                            // launchFlags=0x14000000 (FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TOP)
+                                                            // This forces the app to open in its own separate task instead of inside the browser's task.
+                                                            const intentUrl = `intent://#Intent;scheme=${appScheme};package=${packageId};action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;launchFlags=0x14000000;S.browser_fallback_url=${encodeURIComponent(fallbackUrl)};end`;
                                                             window.location.replace(intentUrl);
                                                         } else if (isIOS) {
                                                             // For iOS, try the scheme and fallback to store if it doesn't open within 2.5s
