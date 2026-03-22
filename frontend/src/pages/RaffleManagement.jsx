@@ -4,7 +4,7 @@ import {
     Home, Grid, Settings, Trophy, Plus, Search,
     Filter, AlertTriangle, ExternalLink, User as UserIcon,
     ChevronRight, ArrowLeft, X, Check, Clock, AlertCircle, Layout, Trash2, Calendar,
-    Image as ImageIcon, Ticket, CheckCircle, Phone, QrCode, Copy, DollarSign
+    Image as ImageIcon, Ticket, CheckCircle, Phone, QrCode, Copy, DollarSign, RotateCcw
 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import WinnersLogo from '../components/WinnersLogo';
@@ -321,8 +321,12 @@ const RaffleManagement = () => {
             const year = date.getFullYear().toString();
             const fullDate = date.toLocaleDateString();
 
+            const formattedNum = formatNumber(t.number);
+            const rawNum = t.number.toString();
+
             const matchesSearch = t.buyerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                t.number.toString().includes(searchQuery) ||
+                formattedNum.includes(searchQuery) ||
+                rawNum.includes(searchQuery) ||
                 (t.buyerPhone && t.buyerPhone.includes(searchQuery)) ||
                 day.includes(searchQuery) ||
                 month.includes(searchQuery) ||
@@ -332,7 +336,7 @@ const RaffleManagement = () => {
             const matchesStatus = statusFilter ? t.status === statusFilter : true;
             return matchesSearch && matchesStatus;
         });
-    }, [tickets, searchQuery, statusFilter]);
+    }, [tickets, searchQuery, statusFilter, formatNumber]);
 
     const handleCloseModal = () => {
         setShowWinnersView(false);
@@ -423,6 +427,18 @@ const RaffleManagement = () => {
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                 />
+                                {(searchQuery || statusFilter) && (
+                                    <button
+                                        onClick={() => {
+                                            setSearchQuery('');
+                                            setStatusFilter(null);
+                                        }}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-red-200 text-red-700 rounded-xl hover:bg-red-600 hover:text-white transition-all shadow-md active:scale-90 group/clear"
+                                        title="Limpiar filtros"
+                                    >
+                                        <RotateCcw className="w-4 h-4" />
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -489,7 +505,7 @@ const RaffleManagement = () => {
                             <div
                                 key={s.label}
                                 onClick={() => setStatusFilter(statusFilter === s.status ? null : s.status)}
-                                className={`${s.bg} aspect-square p-4 md:p-6 rounded-2xl md:rounded-3xl ${statusFilter === s.status ? `ring-2 ring-inset ${s.ring}` : `border-2 ${s.border}`} flex flex-col justify-between hover:scale-[1.02] transition-all cursor-pointer relative overflow-hidden group ${s.hover} duration-300 shadow-sm hover:shadow-xl`}
+                                className={`${s.bg} aspect-square p-4 md:p-6 rounded-2xl md:rounded-3xl ${statusFilter === s.status ? `ring-4 ring-inset ${s.ring} shadow-2xl` : `border-2 ${s.border}`} flex flex-col justify-between hover:scale-[1.02] transition-all cursor-pointer relative overflow-hidden group ${s.hover} duration-300 shadow-sm hover:shadow-xl`}
                             >
                                 <div className="absolute top-0 right-0 p-2 md:p-4 opacity-10 group-hover:opacity-30 transition-opacity duration-300">
                                     <div className={`w-8 h-8 md:w-12 md:h-12 rounded-full ${s.badge}`} />
@@ -679,15 +695,15 @@ const RaffleManagement = () => {
                                     <div className="relative group">
                                         {selectedTicket.buyerPhone && !isEnded ? (
                                             <a
-                                                href={`https://api.whatsapp.com/send?phone=57${selectedTicket.buyerPhone.replace(/\D/g, '').slice(-10)}&text=${encodeURIComponent(
-                                                    (selectedTicket.status === 'APARTADO' || selectedTicket.status === 'RESERVED')
-                                                        ? `Hola ${selectedTicket.buyerName || ''}, te escribo de Winners. Tu número ${formatNumber(selectedTicket.number)} debe ser pagado o se liberará para que otro cliente pueda tomarlo. Si ya pagaste envíanos tu comprobante.`
-                                                        : (selectedTicket.status === 'REVISANDO' || selectedTicket.status === 'REVIEWING')
-                                                            ? `Hola ${selectedTicket.buyerName || ''}, te escribo de Winners. La revisión de tu comprobante de pago para el número ${formatNumber(selectedTicket.number)} fue exitosa. ¡Mucha suerte en el sorteo!`
-                                                            : (selectedTicket.status === 'PAGADO' || selectedTicket.status === 'PAID')
-                                                                ? `Hola ${selectedTicket.buyerName || ''}, te escribo de Winners. ¡Felicidades! Has ganado el sorteo con el número ${formatNumber(selectedTicket.number)}. Por favor contáctanos para reclamar tu premio.`
+                                                href={(selectedTicket.status === 'PAGADO' || selectedTicket.status === 'PAID')
+                                                    ? `https://api.whatsapp.com/send?phone=57${selectedTicket.buyerPhone.replace(/\D/g, '').slice(-10)}`
+                                                    : `https://api.whatsapp.com/send?phone=57${selectedTicket.buyerPhone.replace(/\D/g, '').slice(-10)}&text=${encodeURIComponent(
+                                                        (selectedTicket.status === 'APARTADO' || selectedTicket.status === 'RESERVED')
+                                                            ? `Hola ${selectedTicket.buyerName || ''}, te escribo de Winners. Tu número ${formatNumber(selectedTicket.number)} debe ser pagado o se liberará para que otro cliente pueda tomarlo. Si ya pagaste envíanos tu comprobante.`
+                                                            : (selectedTicket.status === 'REVISANDO' || selectedTicket.status === 'REVIEWING')
+                                                                ? `Hola ${selectedTicket.buyerName || ''}, te escribo de Winners. La revisión de tu comprobante de pago para el número ${formatNumber(selectedTicket.number)} fue exitosa. ¡Mucha suerte en el sorteo!`
                                                                 : `Hola ${selectedTicket.buyerName || ''}, te escribo de Winners sobre tu número ${formatNumber(selectedTicket.number)}.`
-                                                )}`}
+                                                    )}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="absolute left-2 top-1/2 -translate-y-1/2 z-30 p-1.5 bg-[#ff00de]/10 rounded-xl hover:bg-[#ff00de]/20 hover:scale-110 transition-all group/wa border border-[#ff00de]/20"
@@ -883,13 +899,11 @@ const RaffleManagement = () => {
                                                     <div className="relative flex-none sm:flex-1 group">
                                                         <Trophy className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-[#ff00de] transition-colors" />
                                                         <input
-                                                            type="number"
+                                                            type="text"
                                                             placeholder="Número ganador"
-                                                            min="0"
-                                                            max={raffle?.totalTickets ? raffle.totalTickets - 1 : 999}
                                                             className="input-field pl-11 bg-gray-50 border-gray-100 text-gray-900 focus:border-[#ff00de] focus:ring-2 focus:ring-[#ff00de]/20"
                                                             value={manualWinnerNumber}
-                                                            onChange={(e) => setManualWinnerNumber(e.target.value)}
+                                                            onChange={(e) => setManualWinnerNumber(e.target.value.replace(/\D/g, ''))}
                                                         />
                                                     </div>
                                                     <button
@@ -901,6 +915,14 @@ const RaffleManagement = () => {
                                                             }
 
                                                             const manualNum = parseInt(manualWinnerNumber);
+                                                            
+                                                            // Validar que el número exista según el total de boletas
+                                                            if (manualNum >= (raffle?.totalTickets || 0)) {
+                                                                setCustomErrorMessage(`El número ${manualWinnerNumber} es inválido. El máximo permitido es ${formatNumber((raffle?.totalTickets || 1) - 1)}.`);
+                                                                setShowCustomErrorModal(true);
+                                                                return;
+                                                            }
+
                                                             // Permitir si ya ganó al azar, pero no si ya se ingresó manualmente
                                                             if (winnersList.some(w => w.ticketNumber === manualNum && Boolean(w.isManualWinner))) {
                                                                 setCustomErrorMessage(`El número ${formatNumber(manualNum)} ya ha sido registrado manualmente como ganador.`);
@@ -909,6 +931,9 @@ const RaffleManagement = () => {
                                                             }
 
                                                             try {
+                                                                const token = localStorage.getItem('token');
+                                                                if (!token) throw new Error('No hay una sesión activa');
+
                                                                 const res = await fetch(`${API_URL}/raffles/${raffleId}/manual-winner`, {
                                                                     method: 'POST',
                                                                     headers: {
@@ -916,7 +941,7 @@ const RaffleManagement = () => {
                                                                         'Content-Type': 'application/json'
                                                                     },
                                                                     body: JSON.stringify({
-                                                                        ticketNumber: parseInt(manualWinnerNumber),
+                                                                        ticketNumber: manualNum,
                                                                         onlyPaid: drawOnlyPaid
                                                                     })
                                                                 });
@@ -937,7 +962,7 @@ const RaffleManagement = () => {
                                                         disabled={!manualWinnerNumber}
                                                         className={`btn-primary px-8 py-4 text-sm tracking-widest whitespace-nowrap shadow-2xl transition-all ${!manualWinnerNumber ? 'opacity-50 grayscale cursor-not-allowed' : 'active:scale-95 shadow-primary/40'}`}
                                                     >
-                                                        Agregar
+                                                        AGREGAR
                                                     </button>
                                                 </div>
                                                 <p className="text-[9px] text-gray-400 font-medium ml-1">Ingresa un número de boleta existente para registrarlo como ganador sin sorteo aleatorio.</p>
@@ -984,8 +1009,7 @@ const RaffleManagement = () => {
                                                             onClick={() => {
                                                                 if (buyerPhone && buyerPhone !== 'Sin tel.' && !isDeleted) {
                                                                     const cleanPhone = buyerPhone.replace(/\D/g, '').slice(-10);
-                                                                    const message = `¡Felicidades ${buyerName}! Has ganado un premio en el sorteo "${raffle?.title || 'Winners'}" con el número ${ticketNum}. Por favor comunícate con el organizador para reclamar tu premio.`;
-                                                                    window.open(`https://api.whatsapp.com/send?phone=57${cleanPhone}&text=${encodeURIComponent(message)}`, '_blank');
+                                                                    window.open(`https://api.whatsapp.com/send?phone=57${cleanPhone}`, '_blank');
                                                                 }
                                                             }}
                                                             className={`p-4 rounded-2xl border flex flex-row items-center justify-between transition-all duration-300 

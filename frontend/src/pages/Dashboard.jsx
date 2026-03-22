@@ -25,7 +25,9 @@ const INITIAL_RAFFLE_STATE = {
     price: '',
     totalTickets: '',
     endDate: '',
-    image: ''
+    image: '',
+    rangeStart: '',
+    rangeEnd: ''
 };
 
 const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/;
@@ -146,6 +148,14 @@ const Dashboard = () => {
     const handleCreateRaffle = async (e) => {
         e.preventDefault();
         try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            let totalTicketsToSave = newRaffle.totalTickets;
+            if (newRaffle.rangeStart !== '' && newRaffle.rangeEnd !== '') {
+                totalTicketsToSave = (parseInt(newRaffle.rangeEnd) - parseInt(newRaffle.rangeStart) + 1).toString();
+            }
+
             const response = await fetch(`${API_URL}/raffles`, {
                 method: 'POST',
                 headers: {
@@ -155,13 +165,13 @@ const Dashboard = () => {
                 body: JSON.stringify({
                     ...newRaffle,
                     price: Number(newRaffle.price.toString().replace(/\./g, '')),
-                    totalTickets: Number(newRaffle.totalTickets.toString().replace(/\./g, '')),
+                    totalTickets: Number(totalTicketsToSave.toString().replace(/\./g, '')),
                     description: newRaffle.description
                 })
             });
             if (response.ok) {
                 setShowCreateModal(false);
-                setNewRaffle({ title: '', description: '', price: '', totalTickets: '', endDate: '', image: '' });
+                setNewRaffle(INITIAL_RAFFLE_STATE);
                 fetchRaffles();
             }
         } catch (err) {
@@ -478,14 +488,75 @@ const Dashboard = () => {
                                                     className="input-field bg-gray-50 border-gray-100 focus:bg-white text-gray-900 appearance-none cursor-pointer"
                                                     style={{ textIndent: '32px' }}
                                                     value={newRaffle.totalTickets}
-                                                    onChange={(e) => setNewRaffle({ ...newRaffle, totalTickets: e.target.value })}
+                                                    onChange={(e) => {
+                                                        setNewRaffle({ 
+                                                            ...newRaffle, 
+                                                            totalTickets: e.target.value,
+                                                            rangeStart: '',
+                                                            rangeEnd: ''
+                                                        });
+                                                    }}
                                                 >
                                                     <option value="" disabled hidden style={{ textIndent: '0' }}></option>
                                                     <option value="10" style={{ textIndent: '0' }}>10 (0-9)</option>
                                                     <option value="100" style={{ textIndent: '0' }}>100 (00-99)</option>
                                                     <option value="1000" style={{ textIndent: '0' }}>1.000 (000-999)</option>
                                                     <option value="10000" style={{ textIndent: '0' }}>10.000 (0000-9999)</option>
+                                                    {/* Opción personalizada si el rango no coincide con las estándar */}
+                                                    {newRaffle.rangeStart !== '' && newRaffle.rangeEnd !== '' && 
+                                                     !['10','100','1000','10000'].includes((parseInt(newRaffle.rangeEnd) - parseInt(newRaffle.rangeStart) + 1).toString()) && (
+                                                        <option value={(parseInt(newRaffle.rangeEnd) - parseInt(newRaffle.rangeStart) + 1).toString()} style={{ textIndent: '0' }}>
+                                                            {parseInt(newRaffle.rangeEnd) - parseInt(newRaffle.rangeStart) + 1} (Personalizado)
+                                                        </option>
+                                                    )}
                                                 </select>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Rango número</label>
+                                            <div className="flex items-center space-x-3">
+                                                <div className="relative group flex-1">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Desde"
+                                                        className="input-field bg-gray-50 border-gray-100 focus:bg-white text-gray-900 text-center"
+                                                        value={newRaffle.rangeStart}
+                                                        onChange={(e) => {
+                                                            const start = e.target.value.replace(/\D/g, '');
+                                                            let total = newRaffle.totalTickets;
+                                                            if (start !== '' && newRaffle.rangeEnd !== '') {
+                                                                total = (parseInt(newRaffle.rangeEnd) - parseInt(start) + 1).toString();
+                                                            }
+                                                            setNewRaffle({ 
+                                                                ...newRaffle, 
+                                                                rangeStart: start,
+                                                                totalTickets: total
+                                                            });
+                                                        }}
+                                                    />
+                                                </div>
+                                                <span className="text-gray-400 font-bold">-</span>
+                                                <div className="relative group flex-1">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Hasta"
+                                                        className="input-field bg-gray-50 border-gray-100 focus:bg-white text-gray-900 text-center"
+                                                        value={newRaffle.rangeEnd}
+                                                        onChange={(e) => {
+                                                            const end = e.target.value.replace(/\D/g, '');
+                                                            let total = newRaffle.totalTickets;
+                                                            if (newRaffle.rangeStart !== '' && end !== '') {
+                                                                total = (parseInt(end) - parseInt(newRaffle.rangeStart) + 1).toString();
+                                                            }
+                                                            setNewRaffle({ 
+                                                                ...newRaffle, 
+                                                                rangeEnd: end,
+                                                                totalTickets: total
+                                                            });
+                                                        }}
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

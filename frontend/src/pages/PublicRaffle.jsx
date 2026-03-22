@@ -271,7 +271,7 @@ const PublicRaffle = () => {
                                     onClick={() => setShowHowToModal(true)}
                                     className="flex flex-col items-center justify-center p-4 bg-[#1a1a1a] rounded-xl transition-all border border-transparent hover:border-[#fbbf24] group/howto"
                                 >
-                                    <Info className="w-6 h-6 text-[#fbbf24] mb-2 transition-colors group-hover/howto:text-[#8b00ff]" />
+                                    <Info className="w-6 h-6 text-[#fbbf24] mb-2 transition-colors" />
                                     <span className="text-[10px] font-bold text-white group-hover/howto:text-[#8b00ff] uppercase tracking-widest transition-colors">Cómo participar</span>
                                 </button>
                                 {!isEnded && (
