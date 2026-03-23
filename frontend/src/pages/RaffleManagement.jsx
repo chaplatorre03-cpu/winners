@@ -1001,7 +1001,40 @@ const RaffleManagement = () => {
                                                     const ticketNum = win?.ticketNumber !== undefined ? formatNumber(win.ticketNumber) : '??';
                                                     const buyerName = win?.buyer?.name || 'Anónimo';
                                                     const buyerPhone = win?.buyer?.phone || 'Sin tel.';
+                                                    const status = win?.buyer?.status;
                                                     const isDeleted = !win?.buyer;
+
+                                                    const getStatusColor = (s) => {
+                                                        if (s === 'PAGADO') return '#00ff00';
+                                                        if (s === 'REVISANDO') return '#ff00de';
+                                                        return '#8b00ff';
+                                                    };
+                                                    const statusColor = getStatusColor(status);
+
+                                                    const statusStyles = {
+                                                        'PAGADO': {
+                                                            text: 'text-[#00ff00]',
+                                                            hoverText: 'group-hover/card:text-[#00ff00]',
+                                                            hoverBorder: 'hover:border-[#00ff00]/30',
+                                                            hoverShadow: 'hover:shadow-[#00ff00]/10',
+                                                            hoverFrom: 'hover:from-[#00ff00]/5'
+                                                        },
+                                                        'REVISANDO': {
+                                                            text: 'text-[#ff00de]',
+                                                            hoverText: 'group-hover/card:text-[#ff00de]',
+                                                            hoverBorder: 'hover:border-[#ff00de]/30',
+                                                            hoverShadow: 'hover:shadow-[#ff00de]/10',
+                                                            hoverFrom: 'hover:from-[#ff00de]/5'
+                                                        },
+                                                        'APARTADO': {
+                                                            text: 'text-[#8b00ff]',
+                                                            hoverText: 'group-hover/card:text-[#8b00ff]',
+                                                            hoverBorder: 'hover:border-[#8b00ff]/30',
+                                                            hoverShadow: 'hover:shadow-[#8b00ff]/10',
+                                                            hoverFrom: 'hover:from-[#8b00ff]/5'
+                                                        }
+                                                    };
+                                                    const currentStyle = statusStyles[status] || statusStyles['APARTADO'];
 
                                                     return (
                                                         <div
@@ -1017,20 +1050,20 @@ const RaffleManagement = () => {
                                                                     ? 'bg-gray-100 border-gray-200 opacity-60 grayscale cursor-not-allowed'
                                                                     : `bg-gray-50 border-gray-100 ${buyerPhone && buyerPhone !== 'Sin tel.' ? `cursor-pointer hover:scale-[1.02] hover:-translate-y-0.5 active:scale-[0.98] group/card ${isManual
                                                                         ? 'hover:bg-gradient-to-r hover:from-amber-500/5 hover:to-orange-400/5 hover:border-amber-400/30 hover:shadow-xl hover:shadow-amber-500/10'
-                                                                        : 'hover:bg-gradient-to-r hover:from-[#8b00ff]/5 hover:to-[#ff00de]/5 hover:border-[#8b00ff]/30 hover:shadow-xl hover:shadow-[#8b00ff]/10'
+                                                                        : `hover:bg-gradient-to-r ${currentStyle.hoverFrom} hover:to-[#ff00de]/5 ${currentStyle.hoverBorder} hover:shadow-xl ${currentStyle.hoverShadow}`
                                                                         }` : ''}`
                                                                 }`}
                                                         >
                                                             {/* Left Section: Name */}
                                                             <div className="flex-1 text-left min-w-0 pr-4">
-                                                                <h4 className={`text-lg font-black transition-colors ${isDeleted ? 'text-gray-500' : 'text-gray-900'} ${!isDeleted && (isManual ? 'group-hover/card:text-amber-600' : 'group-hover/card:text-[#8b00ff]')}`}>{buyerName}</h4>
+                                                                <h4 className={`text-lg font-black transition-colors ${isDeleted ? 'text-gray-500' : 'text-gray-900'} ${!isDeleted && (isManual ? 'group-hover/card:text-amber-600' : currentStyle.hoverText)}`}>{buyerName}</h4>
                                                             </div>
 
                                                             {/* Right Group: Puesto, Phone and Ticket grouped closer */}
                                                             <div className="flex items-center space-x-6 md:space-x-8 shrink-0">
                                                                 {/* Rank and Phone */}
                                                                 <div className="flex flex-col items-center justify-center">
-                                                                    <p className={`text-[11px] font-black uppercase mb-1 whitespace-nowrap ${isDeleted ? 'text-gray-400' : (isManual ? 'text-amber-500' : 'text-primary')}`}>
+                                                                    <p className={`text-[11px] font-black uppercase mb-1 whitespace-nowrap ${isDeleted ? 'text-gray-400' : (isManual ? 'text-amber-500' : currentStyle.text)}`}>
                                                                         Puesto #{(() => {
                                                                             const subset = winnersList.filter(w => Boolean(w.isManualWinner) === isManual);
                                                                             const winIndexInSubset = subset.indexOf(win);
@@ -1038,22 +1071,29 @@ const RaffleManagement = () => {
                                                                         })()}
                                                                     </p>
                                                                     <div className="flex items-center space-x-2">
-                                                                        <span className={`text-[15px] md:text-[18px] font-bold font-mono tracking-tighter italic transition-all ${isDeleted ? 'text-gray-400' : 'text-gray-500'} ${!isDeleted && (isManual ? 'group-hover/card:text-amber-500' : 'group-hover/card:text-[#8b00ff]')}`}>
+                                                                        <span className={`text-[15px] md:text-[18px] font-bold font-mono tracking-tighter italic transition-all ${isDeleted ? 'text-gray-400' : 'text-gray-500'} ${!isDeleted && (isManual ? 'group-hover/card:text-amber-500' : currentStyle.hoverText)}`}>
                                                                             {buyerPhone}
                                                                         </span>
                                                                         {buyerPhone && buyerPhone !== 'Sin tel.' && (
-                                                                            <Phone className={`w-5 h-5 md:w-6 md:h-6 transition-all ${isDeleted ? 'text-gray-300' : (isManual ? 'text-amber-500' : 'text-[#ff00de]')} ${!isDeleted && 'group-hover/card:scale-125 group-hover/card:rotate-12'}`} />
+                                                                            <Phone className={`w-5 h-5 md:w-6 md:h-6 transition-all ${isDeleted ? 'text-gray-300' : (isManual ? 'text-amber-500' : currentStyle.text)} ${!isDeleted && 'group-hover/card:scale-125 group-hover/card:rotate-12'}`} />
                                                                         )}
                                                                     </div>
                                                                 </div>
 
                                                                 {/* Ticket Number */}
-                                                                <div className={`bg-white w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center shadow-lg border border-gray-100 font-black text-2xl md:text-3xl italic transition-all shrink-0 ${isDeleted
+                                                                <div 
+                                                                    className={`bg-white w-16 h-14 md:w-20 md:h-16 rounded-2xl flex items-center justify-center shadow-lg border border-gray-100 font-black text-2xl md:text-3xl italic transition-all shrink-0 ${isDeleted
                                                                     ? 'text-gray-300 shadow-none'
                                                                     : (isManual
                                                                         ? 'text-amber-500 group-hover/card:shadow-[0_0_20px_rgba(245,158,11,0.25)] group-hover/card:border-amber-400/30'
-                                                                        : 'text-primary group-hover/card:shadow-[0_0_20px_rgba(139,0,255,0.2)] group-hover/card:border-[#8b00ff]/30')
-                                                                    }`}>
+                                                                        : 'group-hover/card:shadow-xl group-hover/card:border-opacity-30')
+                                                                    }`}
+                                                                    style={!isDeleted && !isManual ? { 
+                                                                        color: statusColor, 
+                                                                        boxShadow: `0 0 20px ${statusColor}30`,
+                                                                        borderColor: `${statusColor}40`
+                                                                    } : {}}
+                                                                >
                                                                     {ticketNum}
                                                                 </div>
                                                             </div>

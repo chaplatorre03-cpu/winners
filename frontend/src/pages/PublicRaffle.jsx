@@ -770,11 +770,11 @@ const PublicRaffle = () => {
                                     </div>
                                     <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8">
                                         <div className="flex flex-col space-y-3">
-                                            <div onClick={() => window.open('https://www.wompi.co/', '_blank')} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer w-full">
+                                            <div onClick={() => window.open('https://kiire.mpos.com/mailpos/#/jb-27LN', '_blank')} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer w-full">
                                                 <CreditCard className="w-6 h-6 text-[#8b00ff]" />
                                                 <p className="font-bold text-gray-900 text-sm">Tarjeta Débito / Crédito</p>
                                             </div>
-                                            <div onClick={() => window.open('https://www.pse.com.co/', '_blank')} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer w-full">
+                                            <div onClick={() => window.open('https://kiire.mpos.com/mailpos/#/jb-27LN', '_blank')} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer w-full">
                                                 <MousePointer2 className="w-6 h-6 text-[#ff00de]" />
                                                 <p className="font-bold text-gray-900 text-sm">PSE</p>
                                             </div>
