@@ -49,7 +49,8 @@ const formatWinner = (win) => {
         wonAt: win.wonAt || new Date(),
         buyer: {
             name: ticket.buyerName || 'Anónimo',
-            phone: ticket.buyerPhone || 'Sin tel.'
+            phone: ticket.buyerPhone || 'Sin tel.',
+            status: ticket.status || 'APARTADO'
         }
     };
 };
@@ -255,6 +256,7 @@ exports.drawWinner = async (req, res) => {
                 number: t.number,
                 buyerName: t.buyerName,
                 buyerPhone: t.buyerPhone,
+                status: t.status,
                 isManualWinner: false,
                 wonAt: now
             }))
@@ -318,6 +320,7 @@ exports.manualWinner = async (req, res) => {
                 number: ticket.number,
                 buyerName: ticket.buyerName,
                 buyerPhone: ticket.buyerPhone,
+                status: ticket.status,
                 isManualWinner: true,
                 wonAt: now
             })]
