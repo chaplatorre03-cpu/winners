@@ -568,6 +568,7 @@ const Dashboard = () => {
                                             <input
                                                 type="date"
                                                 required
+                                                min={new Date().toLocaleDateString('en-CA')}
                                                 className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900 appearance-none"
                                                 value={newRaffle.endDate}
                                                 onChange={(e) => setNewRaffle({ ...newRaffle, endDate: e.target.value })}

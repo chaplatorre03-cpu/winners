@@ -156,7 +156,7 @@ const PublicRaffle = () => {
 
     const formatNumber = (num) => {
         if (!raffle?.totalTickets) return num;
-        const padding = raffle.totalTickets.toString().length - 1;
+        const padding = (raffle.totalTickets - 1).toString().length;
         return num.toString().padStart(padding, '0');
     };
 
@@ -214,10 +214,19 @@ const PublicRaffle = () => {
                             <input
                                 type="text"
                                 placeholder="Buscar..."
-                                className="w-full text-sm md:text-base input-field pl-9 md:pl-10 h-10 md:h-12 bg-[#222] border-gray-700 transition-all hover:bg-[#2a2a2a] focus:bg-[#333] focus:ring-4 focus:ring-primary/10 text-white placeholder-gray-500"
+                                className="w-full text-sm md:text-base input-field pl-9 md:pl-10 pr-10 md:pr-12 h-10 md:h-12 bg-[#222] border-gray-700 transition-all hover:bg-[#2a2a2a] focus:bg-[#333] focus:ring-4 focus:ring-primary/10 text-white placeholder-gray-500"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
+                            {searchQuery && (
+                                <button
+                                    onClick={() => setSearchQuery('')}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-red-500/20 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-md active:scale-90 group/clear"
+                                    title="Limpiar búsqueda"
+                                >
+                                    <RotateCcw className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -431,7 +440,8 @@ const PublicRaffle = () => {
                                         if (!searchQuery) return true;
                                         const ticket = raffle?.tickets?.find(t => t.number === num);
                                         const buyerInfo = ticket?.buyerName || '';
-                                        return num.toString().includes(searchQuery) || buyerInfo.toLowerCase().includes(searchQuery.toLowerCase());
+                                        const formattedNum = formatNumber(num);
+                                        return formattedNum.includes(searchQuery) || num.toString().includes(searchQuery) || buyerInfo.toLowerCase().includes(searchQuery.toLowerCase());
                                     })
                                     .map((num) => {
                                         const status = getTicketStatus(num);
@@ -809,7 +819,9 @@ const PublicRaffle = () => {
                                             <h3 className="text-xl md:text-2xl font-black text-gray-900 uppercase italic tracking-tighter mb-1">
                                                 {paymentDetailView === 'nequi' ? 'Pago por Nequi' : paymentDetailView === 'daviplata' ? 'Pago por Daviplata' : 'Pago por Bre-B'}
                                             </h3>
-                                            <p className="text-xs md:text-sm text-gray-500 font-medium tracking-tight">Copia los datos</p>
+                                            <p className="text-xs md:text-sm text-gray-500 font-medium tracking-tight">
+                                                {(paymentDetailView === 'nequi' || paymentDetailView === 'daviplata') ? 'Copia los datos y abre la App' : 'Copia los datos'}
+                                            </p>
                                         </div>
                                     </div>
                                     <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8">

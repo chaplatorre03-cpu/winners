@@ -156,7 +156,7 @@ const RaffleManagement = () => {
 
     const formatNumber = (num) => {
         if (!raffle?.totalTickets) return num;
-        const padding = raffle.totalTickets.toString().length - 1;
+        const padding = (raffle.totalTickets - 1).toString().length;
         return num.toString().padStart(padding, '0');
     };
 
@@ -1248,6 +1248,7 @@ const RaffleManagement = () => {
                                             <input
                                                 type="date"
                                                 required
+                                                min={new Date().toLocaleDateString('en-CA')}
                                                 disabled={isEnded}
                                                 className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white disabled:opacity-70 text-gray-900 appearance-none"
                                                 value={updatedRaffleInfo.endDate}
