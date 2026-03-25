@@ -206,25 +206,25 @@ const PublicRaffle = () => {
             )}
 
             <div className="flex-1 flex flex-col min-w-0">
-                <nav className="h-auto py-1 md:h-20 bg-[#111] shadow-sm border-b border-gray-800 flex flex-col md:flex-row items-center justify-between px-4 md:px-8 sticky top-0 z-50 gap-0">
+                <nav className="h-auto py-3 md:h-24 bg-[#111] shadow-sm border-b border-gray-800 flex flex-col md:flex-row items-center justify-between px-4 md:px-8 sticky top-0 z-50 gap-0">
                     {/* Search Section - Bottom on mobile (order-2), Left on desktop (order-1) */}
                     <div className="order-2 md:order-1 flex items-center w-full max-w-xl">
                         <div className="relative flex-1 group">
-                            <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 w-3.5 md:w-4 h-3.5 md:h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-[22px] md:w-[26px] h-[22px] md:h-[26px] text-gray-400 group-focus-within:text-primary transition-colors" />
                             <input
                                 type="text"
                                 placeholder="Buscar..."
-                                className="w-full text-sm md:text-base input-field pl-9 md:pl-10 pr-10 md:pr-12 h-10 md:h-12 bg-[#222] border-gray-700 transition-all hover:bg-[#2a2a2a] focus:bg-[#333] focus:ring-4 focus:ring-primary/10 text-white placeholder-gray-500"
+                                className="w-full text-lg md:text-xl input-field pl-11 md:pl-12 pr-10 md:pr-12 h-[52px] md:h-[62px] bg-[#222] border-primary/50 border-2 focus:border-primary transition-all hover:bg-[#2a2a2a] focus:bg-[#333] focus:ring-4 focus:ring-primary/20 text-white placeholder-gray-500"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                             {searchQuery && (
                                 <button
                                     onClick={() => setSearchQuery('')}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-red-500/20 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-md active:scale-90 group/clear"
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-red-500/20 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-md active:scale-90 group/clear z-10"
                                     title="Limpiar búsqueda"
                                 >
-                                    <RotateCcw className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                                    <RotateCcw className="w-5 h-5 md:w-6 md:h-6" />
                                 </button>
                             )}
                         </div>
@@ -441,7 +441,12 @@ const PublicRaffle = () => {
                                         const ticket = raffle?.tickets?.find(t => t.number === num);
                                         const buyerInfo = ticket?.buyerName || '';
                                         const formattedNum = formatNumber(num);
-                                        return formattedNum.includes(searchQuery) || num.toString().includes(searchQuery) || buyerInfo.toLowerCase().includes(searchQuery.toLowerCase());
+                                        const query = searchQuery.trim().toLowerCase();
+                                        const numStr = num.toString();
+                                        return formattedNum.includes(query) || 
+                                               numStr.includes(query) || 
+                                               buyerInfo.toLowerCase().includes(query) ||
+                                               (!isNaN(query) && query !== '' && parseInt(query, 10) === num);
                                     })
                                     .map((num) => {
                                         const status = getTicketStatus(num);
@@ -730,7 +735,7 @@ const PublicRaffle = () => {
                                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Generar números</p>
                                 <p className="text-sm text-gray-500 font-medium">Selecciona números al azar</p>
                             </div>
-                            <button onClick={handleRandomSelect} className="w-full flex items-center justify-center space-x-3 py-4 bg-primary/5 hover:bg-primary/10 text-primary border-2 border-primary/20 border-dashed rounded-2xl transition-all group active:scale-95 mb-6">
+                            <button onClick={handleRandomSelect} className="w-full flex items-center justify-center space-x-3 py-4 bg-secondary/10 hover:bg-secondary/20 text-primary border-2 border-secondary/50 border-dashed rounded-2xl transition-all group active:scale-95 mb-6">
                                 <Dices className="w-6 h-6 group-hover:rotate-180 transition-transform duration-500" />
                                 <span className="font-black uppercase tracking-widest italic text-sm">Aleatorio</span>
                             </button>

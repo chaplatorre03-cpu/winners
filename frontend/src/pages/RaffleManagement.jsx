@@ -419,11 +419,11 @@ const RaffleManagement = () => {
                     <div className="flex flex-col md:flex-row gap-4 items-center">
                         <div className="flex flex-1 gap-2 w-full">
                             <div className="relative flex-1">
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 md:w-6 md:h-6 text-gray-400" />
                                 <input
                                     type="text"
                                     placeholder="Buscar..."
-                                    className="input-field pl-10 bg-white border-gray-100 text-gray-900"
+                                    className="input-field pl-12 md:pl-14 h-[52px] md:h-[62px] text-lg md:text-xl bg-white border-gray-100 text-gray-900"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                 />
@@ -436,7 +436,7 @@ const RaffleManagement = () => {
                                         className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-red-200 text-red-700 rounded-xl hover:bg-red-600 hover:text-white transition-all shadow-md active:scale-90 group/clear"
                                         title="Limpiar filtros"
                                     >
-                                        <RotateCcw className="w-4 h-4" />
+                                        <RotateCcw className="w-5 h-5 md:w-6 md:h-6" />
                                     </button>
                                 )}
                             </div>
