@@ -4,7 +4,8 @@ import {
     Home, Grid, Settings, Trophy, Plus, Search,
     Filter, AlertTriangle, ExternalLink, User as UserIcon,
     ChevronRight, ArrowLeft, X, Check, Clock, AlertCircle, Layout, Trash2, Calendar,
-    Image as ImageIcon, Ticket, CheckCircle, Phone, QrCode, Copy, DollarSign, RotateCcw
+    Image as ImageIcon, Ticket, CheckCircle, Phone, QrCode, Copy, DollarSign, RotateCcw,
+    Link, Smartphone, Wallet, Send
 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import WinnersLogo from '../components/WinnersLogo';
@@ -19,7 +20,12 @@ const INITIAL_RAFFLE_INFO = {
     image: '',
     price: 0,
     totalTickets: 0,
-    endDate: ''
+    endDate: '',
+    pseLink: '',
+    cardLink: '',
+    nequiPhone: '',
+    daviplataPhone: '',
+    brebPhone: ''
 };
 
 import LoadingOverlay from '../components/LoadingOverlay';
@@ -145,7 +151,12 @@ const RaffleManagement = () => {
                 image: data.image || '',
                 price: data.price?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
                 totalTickets: data.totalTickets?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
-                endDate: new Date(data.endDate).toISOString().split('T')[0]
+                endDate: new Date(data.endDate).toISOString().split('T')[0],
+                pseLink: data.pseLink || '',
+                cardLink: data.cardLink || '',
+                nequiPhone: data.nequiPhone || '',
+                daviplataPhone: data.daviplataPhone || '',
+                brebPhone: data.brebPhone || ''
             });
             setLoading(false);
         } catch (err) {
@@ -362,7 +373,12 @@ const RaffleManagement = () => {
                 body: JSON.stringify({
                     ...updatedRaffleInfo,
                     price: parseFloat(updatedRaffleInfo.price.toString().replace(/\./g, '')),
-                    totalTickets: parseInt(updatedRaffleInfo.totalTickets.toString().replace(/\./g, ''))
+                    totalTickets: parseInt(updatedRaffleInfo.totalTickets.toString().replace(/\./g, '')),
+                    pseLink: updatedRaffleInfo.pseLink,
+                    cardLink: updatedRaffleInfo.cardLink,
+                    nequiPhone: updatedRaffleInfo.nequiPhone,
+                    daviplataPhone: updatedRaffleInfo.daviplataPhone,
+                    brebPhone: updatedRaffleInfo.brebPhone
                 })
             });
             if (response.ok) {
@@ -1259,6 +1275,88 @@ const RaffleManagement = () => {
                                         </div>
                                     </div>
 
+                                    <div className="pt-4 border-t border-gray-100 mt-4 space-y-4">
+                                        <h4 className="text-[11px] font-black text-primary uppercase tracking-[0.2em] mb-4">Configuración de Pagos</h4>
+                                        
+                                        <div className="space-y-4">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Link de PSE</label>
+                                                <div className="relative group">
+                                                    <Link className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+                                                    <input
+                                                        type="url"
+                                                        placeholder="https://..."
+                                                        disabled={isEnded}
+                                                        className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900 disabled:opacity-70 text-sm"
+                                                        value={updatedRaffleInfo.pseLink}
+                                                        onChange={(e) => setUpdatedRaffleInfo({ ...updatedRaffleInfo, pseLink: e.target.value })}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Link de Tarjeta</label>
+                                                <div className="relative group">
+                                                    <Link className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+                                                    <input
+                                                        type="url"
+                                                        placeholder="https://..."
+                                                        disabled={isEnded}
+                                                        className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900 disabled:opacity-70 text-sm"
+                                                        value={updatedRaffleInfo.cardLink}
+                                                        onChange={(e) => setUpdatedRaffleInfo({ ...updatedRaffleInfo, cardLink: e.target.value })}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Teléfono Nequi</label>
+                                                <div className="relative group">
+                                                    <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+                                                    <input
+                                                        type="tel"
+                                                        maxLength={10}
+                                                        placeholder="300..."
+                                                        disabled={isEnded}
+                                                        className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900 disabled:opacity-70 text-sm"
+                                                        value={updatedRaffleInfo.nequiPhone}
+                                                        onChange={(e) => setUpdatedRaffleInfo({ ...updatedRaffleInfo, nequiPhone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Teléfono Daviplata</label>
+                                                <div className="relative group">
+                                                    <Wallet className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+                                                    <input
+                                                        type="tel"
+                                                        maxLength={10}
+                                                        placeholder="300..."
+                                                        disabled={isEnded}
+                                                        className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900 disabled:opacity-70 text-sm"
+                                                        value={updatedRaffleInfo.daviplataPhone}
+                                                        onChange={(e) => setUpdatedRaffleInfo({ ...updatedRaffleInfo, daviplataPhone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Teléfono Bre-B</label>
+                                                <div className="relative group">
+                                                    <Send className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+                                                    <input
+                                                        type="tel"
+                                                        maxLength={10}
+                                                        placeholder="300..."
+                                                        disabled={isEnded}
+                                                        className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900 disabled:opacity-70 text-sm"
+                                                        value={updatedRaffleInfo.brebPhone}
+                                                        onChange={(e) => setUpdatedRaffleInfo({ ...updatedRaffleInfo, brebPhone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 {!isEnded && (

@@ -785,29 +785,56 @@ const PublicRaffle = () => {
                                     </div>
                                     <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8">
                                         <div className="flex flex-col space-y-3">
-                                            <div onClick={() => window.open('https://kiire.mpos.com/mailpos/#/jb-27LN', '_blank')} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer w-full">
-                                                <CreditCard className="w-6 h-6 text-[#8b00ff]" />
-                                                <p className="font-bold text-gray-900 text-sm">Tarjeta Débito / Crédito</p>
-                                            </div>
-                                            <div onClick={() => window.open('https://kiire.mpos.com/mailpos/#/jb-27LN', '_blank')} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer w-full">
-                                                <MousePointer2 className="w-6 h-6 text-[#ff00de]" />
-                                                <p className="font-bold text-gray-900 text-sm">PSE</p>
-                                            </div>
-                                            <div onClick={() => { setPaymentDetailView('nequi'); setCopiedField(null); }} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer w-full">
-                                                <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <path d="M7.5 19.5V5h3.2l5.4 9.8V5h2.8v14.5h-3.2L10.3 9.7v9.8H7.5z" fill="#1f0e33" />
-                                                    <rect x="3.5" y="5" width="2.5" height="2.5" fill="#e3007b" />
-                                                </svg>
-                                                <p className="font-bold text-gray-900 text-sm">Nequi</p>
-                                            </div>
-                                            <div onClick={() => { setPaymentDetailView('daviplata'); setCopiedField(null); }} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer w-full">
-                                                <Wallet className="w-6 h-6 text-[#ff0000]" />
-                                                <p className="font-bold text-gray-900 text-sm">Daviplata</p>
-                                            </div>
-                                            <div onClick={() => { setPaymentDetailView('breb'); setCopiedField(null); }} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer w-full">
-                                                <Send className="w-6 h-6 text-[#ffcc00]" />
-                                                <p className="font-bold text-gray-900 text-sm">Bre-B</p>
-                                            </div>
+                                            {raffle.cardLink && (
+                                                <div onClick={() => window.open(raffle.cardLink, '_blank')} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between hover:bg-white hover:shadow-lg transition-all group cursor-pointer w-full">
+                                                    <div className="flex items-center space-x-4">
+                                                        <CreditCard className="w-6 h-6 text-[#8b00ff]" />
+                                                        <p className="font-bold text-gray-900 text-sm">Tarjeta Débito / Crédito</p>
+                                                    </div>
+                                                    <ExternalLink className="w-4 h-4 text-gray-300 group-hover:text-primary transition-colors" />
+                                                </div>
+                                            )}
+                                            {raffle.pseLink && (
+                                                <div onClick={() => window.open(raffle.pseLink, '_blank')} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between hover:bg-white hover:shadow-lg transition-all group cursor-pointer w-full">
+                                                    <div className="flex items-center space-x-4">
+                                                        <MousePointer2 className="w-6 h-6 text-[#ff00de]" />
+                                                        <p className="font-bold text-gray-900 text-sm">PSE</p>
+                                                    </div>
+                                                    <ExternalLink className="w-4 h-4 text-gray-300 group-hover:text-primary transition-colors" />
+                                                </div>
+                                            )}
+                                            {raffle.nequiPhone && (
+                                                <div onClick={() => { setPaymentDetailView('nequi'); setCopiedField(null); }} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer w-full">
+                                                    <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                        <path d="M7.5 19.5V5h3.2l5.4 9.8V5h2.8v14.5h-3.2L10.3 9.7v9.8H7.5z" fill="#1f0e33" />
+                                                        <rect x="3.5" y="5" width="2.5" height="2.5" fill="#e3007b" />
+                                                    </svg>
+                                                    <p className="font-bold text-gray-900 text-sm">Nequi</p>
+                                                </div>
+                                            )}
+                                            {raffle.daviplataPhone && (
+                                                <div onClick={() => { setPaymentDetailView('daviplata'); setCopiedField(null); }} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer w-full">
+                                                    <Wallet className="w-6 h-6 text-[#ff0000]" />
+                                                    <p className="font-bold text-gray-900 text-sm">Daviplata</p>
+                                                </div>
+                                            )}
+                                            {raffle.brebPhone && (
+                                                <div onClick={() => { setPaymentDetailView('breb'); setCopiedField(null); }} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer w-full">
+                                                    <Send className="w-6 h-6 text-[#ffcc00]" />
+                                                    <p className="font-bold text-gray-900 text-sm">Bre-B</p>
+                                                </div>
+                                            )}
+
+                                            {/* Si no hay métodos configurados */}
+                                            {!raffle.cardLink && !raffle.pseLink && !raffle.nequiPhone && !raffle.daviplataPhone && !raffle.brebPhone && (
+                                                <div className="p-8 text-center space-y-3">
+                                                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto">
+                                                        <CreditCard className="w-8 h-8 text-gray-300" />
+                                                    </div>
+                                                    <p className="text-gray-500 font-bold text-sm uppercase">Sin métodos configurados</p>
+                                                    <p className="text-xs text-gray-400">Contacta al organizador para coordinar tu pago.</p>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="p-6 md:p-8 shrink-0">
@@ -835,11 +862,16 @@ const PublicRaffle = () => {
                                                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Enviar a número</p>
                                                 <div className="flex items-center justify-between">
                                                     <p className="text-xl font-black text-gray-900 font-mono tracking-wider">
-                                                        {raffle.creator?.phone || raffle.organizerPhone || '3204446733'}
+                                                        {paymentDetailView === 'nequi' ? (raffle.nequiPhone || raffle.creator?.phone || raffle.organizerPhone || '3204446733') :
+                                                            paymentDetailView === 'daviplata' ? (raffle.daviplataPhone || raffle.creator?.phone || raffle.organizerPhone || '3204446733') :
+                                                                (raffle.brebPhone || raffle.creator?.phone || raffle.organizerPhone || '3204446733')}
                                                     </p>
                                                     <button
                                                         onClick={() => {
-                                                            navigator.clipboard.writeText(raffle.creator?.phone || raffle.organizerPhone || '3204446733');
+                                                            const textToCopy = paymentDetailView === 'nequi' ? (raffle.nequiPhone || raffle.creator?.phone || raffle.organizerPhone || '3204446733') :
+                                                                paymentDetailView === 'daviplata' ? (raffle.daviplataPhone || raffle.creator?.phone || raffle.organizerPhone || '3204446733') :
+                                                                    (raffle.brebPhone || raffle.creator?.phone || raffle.organizerPhone || '3204446733');
+                                                            navigator.clipboard.writeText(textToCopy);
                                                             setCopiedField('phone');
                                                             setTimeout(() => setCopiedField(null), 2000);
                                                         }}

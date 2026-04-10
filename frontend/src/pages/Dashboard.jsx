@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Home, Menu, Plus, ChevronDown, ChevronUp, MoreVertical,
-    Grid, Settings, Trophy, X, Calendar, DollarSign,
+    Grid, Settings, Trophy, X, Calendar, DollarSign, Link, Smartphone, Wallet, Send,
     Ticket, Layout, LogOut, User, Mail, Phone, Lock, CheckCircle, Eye, EyeOff
 } from 'lucide-react';
 import WinnersLogo from '../components/WinnersLogo';
@@ -27,7 +27,12 @@ const INITIAL_RAFFLE_STATE = {
     endDate: '',
     image: '',
     rangeStart: '',
-    rangeEnd: ''
+    rangeEnd: '',
+    pseLink: '',
+    cardLink: '',
+    nequiPhone: '',
+    daviplataPhone: '',
+    brebPhone: ''
 };
 
 const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/;
@@ -78,6 +83,18 @@ const Dashboard = () => {
             setShowPassword(false);
         }
     }, [showEditProfileModal, currentUser]);
+
+    // Set default payment phones when creating a new raffle
+    useEffect(() => {
+        if (showCreateModal && currentUser.phone) {
+            setNewRaffle(prev => ({
+                ...prev,
+                nequiPhone: prev.nequiPhone || currentUser.phone || '',
+                daviplataPhone: prev.daviplataPhone || currentUser.phone || '',
+                brebPhone: prev.brebPhone || currentUser.phone || ''
+            }));
+        }
+    }, [showCreateModal, currentUser.phone]);
 
     // Lock body scroll when any modal is open
     useEffect(() => {
@@ -200,6 +217,9 @@ const Dashboard = () => {
         }
 
         try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
             const response = await fetch(`${API_URL}/auth/profile`, {
                 method: 'PUT',
                 headers: {
@@ -575,6 +595,84 @@ const Dashboard = () => {
                                                 onInvalid={(e) => e.target.setCustomValidity('Por favor, selecciona la fecha del sorteo')}
                                                 onInput={(e) => e.target.setCustomValidity('')}
                                             />
+                                        </div>
+                                    </div>
+                                    {/* Payment Configuration Section */}
+                                    <div className="pt-4 border-t border-gray-100 mt-4 space-y-4">
+                                        <h4 className="text-[11px] font-black text-primary uppercase tracking-[0.2em] mb-4">Configuración de Pagos</h4>
+                                        
+                                        <div className="space-y-4">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Link de PSE</label>
+                                                <div className="relative group">
+                                                    <Link className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+                                                    <input
+                                                        type="url"
+                                                        placeholder="https://..."
+                                                        className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900 text-sm"
+                                                        value={newRaffle.pseLink}
+                                                        onChange={(e) => setNewRaffle({ ...newRaffle, pseLink: e.target.value })}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Link de Tarjeta</label>
+                                                <div className="relative group">
+                                                    <Link className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+                                                    <input
+                                                        type="url"
+                                                        placeholder="https://..."
+                                                        className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900 text-sm"
+                                                        value={newRaffle.cardLink}
+                                                        onChange={(e) => setNewRaffle({ ...newRaffle, cardLink: e.target.value })}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Teléfono Nequi</label>
+                                                <div className="relative group">
+                                                    <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+                                                    <input
+                                                        type="tel"
+                                                        maxLength={10}
+                                                        placeholder="300..."
+                                                        className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900 text-sm"
+                                                        value={newRaffle.nequiPhone}
+                                                        onChange={(e) => setNewRaffle({ ...newRaffle, nequiPhone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Teléfono Daviplata</label>
+                                                <div className="relative group">
+                                                    <Wallet className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+                                                    <input
+                                                        type="tel"
+                                                        maxLength={10}
+                                                        placeholder="300..."
+                                                        className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900 text-sm"
+                                                        value={newRaffle.daviplataPhone}
+                                                        onChange={(e) => setNewRaffle({ ...newRaffle, daviplataPhone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Teléfono Bre-B</label>
+                                                <div className="relative group">
+                                                    <Send className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+                                                    <input
+                                                        type="tel"
+                                                        maxLength={10}
+                                                        placeholder="300..."
+                                                        className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900 text-sm"
+                                                        value={newRaffle.brebPhone}
+                                                        onChange={(e) => setNewRaffle({ ...newRaffle, brebPhone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
