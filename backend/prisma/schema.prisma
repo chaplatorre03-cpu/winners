@@ -38,6 +38,11 @@ model Raffle {
   organizerName String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  pseLink       String?
+  cardLink      String?
+  nequiPhone    String?
+  daviplataPhone String?
+  brebPhone     String?
   creatorId     Int
   creator       User     @relation(fields: [creatorId], references: [id])
   tickets       Ticket[]
