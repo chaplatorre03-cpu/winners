@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
     Home, Grid, Settings, Trophy, Plus, Search,
     Filter, AlertTriangle, ExternalLink, User as UserIcon,
-    ChevronRight, ArrowLeft, X, Check, Clock, AlertCircle, Layout, Trash2, Calendar,
+    ChevronRight, ChevronDown, ArrowLeft, X, Check, Clock, AlertCircle, Layout, Trash2, Calendar,
     Image as ImageIcon, Ticket, CheckCircle, Phone, QrCode, Copy, DollarSign, RotateCcw,
     Link, Smartphone, Wallet, Send
 } from 'lucide-react';
@@ -70,7 +70,7 @@ const RaffleManagement = () => {
     const [customErrorMessage, setCustomErrorMessage] = useState('');
 
     const [updatedRaffleInfo, setUpdatedRaffleInfo] = useState(INITIAL_RAFFLE_INFO);
-
+    const [paymentConfigExpanded, setPaymentConfigExpanded] = useState(false);
 
 
     const [phoneError, setPhoneError] = useState('');
@@ -658,9 +658,9 @@ const RaffleManagement = () => {
 
             {/* Update Status Modal */}
             {selectedTicket && (
-                <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
+                <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 pt-10 md:p-4">
                     <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setSelectedTicket(null)}></div>
-                    <div className="relative bg-white w-full max-w-sm md:rounded-[2.5rem] rounded-t-3xl shadow-2xl animate-slide-up md:animate-scale-in max-h-[95vh] flex flex-col overflow-hidden">
+                    <div className="relative bg-white w-full max-w-sm md:rounded-[2.5rem] rounded-t-3xl shadow-2xl animate-slide-up md:animate-scale-in max-h-[88vh] md:max-h-[95vh] flex flex-col overflow-hidden">
                         <CloseButton onClick={() => setSelectedTicket(null)} />
                         <div className="overflow-y-auto overflow-x-visible custom-scrollbar flex-1">
                             <div className="pt-16 md:pt-20 px-14 md:px-10 text-center space-y-4 md:space-y-6 pb-8">
@@ -809,9 +809,9 @@ const RaffleManagement = () => {
 
             {/* Draw Modal */}
             {showDrawModal && (
-                <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
+                <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 pt-10 md:p-4">
                     <div className="absolute inset-0 bg-gray-900/80 backdrop-blur-md" onClick={() => !isDrawing && handleCloseModal()}></div>
-                    <div className="relative bg-white w-full max-w-md md:rounded-[2.5rem] rounded-t-3xl shadow-2xl overflow-hidden animate-slide-up md:animate-scale-in flex flex-col max-h-[95vh]">
+                    <div className="relative bg-white w-full max-w-md md:rounded-[2.5rem] rounded-t-3xl shadow-2xl overflow-hidden animate-slide-up md:animate-scale-in flex flex-col max-h-[88vh] md:max-h-[95vh]">
                         <CloseButton
                             onClick={() => {
                                 if (isDrawing) return;
@@ -1051,6 +1051,11 @@ const RaffleManagement = () => {
                                                         }
                                                     };
                                                     const currentStyle = statusStyles[status] || statusStyles['APARTADO'];
+                                                    const puestoNumber = (() => {
+                                                        const subset = winnersList.filter(w => Boolean(w.isManualWinner) === isManual);
+                                                        const winIndexInSubset = subset.indexOf(win);
+                                                        return subset.length - winIndexInSubset;
+                                                    })();
 
                                                     return (
                                                         <div
@@ -1070,21 +1075,36 @@ const RaffleManagement = () => {
                                                                         }` : ''}`
                                                                 }`}
                                                         >
-                                                            {/* Left Section: Name */}
-                                                            <div className="flex-1 text-left min-w-0 pr-4">
-                                                                <h4 className={`text-lg font-black transition-colors ${isDeleted ? 'text-gray-500' : 'text-gray-900'} ${!isDeleted && (isManual ? 'group-hover/card:text-amber-600' : currentStyle.hoverText)}`}>{buyerName}</h4>
+                                                            {/* Left Section: Name & Rank/Phone on Mobile */}
+                                                            <div className="flex-1 text-left min-w-0 pr-2 sm:pr-4 flex flex-col justify-center">
+                                                                <h4 className={`text-base sm:text-lg font-black transition-colors ${isDeleted ? 'text-gray-500' : 'text-gray-900'} ${!isDeleted && (isManual ? 'group-hover/card:text-amber-600' : currentStyle.hoverText)}`}>
+                                                                    {buyerName}
+                                                                </h4>
+                                                                {/* Rank & Phone beneath the name on mobile (< sm) */}
+                                                                <div className="flex sm:hidden flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
+                                                                    <span className={`text-[10px] font-black uppercase tracking-wider ${isDeleted ? 'text-gray-400' : (isManual ? 'text-amber-500' : currentStyle.text)}`}>
+                                                                        Puesto #{puestoNumber}
+                                                                    </span>
+                                                                    {buyerPhone && buyerPhone !== 'Sin tel.' && (
+                                                                        <>
+                                                                            <span className="text-gray-300 text-xs font-bold">•</span>
+                                                                            <div className="flex items-center space-x-1">
+                                                                                <span className={`text-xs font-bold font-mono tracking-tighter italic ${isDeleted ? 'text-gray-400' : 'text-gray-500'}`}>
+                                                                                    {buyerPhone}
+                                                                                </span>
+                                                                                <Phone className={`w-3.5 h-3.5 ${isDeleted ? 'text-gray-300' : (isManual ? 'text-amber-500' : currentStyle.text)}`} />
+                                                                            </div>
+                                                                        </>
+                                                                    )}
+                                                                </div>
                                                             </div>
 
                                                             {/* Right Group: Puesto, Phone and Ticket grouped closer */}
-                                                            <div className="flex items-center space-x-6 md:space-x-8 shrink-0">
-                                                                {/* Rank and Phone */}
-                                                                <div className="flex flex-col items-center justify-center">
+                                                            <div className="flex items-center space-x-4 sm:space-x-6 md:space-x-8 shrink-0">
+                                                                {/* Rank and Phone (Desktop only: hidden sm:flex) */}
+                                                                <div className="hidden sm:flex flex-col items-center justify-center">
                                                                     <p className={`text-[11px] font-black uppercase mb-1 whitespace-nowrap ${isDeleted ? 'text-gray-400' : (isManual ? 'text-amber-500' : currentStyle.text)}`}>
-                                                                        Puesto #{(() => {
-                                                                            const subset = winnersList.filter(w => Boolean(w.isManualWinner) === isManual);
-                                                                            const winIndexInSubset = subset.indexOf(win);
-                                                                            return subset.length - winIndexInSubset;
-                                                                        })()}
+                                                                        Puesto #{puestoNumber}
                                                                     </p>
                                                                     <div className="flex items-center space-x-2">
                                                                         <span className={`text-[15px] md:text-[18px] font-bold font-mono tracking-tighter italic transition-all ${isDeleted ? 'text-gray-400' : 'text-gray-500'} ${!isDeleted && (isManual ? 'group-hover/card:text-amber-500' : currentStyle.hoverText)}`}>
@@ -1155,9 +1175,9 @@ const RaffleManagement = () => {
             {/* Settings Modal */}
             {
                 showSettingsModal && (
-                    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
+                    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 pt-10 md:p-4">
                         <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => handleCloseModal()}></div>
-                        <div className="relative bg-white w-full max-w-lg md:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden animate-slide-up md:animate-scale-in max-h-[95vh] flex flex-col">
+                        <div className="relative bg-white w-full max-w-lg md:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden animate-slide-up md:animate-scale-in max-h-[88vh] md:max-h-[95vh] flex flex-col">
                             <CloseButton onClick={() => handleCloseModal()} />
                             <div className="bg-gradient-to-r from-primary to-secondary pt-16 md:pt-20 px-14 md:px-8 pb-6 md:pb-8 text-white relative shrink-0">
                                 <h2 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase mb-1 md:mb-2">Ajustes de la Rifa</h2>
@@ -1275,87 +1295,109 @@ const RaffleManagement = () => {
                                         </div>
                                     </div>
 
-                                    <div className="pt-4 border-t border-gray-100 mt-4 space-y-4">
-                                        <h4 className="text-[11px] font-black text-primary uppercase tracking-[0.2em] mb-4">Configuración de Pagos</h4>
+                                    <div className="pt-4 border-t border-gray-100 mt-4 space-y-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setPaymentConfigExpanded(!paymentConfigExpanded)}
+                                            className="w-full flex items-center justify-between py-2 group focus:outline-none transition-all duration-300"
+                                        >
+                                            <h4 className="text-[11px] font-black text-primary uppercase tracking-[0.2em] group-hover:text-primary-light transition-colors duration-300">
+                                                Configuración de Pagos
+                                            </h4>
+                                            <div className="flex items-center space-x-2">
+                                                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider italic">
+                                                    {paymentConfigExpanded ? 'Ocultar' : 'Mostrar'}
+                                                </span>
+                                                <ChevronDown
+                                                    className={`w-4 h-4 text-gray-400 group-hover:text-primary transition-transform duration-300 ${
+                                                        paymentConfigExpanded ? 'rotate-180 text-primary' : ''
+                                                    }`}
+                                                />
+                                            </div>
+                                        </button>
                                         
-                                        <div className="space-y-4">
-                                            <div className="space-y-1.5">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Link de PSE</label>
-                                                <div className="relative group">
-                                                    <Link className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
-                                                    <input
-                                                        type="url"
-                                                        placeholder="https://..."
-                                                        disabled={isEnded}
-                                                        className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900 disabled:opacity-70 text-sm"
-                                                        value={updatedRaffleInfo.pseLink}
-                                                        onChange={(e) => setUpdatedRaffleInfo({ ...updatedRaffleInfo, pseLink: e.target.value })}
-                                                    />
+                                        {paymentConfigExpanded && (
+                                            <div className="space-y-4 pt-2 transition-all duration-300">
+                                                <div className="space-y-4">
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Link de PSE</label>
+                                                        <div className="relative group">
+                                                            <Link className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+                                                            <input
+                                                                type="url"
+                                                                placeholder="https://..."
+                                                                disabled={isEnded}
+                                                                className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900 disabled:opacity-70 text-sm"
+                                                                value={updatedRaffleInfo.pseLink}
+                                                                onChange={(e) => setUpdatedRaffleInfo({ ...updatedRaffleInfo, pseLink: e.target.value })}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Link de Tarjeta</label>
+                                                        <div className="relative group">
+                                                            <Link className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+                                                            <input
+                                                                type="url"
+                                                                placeholder="https://..."
+                                                                disabled={isEnded}
+                                                                className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900 disabled:opacity-70 text-sm"
+                                                                value={updatedRaffleInfo.cardLink}
+                                                                onChange={(e) => setUpdatedRaffleInfo({ ...updatedRaffleInfo, cardLink: e.target.value })}
+                                                            />
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Link de Tarjeta</label>
-                                                <div className="relative group">
-                                                    <Link className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
-                                                    <input
-                                                        type="url"
-                                                        placeholder="https://..."
-                                                        disabled={isEnded}
-                                                        className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900 disabled:opacity-70 text-sm"
-                                                        value={updatedRaffleInfo.cardLink}
-                                                        onChange={(e) => setUpdatedRaffleInfo({ ...updatedRaffleInfo, cardLink: e.target.value })}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
 
-                                        <div className="space-y-4">
-                                            <div className="space-y-1.5">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Teléfono Nequi</label>
-                                                <div className="relative group">
-                                                    <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
-                                                    <input
-                                                        type="tel"
-                                                        maxLength={10}
-                                                        placeholder="300..."
-                                                        disabled={isEnded}
-                                                        className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900 disabled:opacity-70 text-sm"
-                                                        value={updatedRaffleInfo.nequiPhone}
-                                                        onChange={(e) => setUpdatedRaffleInfo({ ...updatedRaffleInfo, nequiPhone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-                                                    />
+                                                <div className="space-y-4">
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Teléfono Nequi</label>
+                                                        <div className="relative group">
+                                                            <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+                                                            <input
+                                                                type="tel"
+                                                                maxLength={10}
+                                                                placeholder="300..."
+                                                                disabled={isEnded}
+                                                                className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900 disabled:opacity-70 text-sm"
+                                                                value={updatedRaffleInfo.nequiPhone}
+                                                                onChange={(e) => setUpdatedRaffleInfo({ ...updatedRaffleInfo, nequiPhone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Teléfono Daviplata</label>
+                                                        <div className="relative group">
+                                                            <Wallet className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+                                                            <input
+                                                                type="tel"
+                                                                maxLength={10}
+                                                                placeholder="300..."
+                                                                disabled={isEnded}
+                                                                className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900 disabled:opacity-70 text-sm"
+                                                                value={updatedRaffleInfo.daviplataPhone}
+                                                                onChange={(e) => setUpdatedRaffleInfo({ ...updatedRaffleInfo, daviplataPhone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Teléfono Bre-B</label>
+                                                        <div className="relative group">
+                                                            <Send className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+                                                            <input
+                                                                type="tel"
+                                                                maxLength={10}
+                                                                placeholder="300..."
+                                                                disabled={isEnded}
+                                                                className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900 disabled:opacity-70 text-sm"
+                                                                value={updatedRaffleInfo.brebPhone}
+                                                                onChange={(e) => setUpdatedRaffleInfo({ ...updatedRaffleInfo, brebPhone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                                                            />
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Teléfono Daviplata</label>
-                                                <div className="relative group">
-                                                    <Wallet className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
-                                                    <input
-                                                        type="tel"
-                                                        maxLength={10}
-                                                        placeholder="300..."
-                                                        disabled={isEnded}
-                                                        className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900 disabled:opacity-70 text-sm"
-                                                        value={updatedRaffleInfo.daviplataPhone}
-                                                        onChange={(e) => setUpdatedRaffleInfo({ ...updatedRaffleInfo, daviplataPhone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Teléfono Bre-B</label>
-                                                <div className="relative group">
-                                                    <Send className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
-                                                    <input
-                                                        type="tel"
-                                                        maxLength={10}
-                                                        placeholder="300..."
-                                                        disabled={isEnded}
-                                                        className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900 disabled:opacity-70 text-sm"
-                                                        value={updatedRaffleInfo.brebPhone}
-                                                        onChange={(e) => setUpdatedRaffleInfo({ ...updatedRaffleInfo, brebPhone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -1528,9 +1570,9 @@ const RaffleManagement = () => {
             {/* QR Modal for Mobile */}
             {
                 showQRModal && (
-                    <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4">
+                    <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 pt-10 md:p-4">
                         <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setShowQRModal(false)}></div>
-                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm md:rounded-[2rem] rounded-t-3xl shadow-2xl border-2 border-white/50 animate-slide-up md:animate-scale-in text-center flex flex-col max-h-[95vh] overflow-hidden">
+                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm md:rounded-[2rem] rounded-t-3xl shadow-2xl border-2 border-white/50 animate-slide-up md:animate-scale-in text-center flex flex-col max-h-[88vh] md:max-h-[95vh] overflow-hidden">
                             <CloseButton onClick={() => setShowQRModal(false)} />
                             <div className="overflow-y-auto custom-scrollbar flex-1 p-8 pt-16 md:pt-20">
                                 <div className="mb-6">

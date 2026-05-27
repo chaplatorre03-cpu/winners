@@ -202,7 +202,7 @@ const Register = () => {
     };
 
     return (
-        <div ref={containerRef} className="min-h-screen bg-[#0a0a0a] flex flex-col items-center pt-20 pb-12 p-4 overflow-y-auto h-screen relative">
+        <div ref={containerRef} className="min-h-screen bg-[#0a0a0a] flex flex-col items-center pt-20 pb-12 p-4 overflow-y-auto overflow-x-hidden h-screen relative">
             {(loading || otpLoading) && <LoadingOverlay />}
             {/* Animated background elements */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">

@@ -296,7 +296,7 @@ const PublicRaffle = () => {
                                         </div>
                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 group-hover:text-primary transition-colors">Precio por número</p>
                                         <div className="flex items-baseline space-x-1">
-                                            <span className="text-sm font-black text-primary">$</span>
+                                            <span className="text-[29px] md:text-[31px] font-black text-primary tracking-tighter italic">$</span>
                                             <span className="text-[29px] md:text-[31px] font-black text-primary tracking-tighter italic">{Number(raffle.price || 0).toLocaleString('es-CO')}</span>
                                         </div>
                                         <p className="text-sm font-black text-gray-400 uppercase tracking-tighter mt-2 bg-white px-4 py-1.5 rounded-full shadow-md group-hover:scale-105 transition-transform">¡TOCA PARA AZAR!</p>
@@ -508,9 +508,9 @@ const PublicRaffle = () => {
 
                 {/* Purchase Modal */}
                 {showPurchaseModal && (
-                    <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center p-0 md:p-4">
+                    <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center p-0 pt-10 md:p-4">
                         <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setShowPurchaseModal(false)}></div>
-                        <div className="relative bg-white w-full max-w-md md:rounded-3xl rounded-t-3xl shadow-2xl animate-slide-up md:animate-scale-in flex flex-col max-h-[95vh] overflow-hidden">
+                        <div className="relative bg-white w-full max-w-md md:rounded-3xl rounded-t-3xl shadow-2xl animate-slide-up md:animate-scale-in flex flex-col max-h-[88vh] md:max-h-[95vh] overflow-hidden">
                             <CloseButton onClick={() => setShowPurchaseModal(false)} />
                             <div className="pt-20 md:pt-24 px-6 md:px-8 pb-6 md:pb-8 space-y-4 md:space-y-6 relative overflow-y-auto custom-scrollbar">
                                 <div className="text-center space-y-1 md:space-y-2">
@@ -769,9 +769,9 @@ const PublicRaffle = () => {
 
                 {/* Payment Methods Modal */}
                 {showPaymentModal && (
-                    <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center p-0 md:p-4">
+                    <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center p-0 pt-10 md:p-4">
                         <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-md animate-fade-in" onClick={() => { setShowPaymentModal(false); setPaymentDetailView(null); }}></div>
-                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-md md:rounded-[2rem] rounded-t-[2rem] shadow-2xl border-2 border-white/50 animate-slide-up md:animate-scale-in flex flex-col max-h-[95vh]">
+                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-md md:rounded-[2rem] rounded-t-[2rem] shadow-2xl border-2 border-white/50 animate-slide-up md:animate-scale-in flex flex-col max-h-[88vh] md:max-h-[95vh]">
                             <CloseButton onClick={() => { setShowPaymentModal(false); setPaymentDetailView(null); }} />
 
                             {!paymentDetailView ? (
@@ -827,12 +827,31 @@ const PublicRaffle = () => {
 
                                             {/* Si no hay métodos configurados */}
                                             {!raffle.cardLink && !raffle.pseLink && !raffle.nequiPhone && !raffle.daviplataPhone && !raffle.brebPhone && (
-                                                <div className="p-8 text-center space-y-3">
-                                                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto">
-                                                        <CreditCard className="w-8 h-8 text-gray-300" />
+                                                <div className="space-y-4">
+                                                    <div className="p-4 md:p-6 text-center space-y-3">
+                                                        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto">
+                                                            <CreditCard className="w-8 h-8 text-gray-300" />
+                                                        </div>
+                                                        <p className="text-gray-500 font-bold text-sm uppercase">Sin métodos configurados</p>
+                                                        <p className="text-xs text-gray-400">Contacta al organizador para coordinar tu pago.</p>
                                                     </div>
-                                                    <p className="text-gray-500 font-bold text-sm uppercase">Sin métodos configurados</p>
-                                                    <p className="text-xs text-gray-400">Contacta al organizador para coordinar tu pago.</p>
+                                                    <a
+                                                        href={`https://api.whatsapp.com/send?phone=57${(raffle.creator?.phone || raffle.organizerPhone || '3204446733').replace(/\\D/g, '').slice(-10)}&text=${encodeURIComponent(`Hola, deseo informacion sobre el sorteo: ${raffle.title}`)}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="p-6 border-[1.2px] border-primary bg-primary/5 rounded-2xl flex flex-col items-center hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-0.5 transition-all cursor-pointer group/organizer w-full"
+                                                    >
+                                                        <div className="text-center">
+                                                            <p className="text-[10px] text-primary uppercase font-black tracking-[0.15em] leading-none mb-2 opacity-80">Organizador</p>
+                                                            <p className="text-lg font-black text-gray-900 group-hover/organizer:text-primary transition-colors uppercase">{raffle.creator?.name || raffle.organizerName || 'Winners'}</p>
+                                                            <div className="flex items-center justify-center space-x-3 mt-3 opacity-90">
+                                                                <div className="w-6 h-6 bg-[#00ff00] rounded-full flex items-center justify-center shadow-[0_0_10px_rgba(0,255,0,0.3)]">
+                                                                    <Phone className="w-3.5 h-3.5 text-white" />
+                                                                </div>
+                                                                <span className="text-sm font-black text-gray-600 font-mono tracking-widest transition-colors group-hover/organizer:text-[#00ff00]">{raffle.creator?.phone || raffle.organizerPhone || '3204446733'}</span>
+                                                            </div>
+                                                        </div>
+                                                    </a>
                                                 </div>
                                             )}
                                         </div>

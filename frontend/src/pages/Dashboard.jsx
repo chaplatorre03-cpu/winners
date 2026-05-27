@@ -428,9 +428,9 @@ const Dashboard = () => {
             {/* Create Raffle Modal */}
             {
                 showCreateModal && (
-                    <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center p-0 md:p-4">
+                    <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center p-0 pt-10 md:p-4">
                         <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setShowCreateModal(false)}></div>
-                        <div className="relative bg-white w-full max-w-lg md:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden animate-slide-up md:animate-scale-in max-h-[95vh] flex flex-col">
+                        <div className="relative bg-white w-full max-w-lg md:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden animate-slide-up md:animate-scale-in max-h-[88vh] md:max-h-[95vh] flex flex-col">
                             <CloseButton onClick={() => setShowCreateModal(false)} />
                             <div className="bg-gradient-to-r from-primary to-secondary pt-20 md:pt-24 px-6 md:px-8 pb-6 md:pb-8 text-white relative shrink-0">
                                 <h2 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase mb-1 md:mb-2">Nueva ronda</h2>
@@ -689,9 +689,9 @@ const Dashboard = () => {
             {/* Edit Profile Modal */}
             {
                 showEditProfileModal && (
-                    <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center p-0 md:p-4">
+                    <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center p-0 pt-10 md:p-4">
                         <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setShowEditProfileModal(false)}></div>
-                        <div className="relative bg-white w-full max-w-lg md:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden animate-scale-in max-h-[95vh] flex flex-col">
+                        <div className="relative bg-white w-full max-w-lg md:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden animate-scale-in max-h-[88vh] md:max-h-[95vh] flex flex-col">
                             <CloseButton onClick={() => setShowEditProfileModal(false)} />
                             <div className="bg-gradient-to-r from-primary to-secondary pt-20 md:pt-24 px-6 md:px-8 pb-6 md:pb-8 text-white relative shrink-0">
                                 <h2 className="text-3xl font-black italic tracking-tighter uppercase mb-2">Mi Perfil</h2>
