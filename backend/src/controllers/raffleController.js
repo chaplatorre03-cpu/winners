@@ -230,9 +230,7 @@ exports.drawWinner = async (req, res) => {
         });
 
         if (eligibleTickets.length === 0) {
-            const message = shouldBePaid
-                ? 'No se encontraron tickets con estado PAGADO para participar en el sorteo'
-                : 'No se encontraron tickets registrados que puedan participar en el sorteo';
+            const message = 'No se encontraron tickets registrados que puedan participar en el sorteo';
             return res.status(400).json({ error: message });
         }
 
