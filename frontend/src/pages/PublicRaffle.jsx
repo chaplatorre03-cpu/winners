@@ -74,6 +74,11 @@ const PublicRaffle = () => {
 
     const isEnded = raffle?.status === 'COMPLETED';
 
+    const hasPaymentMethods = React.useMemo(() => {
+        if (!raffle) return false;
+        return Boolean(raffle.cardLink || raffle.pseLink || raffle.nequiPhone || raffle.daviplataPhone || raffle.brebPhone);
+    }, [raffle]);
+
     useEffect(() => {
         fetchRaffle();
     }, [id]);
@@ -771,19 +776,19 @@ const PublicRaffle = () => {
                 {showPaymentModal && (
                     <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center p-0 pt-10 md:p-4">
                         <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-md animate-fade-in" onClick={() => { setShowPaymentModal(false); setPaymentDetailView(null); }}></div>
-                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-md md:rounded-[2rem] rounded-t-[2rem] shadow-2xl border-2 border-white/50 animate-slide-up md:animate-scale-in flex flex-col max-h-[88vh] md:max-h-[95vh]">
+                        <div className={`relative bg-white/95 backdrop-blur-xl w-full max-w-md md:rounded-[2rem] rounded-t-[2rem] shadow-2xl border-2 border-white/50 animate-slide-up md:animate-scale-in flex flex-col ${hasPaymentMethods ? 'max-h-[88vh] md:max-h-[95vh]' : 'h-fit max-h-[88vh] md:max-h-[95vh]'}`}>
                             <CloseButton onClick={() => { setShowPaymentModal(false); setPaymentDetailView(null); }} />
 
                             {!paymentDetailView ? (
                                 /* Main payment methods list */
                                 <>
-                                    <div className="pt-20 md:pt-24 px-6 md:px-8 pb-6 md:pb-8 shrink-0 relative border-b border-gray-100/50">
+                                    <div className={`${hasPaymentMethods ? 'pt-14 md:pt-16' : 'pt-8 md:pt-10'} px-6 md:px-8 pb-3 md:pb-4 shrink-0 relative border-b border-gray-100/50`}>
                                         <div className="text-center">
                                             <h3 className="text-xl md:text-2xl font-black text-gray-900 uppercase italic tracking-tighter mb-1">Medios de Pago</h3>
                                             <p className="text-xs md:text-sm text-gray-500 font-medium">Selecciona tu método preferido</p>
                                         </div>
                                     </div>
-                                    <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8">
+                                    <div className={`${hasPaymentMethods ? 'flex-1 py-3 md:py-4' : 'flex-initial pt-2 pb-4'} overflow-y-auto custom-scrollbar px-6 md:px-8`}>
                                         <div className="flex flex-col space-y-3">
                                             {raffle.cardLink && (
                                                 <div onClick={() => window.open(raffle.cardLink, '_blank')} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between hover:bg-white hover:shadow-lg transition-all group cursor-pointer w-full">
@@ -827,9 +832,9 @@ const PublicRaffle = () => {
 
                                             {/* Si no hay métodos configurados */}
                                             {!raffle.cardLink && !raffle.pseLink && !raffle.nequiPhone && !raffle.daviplataPhone && !raffle.brebPhone && (
-                                                <div className="space-y-4">
-                                                    <div className="p-4 md:p-6 text-center space-y-3">
-                                                        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto">
+                                                <div className="space-y-3">
+                                                    <div className="py-1 px-4 md:py-2 md:px-6 text-center space-y-2">
+                                                        <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-2">
                                                             <CreditCard className="w-8 h-8 text-gray-300" />
                                                         </div>
                                                         <p className="text-gray-500 font-bold text-sm uppercase">Sin métodos configurados</p>
@@ -865,7 +870,7 @@ const PublicRaffle = () => {
                             ) : (
                                 /* Detail sub-view */
                                 <>
-                                    <div className="pt-20 md:pt-24 px-6 md:px-8 pb-6 md:pb-8 shrink-0 relative border-b border-gray-100/50">
+                                    <div className="pt-14 md:pt-16 px-6 md:px-8 pb-3 md:pb-4 shrink-0 relative border-b border-gray-100/50">
                                         <div className="text-center">
                                             <h3 className="text-xl md:text-2xl font-black text-gray-900 uppercase italic tracking-tighter mb-1">
                                                 {paymentDetailView === 'nequi' ? 'Pago por Nequi' : paymentDetailView === 'daviplata' ? 'Pago por Daviplata' : 'Pago por Bre-B'}
@@ -875,7 +880,7 @@ const PublicRaffle = () => {
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8">
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar px-6 md:px-8 py-3 md:py-4">
                                         <div className="space-y-4">
                                             <div className="bg-gray-50 rounded-2xl border border-gray-100 p-4">
                                                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Enviar a número</p>

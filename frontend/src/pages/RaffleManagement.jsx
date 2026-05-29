@@ -892,10 +892,15 @@ const RaffleManagement = () => {
                                                         setShowCustomErrorModal(true);
                                                         return;
                                                     }
+                                                    if (drawOnlyPaid && stats.pagado === 0) {
+                                                        setCustomErrorMessage("No se encontraron tickets registrados que puedan participar en el sorteo");
+                                                        setShowCustomErrorModal(true);
+                                                        return;
+                                                    }
                                                     const count = countInput.value;
                                                     startDraw(count, drawOnlyPaid);
                                                 }}
-                                                disabled={isDrawing || (stats.pagado === 0 && drawOnlyPaid)}
+                                                disabled={isDrawing}
                                                 className={`w-full btn-primary py-5 text-xl tracking-tighter font-black shadow-2xl transition-transform active:scale-95 shadow-primary/40`}
                                             >
                                                 {isDrawing ? 'SORTEANDO...' : 'LANZAR SORTEO'}
