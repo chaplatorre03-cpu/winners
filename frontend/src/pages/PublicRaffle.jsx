@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
     Users, DollarSign, Calendar, Info, CheckCircle, CheckCircle2,
     QrCode, ArrowLeft, Menu, Lock, X, Grid, Layout, Settings, Trophy, Home, Eye, EyeOff, Search, Filter,
-    Banknote, MousePointer2, Send, Award, Ticket, Phone, CreditCard, Wallet, RotateCcw, Dices, Copy
+    Banknote, MousePointer2, Send, Award, Ticket, Phone, CreditCard, Wallet, RotateCcw, Dices, Copy, ExternalLink
 } from 'lucide-react';
 import WinnersLogo from '../components/WinnersLogo';
 import AdminSidebar from '../components/AdminSidebar';
@@ -37,6 +37,8 @@ const PublicRaffle = () => {
     const [randomSelection, setRandomSelection] = useState([]);
     const [paymentDetailView, setPaymentDetailView] = useState(null);
     const [copiedField, setCopiedField] = useState(null);
+    const [successModalMode, setSuccessModalMode] = useState('reservation'); // 'reservation' or 'organizer'
+    const [successModalView, setSuccessModalView] = useState('success'); // 'success', 'methods', 'nequi', 'daviplata', 'breb'
 
     const [session, setSession] = useState({
         token: localStorage.getItem('token'),
@@ -76,7 +78,7 @@ const PublicRaffle = () => {
 
     const hasPaymentMethods = React.useMemo(() => {
         if (!raffle) return false;
-        return Boolean(raffle.cardLink || raffle.pseLink || raffle.nequiPhone || raffle.daviplataPhone || raffle.brebPhone);
+        return Boolean(raffle.payLink || raffle.nequiPhone || raffle.daviplataPhone || raffle.brebPhone);
     }, [raffle]);
 
     useEffect(() => {
@@ -334,10 +336,13 @@ const PublicRaffle = () => {
                                 )}
                             </div>
 
-                            <a
-                                href={`https://api.whatsapp.com/send?phone=57${(raffle.creator?.phone || raffle.organizerPhone || '3204446733').replace(/\D/g, '').slice(-10)}&text=${encodeURIComponent(`Hola, deseo informacion sobre el sorteo: ${raffle.title}`)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                            <div
+                                onClick={() => {
+                                    setSuccessModalMode('organizer');
+                                    setSuccessModalView('success');
+                                    setCopiedField(null);
+                                    setShowSuccessModal(true);
+                                }}
                                 className="p-6 border-[1.2px] border-primary bg-primary/5 rounded-2xl flex flex-col items-center hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-0.5 transition-all cursor-pointer group/organizer"
                             >
                                 <div className="text-center">
@@ -350,7 +355,7 @@ const PublicRaffle = () => {
                                         <span className="text-sm font-black text-gray-400 font-mono tracking-widest transition-colors group-hover/organizer:text-[#00ff00]">{raffle.creator?.phone || raffle.organizerPhone || '3204446733'}</span>
                                     </div>
                                 </div>
-                            </a>
+                            </div>
 
 
                             <div className="grid grid-cols-1 gap-2">
@@ -567,6 +572,8 @@ const PublicRaffle = () => {
                                                     console.warn('Popup blocked or failed to open');
                                                 }
 
+                                                setSuccessModalMode('reservation');
+                                                setSuccessModalView('success');
                                                 setShowSuccessModal(true);
                                                 setPurchaseForm(INITIAL_PURCHASE_STATE);
                                                 setSelectedNumbers([]);
@@ -639,37 +646,266 @@ const PublicRaffle = () => {
                 )}
 
                 {showSuccessModal && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-md animate-fade-in" onClick={() => setShowSuccessModal(false)}></div>
-                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-[2rem] p-8 shadow-2xl border-2 border-white/50 animate-scale-in text-center">
-                            <div className="w-16 h-16 md:w-20 md:h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-6 relative">
-                                <div className="absolute inset-0 border-4 border-green-100 rounded-full animate-ping opacity-20"></div>
-                                <CheckCircle className="w-8 h-8 md:w-10 md:h-10 text-green-500" />
-                            </div>
+                    <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 pt-10 md:p-4">
+                        <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-md animate-fade-in" onClick={() => { setShowSuccessModal(false); setSuccessModalView('success'); setCopiedField(null); }}></div>
+                        <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-md md:rounded-[2rem] rounded-t-[2rem] shadow-2xl border-2 border-white/50 animate-slide-up md:animate-scale-in flex flex-col max-h-[88vh] md:max-h-[95vh] overflow-hidden">
+                            <CloseButton onClick={() => { setShowSuccessModal(false); setSuccessModalView('success'); setCopiedField(null); }} />
 
-                            <h3 className="text-xl md:text-2xl font-black text-gray-900 uppercase italic tracking-tighter mb-2">¡Éxito!</h3>
-                            <p className="text-sm md:text-base text-gray-500 font-medium mb-6 md:mb-8">
-                                ¡Números apartados con éxito! <br />
-                                <span className="text-xs mt-2 block opacity-70">Contacta al organizador para pagar.</span>
-                            </p>
+                            {successModalView === 'success' && (
+                                /* === SUCCESS / ORGANIZER CONTACT VIEW === */
+                                <div className="pt-20 md:pt-24 px-6 md:px-8 pb-6 md:pb-8 text-center">
+                                    <div className="w-16 h-16 md:w-20 md:h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-6 relative">
+                                        <div className="absolute inset-0 border-4 border-green-100 rounded-full animate-ping opacity-20"></div>
+                                        <CheckCircle className="w-8 h-8 md:w-10 md:h-10 text-green-500" />
+                                    </div>
 
-                            <div className="space-y-3">
-                                <a
-                                    href={tempPhone || '#'}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="w-full bg-[#25D366] hover:bg-[#20ba59] text-white py-3 rounded-xl shadow-xl shadow-green-500/20 hover:shadow-2xl hover:shadow-green-500/40 text-[11px] font-black tracking-widest uppercase flex items-center justify-center space-x-2 transition-all hover:-translate-y-1 active:scale-95 relative z-10"
-                                >
-                                    <Phone className="w-4 h-4" />
-                                    <span>Enviar Comprobante</span>
-                                </a>
-                                <button
-                                    onClick={() => setShowSuccessModal(false)}
-                                    className="w-full btn-primary py-3 rounded-xl shadow-lg shadow-primary/20 text-sm font-black tracking-widest uppercase relative z-10"
-                                >
-                                    CERRAR
-                                </button>
-                            </div>
+                                    {successModalMode === 'reservation' ? (
+                                        <>
+                                            <h3 className="text-xl md:text-2xl font-black text-gray-900 uppercase italic tracking-tighter mb-2">¡Éxito!</h3>
+                                            <p className="text-sm md:text-base text-gray-500 font-medium mb-6 md:mb-8">
+                                                ¡Números apartados con éxito! <br />
+                                                <span className="text-xs mt-2 block opacity-70">Contacta al organizador para pagar.</span>
+                                            </p>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <h3 className="text-xl md:text-2xl font-black text-gray-900 uppercase italic tracking-tighter mb-2">Organizador</h3>
+                                            <p className="text-sm md:text-base text-gray-500 font-medium mb-2">
+                                                <span className="text-primary font-black uppercase">{raffle.creator?.name || raffle.organizerName || 'Winners'}</span>
+                                            </p>
+                                            <p className="text-xs text-gray-400 mb-6 md:mb-8">
+                                                Comunícate con el organizador para cualquier consulta sobre el sorteo.
+                                            </p>
+                                        </>
+                                    )}
+
+                                    <div className="space-y-3">
+                                        {/* Ver Medios de Pago button - only if there are configured payment methods */}
+                                        {hasPaymentMethods && (
+                                            <button
+                                                onClick={() => { setSuccessModalView('methods'); setCopiedField(null); }}
+                                                className="w-full bg-[#111] hover:bg-[#222] text-white py-3 rounded-xl shadow-xl shadow-black/10 hover:shadow-2xl text-[11px] font-black tracking-widest uppercase flex items-center justify-center space-x-2 transition-all hover:-translate-y-1 active:scale-95 relative z-10"
+                                            >
+                                                <CreditCard className="w-4 h-4" />
+                                                <span>Ver Medios de Pago</span>
+                                            </button>
+                                        )}
+
+                                        {successModalMode === 'reservation' && (
+                                            <a
+                                                href={tempPhone || '#'}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="w-full bg-[#25D366] hover:bg-[#20ba59] text-white py-3 rounded-xl shadow-xl shadow-green-500/20 hover:shadow-2xl hover:shadow-green-500/40 text-[11px] font-black tracking-widest uppercase flex items-center justify-center space-x-2 transition-all hover:-translate-y-1 active:scale-95 relative z-10"
+                                            >
+                                                <Phone className="w-4 h-4" />
+                                                <span>Enviar Comprobante</span>
+                                            </a>
+                                        )}
+
+                                        {successModalMode === 'organizer' && (
+                                            <a
+                                                href={`https://api.whatsapp.com/send?phone=57${(raffle.creator?.phone || raffle.organizerPhone || '3204446733').replace(/\D/g, '').slice(-10)}&text=${encodeURIComponent(`Hola, deseo informacion sobre el sorteo: ${raffle.title}`)}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="w-full bg-[#25D366] hover:bg-[#20ba59] text-white py-3 rounded-xl shadow-xl shadow-green-500/20 hover:shadow-2xl hover:shadow-green-500/40 text-[11px] font-black tracking-widest uppercase flex items-center justify-center space-x-2 transition-all hover:-translate-y-1 active:scale-95 relative z-10"
+                                            >
+                                                <Phone className="w-4 h-4" />
+                                                <span>Contactar por WhatsApp</span>
+                                            </a>
+                                        )}
+
+                                        <button
+                                            onClick={() => { setShowSuccessModal(false); setSuccessModalView('success'); setCopiedField(null); }}
+                                            className="w-full btn-primary py-3 rounded-xl shadow-lg shadow-primary/20 text-sm font-black tracking-widest uppercase relative z-10"
+                                        >
+                                            CERRAR
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {successModalView === 'methods' && (
+                                /* === PAYMENT METHODS LIST VIEW (styled like holydeath) === */
+                                <>
+                                    <div className="pt-14 md:pt-16 px-6 md:px-8 pb-3 md:pb-4 shrink-0 relative border-b border-gray-100/50">
+                                        <div className="text-center">
+                                            <h3 className="text-xl md:text-2xl font-black text-gray-900 uppercase italic tracking-tighter mb-1">Medios de Pago</h3>
+                                            <p className="text-xs md:text-sm text-gray-500 font-medium">Selecciona tu método preferido</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex-1 py-3 md:py-4 overflow-y-auto custom-scrollbar px-6 md:px-8">
+                                        <div className="flex flex-col space-y-3">
+                                            {raffle.payLink && (
+                                                <div onClick={() => window.open(raffle.payLink, '_blank')} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between hover:bg-white hover:shadow-lg transition-all group cursor-pointer w-full">
+                                                    <div className="flex items-center space-x-4">
+                                                        <div className="w-10 h-10 bg-[#8b00ff]/10 rounded-xl flex items-center justify-center">
+                                                            <CreditCard className="w-5 h-5 text-[#8b00ff]" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-bold text-gray-900 text-sm">PSE / Tarjeta</p>
+                                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Banca en línea y tarjetas</p>
+                                                        </div>
+                                                    </div>
+                                                    <ExternalLink className="w-4 h-4 text-gray-300 group-hover:text-primary transition-colors" />
+                                                </div>
+                                            )}
+                                            {raffle.nequiPhone && (
+                                                <div onClick={() => { setSuccessModalView('nequi'); setCopiedField(null); }} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer w-full">
+                                                    <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                                                        <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                            <path d="M7.5 19.5V5h3.2l5.4 9.8V5h2.8v14.5h-3.2L10.3 9.7v9.8H7.5z" fill="#1f0e33" />
+                                                            <rect x="3.5" y="5" width="2.5" height="2.5" fill="#e3007b" />
+                                                        </svg>
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-gray-900 text-sm">Nequi</p>
+                                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Transferencia rápida</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {raffle.daviplataPhone && (
+                                                <div onClick={() => { setSuccessModalView('daviplata'); setCopiedField(null); }} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer w-full">
+                                                    <div className="w-10 h-10 bg-[#ff0000]/10 rounded-xl flex items-center justify-center">
+                                                        <Wallet className="w-5 h-5 text-[#ff0000]" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-gray-900 text-sm">Daviplata</p>
+                                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">App Daviplata</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {raffle.brebPhone && (
+                                                <div onClick={() => { setSuccessModalView('breb'); setCopiedField(null); }} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center space-x-4 hover:bg-white hover:shadow-lg transition-all group cursor-pointer w-full">
+                                                    <div className="w-10 h-10 bg-[#ffcc00]/10 rounded-xl flex items-center justify-center">
+                                                        <Send className="w-5 h-5 text-[#ffcc00]" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-gray-900 text-sm">Bre-B</p>
+                                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Transferencia inmediata</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="p-6 md:p-8 shrink-0">
+                                        <button
+                                            onClick={() => setSuccessModalView('success')}
+                                            className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#8b00ff] to-[#ff00de] text-white font-black text-sm uppercase tracking-widest italic flex items-center justify-center space-x-2 transition-all active:scale-95 shadow-2xl shadow-primary/40 group"
+                                        >
+                                            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                                            <span>VOLVER</span>
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+
+                            {(successModalView === 'nequi' || successModalView === 'daviplata' || successModalView === 'breb') && (
+                                /* === PAYMENT DETAIL VIEW === */
+                                <>
+                                    <div className="pt-14 md:pt-16 px-6 md:px-8 pb-3 md:pb-4 shrink-0 relative border-b border-gray-100/50">
+                                        <div className="text-center">
+                                            <h3 className="text-xl md:text-2xl font-black text-gray-900 uppercase italic tracking-tighter mb-1">
+                                                {successModalView === 'nequi' ? 'Pago por Nequi' : successModalView === 'daviplata' ? 'Pago por Daviplata' : 'Pago por Bre-B'}
+                                            </h3>
+                                            <p className="text-xs md:text-sm text-gray-500 font-medium tracking-tight">
+                                                {(successModalView === 'nequi' || successModalView === 'daviplata') ? 'Copia los datos y abre la App' : 'Copia los datos'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar px-6 md:px-8 py-3 md:py-4">
+                                        <div className="space-y-4">
+                                            <div className="bg-gray-50 rounded-2xl border border-gray-100 p-4">
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Enviar a número</p>
+                                                <div className="flex items-center justify-between">
+                                                    <p className="text-xl font-black text-gray-900 font-mono tracking-wider">
+                                                        {successModalView === 'nequi' ? (raffle.nequiPhone || raffle.creator?.phone || raffle.organizerPhone || '3204446733') :
+                                                            successModalView === 'daviplata' ? (raffle.daviplataPhone || raffle.creator?.phone || raffle.organizerPhone || '3204446733') :
+                                                                (raffle.brebPhone || raffle.creator?.phone || raffle.organizerPhone || '3204446733')}
+                                                    </p>
+                                                    <button
+                                                        onClick={() => {
+                                                            const textToCopy = successModalView === 'nequi' ? (raffle.nequiPhone || raffle.creator?.phone || raffle.organizerPhone || '3204446733') :
+                                                                successModalView === 'daviplata' ? (raffle.daviplataPhone || raffle.creator?.phone || raffle.organizerPhone || '3204446733') :
+                                                                    (raffle.brebPhone || raffle.creator?.phone || raffle.organizerPhone || '3204446733');
+                                                            navigator.clipboard.writeText(textToCopy);
+                                                            setCopiedField('phone');
+                                                            setTimeout(() => setCopiedField(null), 2000);
+                                                        }}
+                                                        className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${copiedField === 'phone' ? 'bg-green-100 text-green-600' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}
+                                                    >
+                                                        {copiedField === 'phone' ? (
+                                                            <><CheckCircle className="w-3.5 h-3.5" /><span>Copiado</span></>
+                                                        ) : (
+                                                            <><Copy className="w-3.5 h-3.5" /><span>Copiar</span></>
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {successModalView !== 'breb' && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        const ua = navigator.userAgent || navigator.vendor || window.opera;
+                                                        const isAndroid = /android/i.test(ua);
+                                                        const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+                                                        const appScheme = successModalView === 'nequi' ? 'nequi' : 'daviplata';
+                                                        const packageId = successModalView === 'nequi' ? 'com.nequi.MobileApp' : 'com.davivienda.daviplataapp';
+                                                        
+                                                        const fallbackUrl = successModalView === 'nequi'
+                                                            ? (isIOS ? 'https://apps.apple.com/co/app/nequi/id1010765891' : 'https://play.google.com/store/apps/details?id=com.nequi.MobileApp')
+                                                            : (isIOS ? 'https://apps.apple.com/co/app/daviplata/id1220379146' : 'https://play.google.com/store/apps/details?id=com.davivienda.daviplataapp');
+
+                                                        if (isAndroid) {
+                                                            const intentUrl = `intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=${packageId};S.browser_fallback_url=${encodeURIComponent(fallbackUrl)};end`;
+                                                            window.location.href = intentUrl;
+                                                        } else if (isIOS) {
+                                                            let iOSFallbackCleared = false;
+                                                            const fallbackTimer = setTimeout(() => {
+                                                                if (!iOSFallbackCleared) {
+                                                                    window.location.assign(fallbackUrl);
+                                                                }
+                                                            }, 2500);
+                                                            const onVisChange = () => {
+                                                                if (document.hidden) {
+                                                                    iOSFallbackCleared = true;
+                                                                    clearTimeout(fallbackTimer);
+                                                                }
+                                                            };
+                                                            document.addEventListener('visibilitychange', onVisChange, { once: true });
+                                                            window.location.assign(`${appScheme}://`);
+                                                        } else {
+                                                            window.open(fallbackUrl, '_blank');
+                                                        }
+                                                    }}
+                                                    className={`w-full py-4 rounded-2xl text-white font-black text-sm uppercase tracking-widest flex items-center justify-center space-x-2 transition-all active:scale-95 shadow-lg ${successModalView === 'nequi'
+                                                        ? 'bg-gradient-to-r from-[#E6007E] to-[#D4145A] shadow-[#E6007E]/30'
+                                                        : 'bg-gradient-to-r from-[#ED1C24] to-[#C41017] shadow-[#ED1C24]/30'
+                                                    }`}
+                                                >
+                                                    {successModalView === 'nequi' ? (
+                                                        <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                            <path d="M7.5 19.5V5h3.2l5.4 9.8V5h2.8v14.5h-3.2L10.3 9.7v9.8H7.5z" fill="currentColor" />
+                                                            <rect x="3.5" y="5" width="2.5" height="2.5" fill="currentColor" />
+                                                        </svg>
+                                                    ) : <Wallet className="w-5 h-5" />}
+                                                    <span>Abrir {successModalView === 'nequi' ? 'Nequi' : 'Daviplata'}</span>
+                                                </button>
+                                            )}
+
+                                            <button
+                                                onClick={() => setSuccessModalView('methods')}
+                                                className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#8b00ff] to-[#ff00de] text-white font-black text-sm uppercase tracking-widest italic flex items-center justify-center space-x-2 transition-all active:scale-95 shadow-2xl shadow-primary/40 mt-4 group"
+                                            >
+                                                <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                                                <span>VOLVER</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 )}
@@ -790,20 +1026,14 @@ const PublicRaffle = () => {
                                     </div>
                                     <div className={`${hasPaymentMethods ? 'flex-1 py-3 md:py-4' : 'flex-initial pt-2 pb-4'} overflow-y-auto custom-scrollbar px-6 md:px-8`}>
                                         <div className="flex flex-col space-y-3">
-                                            {raffle.cardLink && (
-                                                <div onClick={() => window.open(raffle.cardLink, '_blank')} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between hover:bg-white hover:shadow-lg transition-all group cursor-pointer w-full">
+                                            {raffle.payLink && (
+                                                <div onClick={() => window.open(raffle.payLink, '_blank')} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between hover:bg-white hover:shadow-lg transition-all group cursor-pointer w-full">
                                                     <div className="flex items-center space-x-4">
                                                         <CreditCard className="w-6 h-6 text-[#8b00ff]" />
-                                                        <p className="font-bold text-gray-900 text-sm">Tarjeta Débito / Crédito</p>
-                                                    </div>
-                                                    <ExternalLink className="w-4 h-4 text-gray-300 group-hover:text-primary transition-colors" />
-                                                </div>
-                                            )}
-                                            {raffle.pseLink && (
-                                                <div onClick={() => window.open(raffle.pseLink, '_blank')} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between hover:bg-white hover:shadow-lg transition-all group cursor-pointer w-full">
-                                                    <div className="flex items-center space-x-4">
-                                                        <MousePointer2 className="w-6 h-6 text-[#ff00de]" />
-                                                        <p className="font-bold text-gray-900 text-sm">PSE</p>
+                                                        <div>
+                                                            <p className="font-bold text-gray-900 text-sm">PSE / Tarjeta</p>
+                                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Banca en línea y tarjetas</p>
+                                                        </div>
                                                     </div>
                                                     <ExternalLink className="w-4 h-4 text-gray-300 group-hover:text-primary transition-colors" />
                                                 </div>
@@ -831,7 +1061,7 @@ const PublicRaffle = () => {
                                             )}
 
                                             {/* Si no hay métodos configurados */}
-                                            {!raffle.cardLink && !raffle.pseLink && !raffle.nequiPhone && !raffle.daviplataPhone && !raffle.brebPhone && (
+                                            {!raffle.payLink && !raffle.nequiPhone && !raffle.daviplataPhone && !raffle.brebPhone && (
                                                 <div className="space-y-3">
                                                     <div className="py-1 px-4 md:py-2 md:px-6 text-center space-y-2">
                                                         <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-2">

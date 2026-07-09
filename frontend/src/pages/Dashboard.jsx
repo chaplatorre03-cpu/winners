@@ -28,8 +28,7 @@ const INITIAL_RAFFLE_STATE = {
     image: '',
     rangeStart: '',
     rangeEnd: '',
-    pseLink: '',
-    cardLink: '',
+    payLink: '',
     nequiPhone: '',
     daviplataPhone: '',
     brebPhone: ''
@@ -603,28 +602,15 @@ const Dashboard = () => {
                                         
                                         <div className="space-y-4">
                                             <div className="space-y-1.5">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Link de PSE</label>
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Link de Pago (PSE / Tarjeta)</label>
                                                 <div className="relative group">
                                                     <Link className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
                                                     <input
                                                         type="url"
                                                         placeholder="https://..."
                                                         className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900 text-sm"
-                                                        value={newRaffle.pseLink}
-                                                        onChange={(e) => setNewRaffle({ ...newRaffle, pseLink: e.target.value })}
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Link de Tarjeta</label>
-                                                <div className="relative group">
-                                                    <Link className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
-                                                    <input
-                                                        type="url"
-                                                        placeholder="https://..."
-                                                        className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900 text-sm"
-                                                        value={newRaffle.cardLink}
-                                                        onChange={(e) => setNewRaffle({ ...newRaffle, cardLink: e.target.value })}
+                                                        value={newRaffle.payLink}
+                                                        onChange={(e) => setNewRaffle({ ...newRaffle, payLink: e.target.value })}
                                                     />
                                                 </div>
                                             </div>

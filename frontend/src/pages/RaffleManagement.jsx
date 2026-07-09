@@ -21,8 +21,7 @@ const INITIAL_RAFFLE_INFO = {
     price: 0,
     totalTickets: 0,
     endDate: '',
-    pseLink: '',
-    cardLink: '',
+    payLink: '',
     nequiPhone: '',
     daviplataPhone: '',
     brebPhone: ''
@@ -152,8 +151,7 @@ const RaffleManagement = () => {
                 price: data.price?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
                 totalTickets: data.totalTickets?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
                 endDate: new Date(data.endDate).toISOString().split('T')[0],
-                pseLink: data.pseLink || '',
-                cardLink: data.cardLink || '',
+                payLink: data.payLink || '',
                 nequiPhone: data.nequiPhone || '',
                 daviplataPhone: data.daviplataPhone || '',
                 brebPhone: data.brebPhone || ''
@@ -374,8 +372,7 @@ const RaffleManagement = () => {
                     ...updatedRaffleInfo,
                     price: parseFloat(updatedRaffleInfo.price.toString().replace(/\./g, '')),
                     totalTickets: parseInt(updatedRaffleInfo.totalTickets.toString().replace(/\./g, '')),
-                    pseLink: updatedRaffleInfo.pseLink,
-                    cardLink: updatedRaffleInfo.cardLink,
+                    payLink: updatedRaffleInfo.payLink,
                     nequiPhone: updatedRaffleInfo.nequiPhone,
                     daviplataPhone: updatedRaffleInfo.daviplataPhone,
                     brebPhone: updatedRaffleInfo.brebPhone
@@ -1325,7 +1322,7 @@ const RaffleManagement = () => {
                                             <div className="space-y-4 pt-2 transition-all duration-300">
                                                 <div className="space-y-4">
                                                     <div className="space-y-1.5">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Link de PSE</label>
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Link de Pago (PSE / Tarjeta)</label>
                                                         <div className="relative group">
                                                             <Link className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
                                                             <input
@@ -1333,22 +1330,8 @@ const RaffleManagement = () => {
                                                                 placeholder="https://..."
                                                                 disabled={isEnded}
                                                                 className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900 disabled:opacity-70 text-sm"
-                                                                value={updatedRaffleInfo.pseLink}
-                                                                onChange={(e) => setUpdatedRaffleInfo({ ...updatedRaffleInfo, pseLink: e.target.value })}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className="space-y-1.5">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Link de Tarjeta</label>
-                                                        <div className="relative group">
-                                                            <Link className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
-                                                            <input
-                                                                type="url"
-                                                                placeholder="https://..."
-                                                                disabled={isEnded}
-                                                                className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900 disabled:opacity-70 text-sm"
-                                                                value={updatedRaffleInfo.cardLink}
-                                                                onChange={(e) => setUpdatedRaffleInfo({ ...updatedRaffleInfo, cardLink: e.target.value })}
+                                                                value={updatedRaffleInfo.payLink}
+                                                                onChange={(e) => setUpdatedRaffleInfo({ ...updatedRaffleInfo, payLink: e.target.value })}
                                                             />
                                                         </div>
                                                     </div>
