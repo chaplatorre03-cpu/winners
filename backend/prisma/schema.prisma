@@ -38,8 +38,7 @@ model Raffle {
   organizerName String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  pseLink       String?
-  cardLink      String?
+  payLink       String?
   nequiPhone    String?
   daviplataPhone String?
   brebPhone     String?

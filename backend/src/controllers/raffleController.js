@@ -93,7 +93,7 @@ exports.getRaffle = async (req, res) => {
 // Create raffle (authenticated)
 exports.createRaffle = async (req, res) => {
     try {
-        const { title, description, price, totalTickets, image, endDate, pseLink, cardLink, nequiPhone, daviplataPhone, brebPhone } = req.body;
+        const { title, description, price, totalTickets, image, endDate, payLink, nequiPhone, daviplataPhone, brebPhone } = req.body;
 
         const newRaffle = await prisma.raffle.create({
             data: {
@@ -106,8 +106,7 @@ exports.createRaffle = async (req, res) => {
                 endDate: new Date(`${endDate}T12:00:00Z`),
                 creatorId: req.userId,
                 status: 'ACTIVE',
-                pseLink,
-                cardLink,
+                payLink,
                 nequiPhone,
                 daviplataPhone,
                 brebPhone
@@ -422,7 +421,7 @@ exports.deleteTicket = async (req, res) => {
 exports.updateRaffle = async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, description, price, totalTickets, endDate, status, image, pseLink, cardLink, nequiPhone, daviplataPhone, brebPhone } = req.body;
+        const { title, description, price, totalTickets, endDate, status, image, payLink, nequiPhone, daviplataPhone, brebPhone } = req.body;
 
         // Verify ownership
         const existingRaffle = await prisma.raffle.findUnique({ where: { id } });
@@ -442,8 +441,7 @@ exports.updateRaffle = async (req, res) => {
         if (endDate !== undefined) updateData.endDate = new Date(endDate);
         if (status !== undefined) updateData.status = status;
         if (image !== undefined) updateData.image = image;
-        if (pseLink !== undefined) updateData.pseLink = pseLink;
-        if (cardLink !== undefined) updateData.cardLink = cardLink;
+        if (payLink !== undefined) updateData.payLink = payLink;
         if (nequiPhone !== undefined) updateData.nequiPhone = nequiPhone;
         if (daviplataPhone !== undefined) updateData.daviplataPhone = daviplataPhone;
         if (brebPhone !== undefined) updateData.brebPhone = brebPhone;
