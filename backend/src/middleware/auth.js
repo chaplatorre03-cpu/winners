@@ -10,7 +10,8 @@ const authMiddleware = (req, res, next) => {
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         req.userId = decoded.userId;
-        req.userRole = decoded.role;
+        // Implicitly make all registered users ADMIN to remove role-based blocks
+        req.userRole = 'ADMIN';
         next();
     } catch (error) {
         return res.status(401).json({ error: 'Invalid token' });
@@ -18,9 +19,7 @@ const authMiddleware = (req, res, next) => {
 };
 
 const adminMiddleware = (req, res, next) => {
-    if (req.userRole !== 'ADMIN') {
-        return res.status(403).json({ error: 'Admin access required' });
-    }
+    // Allow all authenticated users through
     next();
 };
 

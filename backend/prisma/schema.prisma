@@ -16,7 +16,6 @@ model User {
   password  String
   name      String?
   phone     String?
-  role      String   @default("USER")
   isVerified Boolean @default(false)
   verificationCode String?
   verificationExpires DateTime?
@@ -46,6 +45,9 @@ model Raffle {
   creator       User     @relation(fields: [creatorId], references: [id])
   tickets       Ticket[]
   winners       RaffleWinner[]
+  prizeCost     Float?
+  marginExpected Float?
+  suggestedDrawDate DateTime?
 }
 
 model Ticket {
@@ -58,6 +60,7 @@ model Ticket {
   createdAt    DateTime @default(now())
   buyerPhone   String?
   buyerEmail   String?
+  remindersSent Int      @default(0)
   raffleId     String
   raffle       Raffle   @relation(fields: [raffleId], references: [id])
   wins         RaffleWinner[]
@@ -73,4 +76,29 @@ model RaffleWinner {
   ticket    Ticket   @relation(fields: [ticketId], references: [id])
   isManual  Boolean  @default(false)
   wonAt     DateTime @default(now())
+}
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  actorType     String
+  actorId       Int?
+  action        String
+  entity        String
+  entityId      String?
+  previousValue Json?
+  newValue      Json?
+  metadata      Json?
+  createdAt     DateTime @default(now())
+}
+
+model RaffleDraft {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  proposedPrice Float
+  totalTickets  Int
+  prizeCost     Float?
+  metadata      Json?
+  status        String   @default("PENDING")
+  createdAt     DateTime @default(now())
 }

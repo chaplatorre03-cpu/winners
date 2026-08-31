@@ -1,4 +1,5 @@
 const prisma = require('../lib/prisma');
+const WhatsAppService = require('../services/WhatsAppService');
 
 // Get all raffles
 exports.getAllRaffles = async (req, res) => {
@@ -93,7 +94,7 @@ exports.getRaffle = async (req, res) => {
 // Create raffle (authenticated)
 exports.createRaffle = async (req, res) => {
     try {
-        const { title, description, price, totalTickets, image, endDate, payLink, nequiPhone, daviplataPhone, brebPhone } = req.body;
+        const { title, description, price, totalTickets, image, endDate, payLink, nequiPhone, daviplataPhone, brebPhone, prizeCost } = req.body;
 
         const newRaffle = await prisma.raffle.create({
             data: {
@@ -109,7 +110,8 @@ exports.createRaffle = async (req, res) => {
                 payLink,
                 nequiPhone,
                 daviplataPhone,
-                brebPhone
+                brebPhone,
+                prizeCost: prizeCost ? parseFloat(prizeCost) : null
             }
         });
 
@@ -212,7 +214,7 @@ exports.drawWinner = async (req, res) => {
         }
 
         // Verify ownership
-        if (raffle.creatorId !== req.userId && req.userRole !== 'ADMIN') {
+        if (raffle.creatorId !== req.userId) {
             return res.status(403).json({ error: 'No tienes permiso para realizar el sorteo' });
         }
 
@@ -291,7 +293,7 @@ exports.manualWinner = async (req, res) => {
             return res.status(404).json({ error: 'Rifa no encontrada' });
         }
 
-        if (raffle.creatorId !== req.userId && req.userRole !== 'ADMIN') {
+        if (raffle.creatorId !== req.userId) {
             return res.status(403).json({ error: 'No tienes permiso para esta acción' });
         }
 
@@ -351,7 +353,7 @@ exports.updateTicketStatus = async (req, res) => {
 
         if (!ticketToCheck) return res.status(404).json({ error: 'Ticket no encontrado' });
 
-        if (ticketToCheck.raffle.creatorId !== req.userId && req.userRole !== 'ADMIN') {
+        if (ticketToCheck.raffle.creatorId !== req.userId) {
             return res.status(403).json({ error: 'No tienes permiso para actualizar este ticket' });
         }
 
@@ -386,7 +388,7 @@ exports.deleteTicket = async (req, res) => {
             return res.status(404).json({ error: 'Ticket no encontrado' });
         }
 
-        if (ticket.raffle.creatorId !== req.userId && req.userRole !== 'ADMIN') {
+        if (ticket.raffle.creatorId !== req.userId) {
             return res.status(403).json({ error: 'No tienes permiso para eliminar este ticket' });
         }
 
@@ -421,17 +423,40 @@ exports.deleteTicket = async (req, res) => {
 exports.updateRaffle = async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, description, price, totalTickets, endDate, status, image, payLink, nequiPhone, daviplataPhone, brebPhone } = req.body;
+        const { title, description, price, totalTickets, endDate, status, image, payLink, nequiPhone, daviplataPhone, brebPhone, prizeCost } = req.body;
 
         // Verify ownership
         const existingRaffle = await prisma.raffle.findUnique({ where: { id } });
         if (!existingRaffle) return res.status(404).json({ error: 'Rifa no encontrada' });
 
-        if (existingRaffle.creatorId !== req.userId && req.userRole !== 'ADMIN') {
+        if (existingRaffle.creatorId !== req.userId) {
             return res.status(403).json({ error: 'No tienes permiso para editar esta rifa' });
         }
 
         console.log(`[BACKEND] Updating raffle ${id} with:`, req.body);
+
+        let dateChanged = false;
+        let oldDateFormatted = '';
+        let newDateFormatted = '';
+
+        if (endDate !== undefined && existingRaffle.endDate) {
+            const newDateObj = new Date(endDate);
+            const oldDateObj = new Date(existingRaffle.endDate);
+            
+            // Check if the actual dates (day, month, year) are different in UTC to avoid minor timezone/hour shifts triggering notifications
+            const sameDate = newDateObj.getUTCFullYear() === oldDateObj.getUTCFullYear() &&
+                             newDateObj.getUTCMonth() === oldDateObj.getUTCMonth() &&
+                             newDateObj.getUTCDate() === oldDateObj.getUTCDate();
+
+            if (!sameDate) {
+                dateChanged = true;
+                
+                // Format dates nicely for Spanish (e.g. "31 de agosto de 2026")
+                const options = { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' };
+                oldDateFormatted = oldDateObj.toLocaleDateString('es-CO', options);
+                newDateFormatted = newDateObj.toLocaleDateString('es-CO', options);
+            }
+        }
 
         const updateData = {};
         if (title !== undefined) updateData.title = title;
@@ -445,13 +470,24 @@ exports.updateRaffle = async (req, res) => {
         if (nequiPhone !== undefined) updateData.nequiPhone = nequiPhone;
         if (daviplataPhone !== undefined) updateData.daviplataPhone = daviplataPhone;
         if (brebPhone !== undefined) updateData.brebPhone = brebPhone;
+        if (prizeCost !== undefined) {
+            updateData.prizeCost = prizeCost === '' || prizeCost === null ? null : parseFloat(prizeCost);
+        }
 
         const updatedRaffle = await prisma.raffle.update({
             where: { id: id },
-            data: updateData
+            data: updateData,
+            include: { tickets: true }
         });
 
         console.log(`[BACKEND] Raffle ${id} updated successfully:`, updatedRaffle);
+
+        if (dateChanged) {
+            // Trigger WhatsApp notifications asynchronously to not block the server response
+            WhatsAppService.notifyDateChange(updatedRaffle, oldDateFormatted, newDateFormatted)
+                .catch(err => console.error('[WhatsAppService] Error in notifyDateChange background task:', err));
+        }
+
         res.json(updatedRaffle);
     } catch (error) {
         console.error('[BACKEND] Error updating raffle:', error);

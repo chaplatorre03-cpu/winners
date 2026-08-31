@@ -19,8 +19,7 @@ async function seed() {
             create: {
                 email: 'admin@winners.com',
                 password: adminPassword,
-                name: 'GEFERSON ALEXANDER LATORRE ZAMBRANO',
-                role: 'ADMIN'
+                name: 'GEFERSON ALEXANDER LATORRE ZAMBRANO'
             }
         });
 
@@ -34,8 +33,7 @@ async function seed() {
             create: {
                 email: 'user@winners.com',
                 password: userPassword,
-                name: 'Test User',
-                role: 'USER'
+                name: 'Test User'
             }
         });
 

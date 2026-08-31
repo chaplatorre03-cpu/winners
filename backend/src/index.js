@@ -4,6 +4,8 @@ require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
 const raffleRoutes = require('./routes/raffles');
+const intelligenceRoutes = require('./routes/intelligence');
+const Scheduler = require('./utils/scheduler');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,6 +20,7 @@ app.get('/', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/raffles', raffleRoutes);
+app.use('/api/intelligence', intelligenceRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -29,6 +32,9 @@ if (process.env.NODE_ENV !== 'production') {
     app.listen(PORT, () => {
         console.log(`🚀 Server running on port ${PORT}`);
         console.log(`📡 API available at http://localhost:${PORT}/api`);
+        
+        // Start background intelligent agent tasks
+        Scheduler.start();
     });
 }
 

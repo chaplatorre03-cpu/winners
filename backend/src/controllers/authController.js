@@ -77,7 +77,6 @@ exports.register = async (req, res) => {
                     password: hashedPassword,
                     name,
                     phone,
-                    role: 'USER',
                     isVerified: false,
                     verificationCode: otp,
                     verificationExpires: expires
@@ -109,7 +108,7 @@ exports.verifyOTP = async (req, res) => {
         }
 
         if (user.verificationCode !== code) {
-            return res.status(400).json({ error: 'Código de verificación incorrecto' });
+            return res.status(400).json({ error: 'Código de verificación incorrecto.' });
         }
 
         if (Date.now() > new Date(user.verificationExpires).getTime()) {
@@ -173,7 +172,7 @@ exports.login = async (req, res) => {
 
         // Generate token
         const token = jwt.sign(
-            { userId: user.id, role: user.role },
+            { userId: user.id, role: 'ADMIN' },
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
@@ -185,7 +184,7 @@ exports.login = async (req, res) => {
                 email: user.email,
                 name: user.name,
                 phone: user.phone,
-                role: user.role
+                role: 'ADMIN'
             }
         });
     } catch (error) {
@@ -204,11 +203,14 @@ exports.me = async (req, res) => {
                 email: true,
                 name: true,
                 phone: true,
-                role: true,
                 isVerified: true,
                 createdAt: true
             }
         });
+
+        if (user) {
+            user.role = 'ADMIN';
+        }
 
         res.json(user);
     } catch (error) {
@@ -243,7 +245,7 @@ exports.updateProfile = async (req, res) => {
                 email: user.email,
                 name: user.name,
                 phone: user.phone,
-                role: user.role
+                role: 'ADMIN'
             }
         });
     } catch (error) {
@@ -294,7 +296,7 @@ exports.verifyResetCode = async (req, res) => {
         }
 
         if (user.verificationCode !== code) {
-            return res.status(400).json({ error: 'Código de verificación incorrecto' });
+            return res.status(400).json({ error: 'Código de verificación incorrecto.' });
         }
 
         if (Date.now() > new Date(user.verificationExpires).getTime()) {

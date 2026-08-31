@@ -12,7 +12,6 @@ async function main() {
                 email: true,
                 name: true,
                 password: true,
-                role: true,
                 isVerified: true
             }
         });
@@ -25,7 +24,6 @@ async function main() {
                 email: u.email,
                 nombre: u.name,
                 password_hash: u.password,
-                rol: u.role,
                 verificado: u.isVerified
             })));
         }
