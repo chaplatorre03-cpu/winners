@@ -278,7 +278,7 @@ const PublicRaffle = () => {
                                 )}
                                 <div className="space-y-1">
                                     <h2 className="text-2xl font-bold text-white">{raffle.title}</h2>
-                                    <p className="text-gray-400 text-sm">{raffle.description}</p>
+                                    <p className="text-gray-400 text-sm whitespace-pre-wrap">{raffle.description}</p>
                                 </div>
                             </div>
 

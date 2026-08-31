@@ -49,6 +49,7 @@
     color: #aaa;
     font-size: 1.1rem;
     line-height: 1.6;
+    white-space: pre-wrap;
 }
 
 .raffle-stats-grid {

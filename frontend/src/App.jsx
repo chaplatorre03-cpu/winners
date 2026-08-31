@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import RaffleManagement from './pages/RaffleManagement';
 import PublicRaffle from './pages/PublicRaffle';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import IntelligencePanel from './pages/IntelligencePanel';
 import ScrollToTop from './components/ScrollToTop';
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/panel" element={<RaffleManagement />} />
+        <Route path="/intelligence" element={<IntelligencePanel />} />
         <Route path="/:id" element={<PublicRaffle />} />
       </Routes>
     </Router>

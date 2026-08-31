@@ -24,7 +24,8 @@ const INITIAL_RAFFLE_INFO = {
     payLink: '',
     nequiPhone: '',
     daviplataPhone: '',
-    brebPhone: ''
+    brebPhone: '',
+    prizeCost: ''
 };
 
 import LoadingOverlay from '../components/LoadingOverlay';
@@ -154,7 +155,8 @@ const RaffleManagement = () => {
                 payLink: data.payLink || '',
                 nequiPhone: data.nequiPhone || '',
                 daviplataPhone: data.daviplataPhone || '',
-                brebPhone: data.brebPhone || ''
+                brebPhone: data.brebPhone || '',
+                prizeCost: data.prizeCost ? data.prizeCost.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : ''
             });
             setLoading(false);
         } catch (err) {
@@ -375,7 +377,8 @@ const RaffleManagement = () => {
                     payLink: updatedRaffleInfo.payLink,
                     nequiPhone: updatedRaffleInfo.nequiPhone,
                     daviplataPhone: updatedRaffleInfo.daviplataPhone,
-                    brebPhone: updatedRaffleInfo.brebPhone
+                    brebPhone: updatedRaffleInfo.brebPhone,
+                    prizeCost: updatedRaffleInfo.prizeCost ? parseFloat(updatedRaffleInfo.prizeCost.toString().replace(/\./g, '')) : null
                 })
             });
             if (response.ok) {
@@ -1219,7 +1222,7 @@ const RaffleManagement = () => {
                                     <div className="space-y-1.5">
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Descripción</label>
                                         <textarea
-                                            rows="2"
+                                            rows="3"
                                             placeholder="Detalles..."
                                             disabled={isEnded}
                                             className="input-field bg-gray-50 border-gray-100 focus:bg-white resize-none disabled:opacity-70 text-gray-900"
@@ -1261,6 +1264,24 @@ const RaffleManagement = () => {
                                                     }}
                                                     onInvalid={(e) => e.target.setCustomValidity('Por favor, ingresa el precio por número')}
                                                     onInput={(e) => e.target.setCustomValidity('')}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Costo del premio</label>
+                                            <div className="relative group">
+                                                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-primary transition-colors pointer-events-none" />
+                                                <input
+                                                    type="text"
+                                                    disabled={isEnded}
+                                                    placeholder="0 (Opcional)"
+                                                    className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white disabled:opacity-70 text-gray-900"
+                                                    value={updatedRaffleInfo.prizeCost}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value.replace(/\D/g, '');
+                                                        const formatted = val.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                                                        setUpdatedRaffleInfo({ ...updatedRaffleInfo, prizeCost: formatted });
+                                                    }}
                                                 />
                                             </div>
                                         </div>

@@ -31,7 +31,8 @@ const INITIAL_RAFFLE_STATE = {
     payLink: '',
     nequiPhone: '',
     daviplataPhone: '',
-    brebPhone: ''
+    brebPhone: '',
+    prizeCost: ''
 };
 
 const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/;
@@ -48,7 +49,7 @@ const Dashboard = () => {
 
     // User Profile Edit States
     const [showEditProfileModal, setShowEditProfileModal] = useState(false);
-    const [currentUser, setCurrentUser] = useState(JSON.parse(localStorage.getItem('user') || '{}'));
+    const [currentUser, setCurrentUser] = useState(JSON.parse(localStorage.getItem('user') || '{}') || {});
     const [phoneError, setPhoneError] = useState('');
     const [editProfileForm, setEditProfileForm] = useState(INITIAL_PROFILE_STATE);
     const [showPassword, setShowPassword] = useState(false);
@@ -70,7 +71,7 @@ const Dashboard = () => {
 
     // Update form when modal opens or user changes
     useEffect(() => {
-        if (showEditProfileModal) {
+        if (showEditProfileModal && currentUser) {
             setEditProfileForm({
                 ...INITIAL_PROFILE_STATE,
                 name: currentUser.name || '',
@@ -85,7 +86,7 @@ const Dashboard = () => {
 
     // Set default payment phones when creating a new raffle
     useEffect(() => {
-        if (showCreateModal && currentUser.phone) {
+        if (showCreateModal && currentUser?.phone) {
             setNewRaffle(prev => ({
                 ...prev,
                 nequiPhone: prev.nequiPhone || currentUser.phone || '',
@@ -93,7 +94,7 @@ const Dashboard = () => {
                 brebPhone: prev.brebPhone || currentUser.phone || ''
             }));
         }
-    }, [showCreateModal, currentUser.phone]);
+    }, [showCreateModal, currentUser?.phone]);
 
     // Lock body scroll when any modal is open
     useEffect(() => {
@@ -182,7 +183,8 @@ const Dashboard = () => {
                     ...newRaffle,
                     price: Number(newRaffle.price.toString().replace(/\./g, '')),
                     totalTickets: Number(totalTicketsToSave.toString().replace(/\./g, '')),
-                    description: newRaffle.description
+                    description: newRaffle.description,
+                    prizeCost: newRaffle.prizeCost ? Number(newRaffle.prizeCost.toString().replace(/\./g, '')) : null
                 })
             });
             if (response.ok) {
@@ -306,13 +308,22 @@ const Dashboard = () => {
                         <h2 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">Rondas activas</h2>
                         <p className="text-sm md:text-base text-gray-500 font-medium">Gestiona tus sorteos en Winners</p>
                     </div>
-                    <button
-                        onClick={() => setShowCreateModal(true)}
-                        className="w-full sm:w-auto flex items-center justify-center space-x-2 py-3 px-6 bg-gradient-to-r from-[#8b00ff] to-[#ff00de] text-white font-black rounded-xl transition-all duration-300 hover:-translate-y-1 active:scale-95 uppercase tracking-wider italic shadow-xl shadow-primary/20 hover:scale-105"
-                    >
-                        <Plus className="w-5 h-5" />
-                        <span>Nueva ronda</span>
-                    </button>
+                    <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                        <button
+                            onClick={() => navigate('/intelligence')}
+                            className="w-full sm:w-auto flex items-center justify-center space-x-2 py-3 px-5 bg-[#0f0f0f] text-white font-black rounded-xl transition-all duration-300 hover:-translate-y-1 active:scale-95 uppercase tracking-wider italic border border-white/10 hover:border-[#8b00ff]/50 hover:shadow-lg hover:shadow-[#8b00ff]/20"
+                        >
+                            <span>🧠</span>
+                            <span className="hidden sm:inline">Asistente</span>
+                        </button>
+                        <button
+                            onClick={() => setShowCreateModal(true)}
+                            className="w-full sm:w-auto flex items-center justify-center space-x-2 py-3 px-6 bg-gradient-to-r from-[#8b00ff] to-[#ff00de] text-white font-black rounded-xl transition-all duration-300 hover:-translate-y-1 active:scale-95 uppercase tracking-wider italic shadow-xl shadow-primary/20 hover:scale-105"
+                        >
+                            <Plus className="w-5 h-5" />
+                            <span>Nueva ronda</span>
+                        </button>
+                    </div>
                 </div>
 
                 {activeRaffles.length === 0 ? (
@@ -458,7 +469,7 @@ const Dashboard = () => {
                                     <div className="space-y-1.5">
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Descripción</label>
                                         <textarea
-                                            rows="2"
+                                            rows="3"
                                             placeholder="Detalles del premio..."
                                             className="input-field bg-gray-50 border-gray-100 focus:bg-white resize-none text-gray-900"
                                             value={newRaffle.description}
@@ -499,6 +510,23 @@ const Dashboard = () => {
                                             </div>
                                         </div>
                                         <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Costo del premio</label>
+                                            <div className="relative group">
+                                                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-primary transition-colors" />
+                                                <input
+                                                    type="text"
+                                                    placeholder="0 (Opcional)"
+                                                    className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900"
+                                                    value={newRaffle.prizeCost}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value.replace(/\D/g, '');
+                                                        const formatted = val.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                                                        setNewRaffle({ ...newRaffle, prizeCost: formatted });
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1.5">
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Total de números</label>
                                             <div className="relative group">
                                                 <Ticket className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-primary transition-colors pointer-events-none z-10" />
@@ -508,11 +536,19 @@ const Dashboard = () => {
                                                     style={{ textIndent: '32px' }}
                                                     value={newRaffle.totalTickets}
                                                     onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        let start = '';
+                                                        let end = '';
+                                                        if (val === '10') { start = '0'; end = '9'; }
+                                                        else if (val === '100') { start = '00'; end = '99'; }
+                                                        else if (val === '1000') { start = '000'; end = '999'; }
+                                                        else if (val === '10000') { start = '0000'; end = '9999'; }
+                                                        
                                                         setNewRaffle({ 
                                                             ...newRaffle, 
-                                                            totalTickets: e.target.value,
-                                                            rangeStart: '',
-                                                            rangeEnd: ''
+                                                            totalTickets: val,
+                                                            rangeStart: start,
+                                                            rangeEnd: end
                                                         });
                                                     }}
                                                 >
