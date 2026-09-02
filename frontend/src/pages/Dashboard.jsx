@@ -314,7 +314,7 @@ const Dashboard = () => {
                             className="w-full sm:w-auto flex items-center justify-center space-x-2 py-3 px-5 bg-[#0f0f0f] text-white font-black rounded-xl transition-all duration-300 hover:-translate-y-1 active:scale-95 uppercase tracking-wider italic border border-white/10 hover:border-[#8b00ff]/50 hover:shadow-lg hover:shadow-[#8b00ff]/20"
                         >
                             <span>🧠</span>
-                            <span className="hidden sm:inline">Asistente</span>
+                            <span>Asistente</span>
                         </button>
                         <button
                             onClick={() => setShowCreateModal(true)}
