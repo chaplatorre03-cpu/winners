@@ -8,6 +8,8 @@ import {
 import WinnersLogo from '../components/WinnersLogo';
 import CloseButton from '../components/CloseButton';
 import LoadingOverlay, { LoadingSpinner } from '../components/LoadingOverlay';
+import CustomDateInput from '../components/CustomDateInput';
+import { formatRaffleDate } from '../utils/dateUtils';
 
 import { API_URL } from '../config';
 
@@ -417,7 +419,7 @@ const Dashboard = () => {
                                                 </div>
                                                 <div>
                                                     <h4 className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-gray-400 to-gray-600 group-hover:from-white group-hover:to-white transition-all">{raffle.title}</h4>
-                                                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">{new Date(raffle.endDate).toLocaleDateString()}</p>
+                                                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">{formatRaffleDate(raffle.endDate)}</p>
                                                 </div>
                                             </div>
                                             <div className="flex items-center space-x-3">
@@ -618,19 +620,14 @@ const Dashboard = () => {
 
                                     <div className="space-y-1.5">
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Fecha de sorteo</label>
-                                        <div className="relative group">
-                                            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-primary transition-colors" />
-                                            <input
-                                                type="date"
-                                                required
-                                                min={new Date().toLocaleDateString('en-CA')}
-                                                className="input-field pl-12 bg-gray-50 border-gray-100 focus:bg-white text-gray-900 appearance-none"
-                                                value={newRaffle.endDate}
-                                                onChange={(e) => setNewRaffle({ ...newRaffle, endDate: e.target.value })}
-                                                onInvalid={(e) => e.target.setCustomValidity('Por favor, selecciona la fecha del sorteo')}
-                                                onInput={(e) => e.target.setCustomValidity('')}
-                                            />
-                                        </div>
+                                        <CustomDateInput
+                                            required
+                                            min={new Date().toLocaleDateString('en-CA')}
+                                            value={newRaffle.endDate}
+                                            onChange={(e) => setNewRaffle({ ...newRaffle, endDate: e.target.value })}
+                                            onInvalid={(e) => e.target.setCustomValidity('Por favor, selecciona la fecha del sorteo')}
+                                            onInput={(e) => e.target.setCustomValidity('')}
+                                        />
                                     </div>
                                     {/* Payment Configuration Section */}
                                     <div className="pt-4 border-t border-gray-100 mt-4 space-y-4">
