@@ -5,6 +5,7 @@ require('dotenv').config();
 const authRoutes = require('./routes/auth');
 const raffleRoutes = require('./routes/raffles');
 const intelligenceRoutes = require('./routes/intelligence');
+const cronRoutes = require('./routes/cron');
 const Scheduler = require('./utils/scheduler');
 
 const app = express();
@@ -21,6 +22,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/raffles', raffleRoutes);
 app.use('/api/intelligence', intelligenceRoutes);
+app.use('/api/cron', cronRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

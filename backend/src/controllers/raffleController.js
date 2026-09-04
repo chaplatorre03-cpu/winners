@@ -181,6 +181,43 @@ exports.purchaseTickets = async (req, res) => {
             }
         });
 
+        // Send immediate WhatsApp confirmation to buyer if phone is provided
+        const buyerPhone = req.body.buyerPhone;
+        const buyerName = req.body.buyerName || 'participante';
+
+        if (buyerPhone) {
+            try {
+                const formattedNumbers = ticketNumbers.map(n => `#${String(n).padStart(3, '0')}`).join(', ');
+                const totalCostFormatted = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(raffle.price * ticketNumbers.length);
+
+                let paymentInfo = '';
+                if (raffle.nequiPhone) paymentInfo += `\n• *Nequi:* ${raffle.nequiPhone}`;
+                if (raffle.daviplataPhone) paymentInfo += `\n• *Daviplata:* ${raffle.daviplataPhone}`;
+                if (raffle.brebPhone) paymentInfo += `\n• *Breb:* ${raffle.brebPhone}`;
+                if (raffle.payLink) paymentInfo += `\n• *Link de Pago:* ${raffle.payLink}`;
+
+                const confirmMsg =
+                    `✨ *WINNERS PLATFORM* ✨\n` +
+                    `________________________________________\n\n` +
+                    `👋 Hola *${buyerName}*,\n\n` +
+                    `¡Tus números han sido reservados con éxito!\n\n` +
+                    `📱 *Sorteo:* "${raffle.title}"\n` +
+                    `👉 *Números reservados:* ${formattedNumbers}\n` +
+                    `💰 *Total a pagar:* ${totalCostFormatted}\n` +
+                    (paymentInfo ? `\n🏦 *Métodos de pago:*${paymentInfo}\n` : '') +
+                    `\n⏳ Cuentas con *72 horas* para realizar tu pago y asegurar tu participación. ¡Mucha suerte! 🍀\n` +
+                    `________________________________________\n\n` +
+                    `💎 *Equipo WINNERS*\n` +
+                    `🌐 https://winners-one.vercel.app`;
+
+                WhatsAppService.sendMessage(buyerPhone, confirmMsg).catch(err => {
+                    console.error('[purchaseTickets] Error enviando WhatsApp instantáneo:', err.message);
+                });
+            } catch (wErr) {
+                console.error('[purchaseTickets] Error construyendo mensaje de WhatsApp:', wErr.message);
+            }
+        }
+
         res.json({
             message: 'Números reservados con éxito',
             tickets,

@@ -1,5 +1,11 @@
 {
     "version": 2,
+    "crons": [
+        {
+            "path": "/api/cron/follow-up",
+            "schedule": "0 * * * *"
+        }
+    ],
     "rewrites": [
         {
             "source": "/api/(.*)",
