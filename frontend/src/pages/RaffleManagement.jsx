@@ -1658,6 +1658,7 @@ const RaffleManagement = () => {
                         </div>
                     </div>
                 )
+            }
             {/* Global Action Loading Overlay */}
             {actionLoading && <LoadingOverlay message={actionLoadingMessage} />}
 
