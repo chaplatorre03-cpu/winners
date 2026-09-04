@@ -483,9 +483,12 @@ exports.updateRaffle = async (req, res) => {
         console.log(`[BACKEND] Raffle ${id} updated successfully:`, updatedRaffle);
 
         if (dateChanged) {
-            // Trigger WhatsApp notifications asynchronously to not block the server response
-            WhatsAppService.notifyDateChange(updatedRaffle, oldDateFormatted, newDateFormatted)
-                .catch(err => console.error('[WhatsAppService] Error in notifyDateChange background task:', err));
+            console.log(`[BACKEND] Date changed for raffle ${id} from "${oldDateFormatted}" to "${newDateFormatted}". Triggering WhatsApp notification...`);
+            try {
+                await WhatsAppService.notifyDateChange(updatedRaffle, oldDateFormatted, newDateFormatted);
+            } catch (notifyErr) {
+                console.error('[BACKEND] Error sending date change WhatsApp notification:', notifyErr);
+            }
         }
 
         res.json(updatedRaffle);

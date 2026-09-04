@@ -5,11 +5,6 @@
  * In production, messages are sent via the Evolution API WhatsApp gateway.
  */
 
-const isConfigured =
-    process.env.WHATSAPP_API_URL &&
-    process.env.WHATSAPP_API_KEY &&
-    process.env.WHATSAPP_INSTANCE_NAME;
-
 class WhatsAppService {
     /**
      * Sends a WhatsApp message to a phone number.
@@ -18,6 +13,12 @@ class WhatsAppService {
      */
     static async sendMessage(phone, message) {
         if (!phone) return;
+
+        const apiUrl = process.env.WHATSAPP_API_URL;
+        const apiKey = process.env.WHATSAPP_API_KEY;
+        const instanceName = process.env.WHATSAPP_INSTANCE_NAME;
+
+        const isConfigured = Boolean(apiUrl && apiKey && instanceName);
 
         // Normalize phone number to E.164 format (+57XXXXXXXXXX)
         const normalized = WhatsAppService.normalizePhone(phone);
@@ -31,41 +32,47 @@ class WhatsAppService {
 
         if (isConfigured) {
             try {
-                const url = `${process.env.WHATSAPP_API_URL.replace(/\/$/, '')}/message/sendText/${process.env.WHATSAPP_INSTANCE_NAME}`;
-                
+                const cleanBaseUrl = apiUrl.replace(/\/$/, '');
+                const url = `${cleanBaseUrl}/message/sendText/${instanceName}`;
+
+                console.log(`[WhatsAppService] Enviando mensaje a ${phoneWithoutPlus} vía ${url}...`);
+
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'apikey': process.env.WHATSAPP_API_KEY
+                        'apikey': apiKey
                     },
                     body: JSON.stringify({
                         number: phoneWithoutPlus,
                         options: {
                             delay: 1200,
-                            presence: 'composing'
+                            presence: 'composing',
+                            linkPreview: false
                         },
                         textMessage: {
                             text: message
-                        }
+                        },
+                        text: message
                     })
                 });
 
-                if (!response.ok) {
-                    const errText = await response.text();
-                    throw new Error(`Error en pasarela (${response.status}): ${errText}`);
-                }
+                const resText = await response.text();
 
-                console.log(`[WhatsAppService] Mensaje enviado a ${phoneWithoutPlus}`);
+                if (!response.ok) {
+                    console.error(`[WhatsAppService] Error en pasarela (${response.status}):`, resText);
+                } else {
+                    console.log(`[WhatsAppService] Mensaje enviado exitosamente a ${phoneWithoutPlus}:`, resText);
+                }
             } catch (err) {
-                console.error(`[WhatsAppService] Error enviando a ${phoneWithoutPlus}:`, err.message);
+                console.error(`[WhatsAppService] Error de red enviando a ${phoneWithoutPlus}:`, err.message);
             }
         } else {
             // Simulation mode - log message to console
-            console.log(`\n====== [WhatsAppService - SIMULACIÓN] ======`);
+            console.log(`\n====== [WhatsAppService - SIMULACIÓN (Faltan variables en .env)] ======`);
             console.log(`📲 Para: ${normalized}`);
             console.log(`💬 Mensaje:\n${message}`);
-            console.log(`============================================\n`);
+            console.log(`======================================================================\n`);
         }
     }
 
@@ -81,8 +88,8 @@ class WhatsAppService {
         // Get unique buyer phones
         const uniquePhones = [...new Set(
             tickets
-                .filter(t => t.buyerPhone)
-                .map(t => t.buyerPhone)
+                .filter(t => t.buyerPhone && t.buyerPhone.trim() !== '')
+                .map(t => t.buyerPhone.trim())
         )];
 
         if (uniquePhones.length === 0) {
@@ -90,7 +97,7 @@ class WhatsAppService {
             return;
         }
 
-        console.log(`[WhatsAppService] Notificando cambio de fecha a ${uniquePhones.length} participante(s) de "${raffle.title}"`);
+        console.log(`[WhatsAppService] Notificando cambio de fecha a ${uniquePhones.length} participante(s) de "${raffle.title}":`, uniquePhones);
 
         const message =
             `🎟️ *WINNERS - Aviso Importante*\n\n` +
@@ -100,10 +107,10 @@ class WhatsAppService {
             `Tu número participante sigue siendo válido. ¡Gracias por tu apoyo y mucha suerte! 🍀\n\n` +
             `- El equipo de Winners`;
 
-        // Send to all unique phones
-        await Promise.allSettled(
-            uniquePhones.map(phone => WhatsAppService.sendMessage(phone, message))
-        );
+        // Send to all unique phones sequentially with small pause to avoid rate limits
+        for (const phone of uniquePhones) {
+            await WhatsAppService.sendMessage(phone, message);
+        }
     }
 
     /**
@@ -134,6 +141,11 @@ class WhatsAppService {
 
         // Handle standard 10 digit without country code
         if (cleaned.length === 10) {
+            return `+57${cleaned}`;
+        }
+
+        // If it's at least 7 digits, assume Colombia
+        if (cleaned.length >= 7 && cleaned.length <= 11) {
             return `+57${cleaned}`;
         }
 
