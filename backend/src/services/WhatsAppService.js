@@ -48,6 +48,11 @@ class WhatsAppService {
             // Try sending as media message with WINNERS logo if image is available
             if (imageToSend) {
                 try {
+                    let cleanMedia = imageToSend;
+                    if (typeof cleanMedia === 'string' && cleanMedia.startsWith('data:image')) {
+                        cleanMedia = cleanMedia.replace(/^data:image\/[a-zA-Z]+;base64,/, '');
+                    }
+
                     const mediaUrl = `${cleanBaseUrl}/message/sendMedia/${instanceName}`;
                     console.log(`[WhatsAppService] Enviando mensaje con imagen a ${phoneWithoutPlus}...`);
 
@@ -60,7 +65,7 @@ class WhatsAppService {
                         body: JSON.stringify({
                             number: phoneWithoutPlus,
                             mediatype: 'image',
-                            media: imageToSend,
+                            media: cleanMedia,
                             caption: message,
                             fileName: 'winners-logo.png'
                         })
