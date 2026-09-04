@@ -74,6 +74,8 @@ const RaffleManagement = () => {
     const [updatedRaffleInfo, setUpdatedRaffleInfo] = useState(INITIAL_RAFFLE_INFO);
     const [paymentConfigExpanded, setPaymentConfigExpanded] = useState(false);
 
+    const [actionLoading, setActionLoading] = useState(false);
+    const [actionLoadingMessage, setActionLoadingMessage] = useState('CARGANDO...');
 
     const [phoneError, setPhoneError] = useState('');
 
@@ -188,6 +190,8 @@ const RaffleManagement = () => {
         const token = localStorage.getItem('token');
         if (!token) return;
 
+        setActionLoadingMessage('ACTUALIZANDO ESTADO...');
+        setActionLoading(true);
         try {
             const response = await fetch(`${API_URL}/raffles/tickets/${pendingStatusUpdate.id}`, {
                 method: 'PATCH',
@@ -204,16 +208,21 @@ const RaffleManagement = () => {
                 setSelectedTicket(null);
                 setSuccessType('status');
                 setShowTicketUpdateSuccess(true);
-                fetchRaffleDetails();
+                await fetchRaffleDetails();
             }
         } catch (err) {
             console.error('Error updating ticket:', err);
+        } finally {
+            setActionLoading(false);
         }
     };
 
     const handleUpdateStatus = async (ticketId, updates) => {
         const token = localStorage.getItem('token');
         if (!token) return;
+
+        setActionLoadingMessage('ACTUALIZANDO DATOS...');
+        setActionLoading(true);
         try {
             const body = typeof updates === 'string' ? { status: updates } : updates;
             const response = await fetch(`${API_URL}/raffles/tickets/${ticketId}`, {
@@ -234,10 +243,12 @@ const RaffleManagement = () => {
                     setSelectedTicket(null);
                     setShowTicketUpdateSuccess(true);
                 }
-                fetchRaffleDetails();
+                await fetchRaffleDetails();
             }
         } catch (err) {
             console.error('Error updating ticket:', err);
+        } finally {
+            setActionLoading(false);
         }
     };
 
@@ -251,6 +262,8 @@ const RaffleManagement = () => {
         const token = localStorage.getItem('token');
         if (!token) return;
 
+        setActionLoadingMessage('LIBERANDO NÚMERO...');
+        setActionLoading(true);
         try {
             const response = await fetch(`${API_URL}/raffles/tickets/${ticketToDelete}`, {
                 method: 'DELETE',
@@ -262,21 +275,26 @@ const RaffleManagement = () => {
                 setShowDeleteConfirm(false);
                 setTicketToDelete(null);
                 setSelectedTicket(null);
-                fetchRaffleDetails();
+                await fetchRaffleDetails();
             } else {
                 const data = await response.json();
                 alert(data.error || 'Error al eliminar ticket');
             }
         } catch (err) {
             console.error('Error deleting ticket:', err);
+        } finally {
+            setActionLoading(false);
         }
     };
 
     const startDraw = async (winnersCount = 1, onlyPaid = true) => {
         setIsDrawing(true);
+        setActionLoadingMessage('REALIZANDO SORTEO...');
+        setActionLoading(true);
         const token = localStorage.getItem('token');
         if (!token) {
             setIsDrawing(false);
+            setActionLoading(false);
             return;
         }
 
@@ -296,6 +314,7 @@ const RaffleManagement = () => {
             setTimeout(() => {
                 setWinnersList(prev => [...data.winners, ...(Array.isArray(prev) ? prev : [])]);
                 setIsDrawing(false);
+                setActionLoading(false);
                 setShowWinnersView(true);
                 fetchRaffleDetails();
             }, 2000);
@@ -305,6 +324,7 @@ const RaffleManagement = () => {
             setCustomErrorMessage(err.message);
             setShowCustomErrorModal(true);
             setIsDrawing(false);
+            setActionLoading(false);
         }
     };
 
@@ -365,6 +385,9 @@ const RaffleManagement = () => {
         const token = localStorage.getItem('token');
         if (!token) return;
 
+        setActionLoadingMessage('GUARDANDO AJUSTES...');
+        setActionLoading(true);
+
         try {
             const response = await fetch(`${API_URL}/raffles/${raffleId}`, {
                 method: 'PATCH',
@@ -389,7 +412,7 @@ const RaffleManagement = () => {
                 setShowSuccessModal(true);
                 // Navigate to root panel to update selection to 'Administración' (optional or keep)
                 navigate(`/panel?raffle=${raffleId}`, { replace: true });
-                fetchRaffleDetails();
+                await fetchRaffleDetails();
             } else {
                 const errorData = await response.json();
                 setCustomErrorMessage(errorData.error || response.statusText);
@@ -399,6 +422,8 @@ const RaffleManagement = () => {
             console.error('Error updating raffle:', err);
             setCustomErrorMessage('Error de conexión al actualizar la rifa');
             setShowCustomErrorModal(true);
+        } finally {
+            setActionLoading(false);
         }
     };
 
@@ -1408,8 +1433,14 @@ const RaffleManagement = () => {
                                 </div>
 
                                 {!isEnded && (
-                                    <button type="submit" className="w-full btn-primary py-4 text-lg shadow-2xl shadow-primary/30 active:scale-95 transition-all">
-                                        GUARDAR CAMBIOS
+                                    <button
+                                        type="submit"
+                                        disabled={actionLoading}
+                                        className={`w-full btn-primary py-4 text-lg shadow-2xl shadow-primary/30 active:scale-95 transition-all ${
+                                            actionLoading ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''
+                                        }`}
+                                    >
+                                        {actionLoading ? 'GUARDANDO...' : 'GUARDAR CAMBIOS'}
                                     </button>
                                 )}
                             </form>
@@ -1627,8 +1658,8 @@ const RaffleManagement = () => {
                         </div>
                     </div>
                 )
-            }
-
+            {/* Global Action Loading Overlay */}
+            {actionLoading && <LoadingOverlay message={actionLoadingMessage} />}
 
         </div >
     );

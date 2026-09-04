@@ -15,7 +15,7 @@ export const LoadingSpinner = ({ size = 'medium', className = "" }) => {
 
 const LoadingOverlay = ({ fullScreen = true, message = "CARGANDO..." }) => {
     return (
-        <div className={`${fullScreen ? 'fixed inset-0 z-[9999] bg-[#0a090b]' : 'relative w-full h-full min-h-[400px] bg-[#0a090b] mt-8'} flex flex-col items-center justify-center overflow-hidden font-sans`}>
+        <div className={`${fullScreen ? 'fixed inset-0 z-[99999] bg-[#0a090b]' : 'relative w-full h-full min-h-[400px] bg-[#0a090b] mt-8'} flex flex-col items-center justify-center overflow-hidden font-sans select-none pointer-events-auto`}>
 
             {/* Center Content */}
             <div className="relative z-10 flex flex-col items-center w-full px-6 text-center">

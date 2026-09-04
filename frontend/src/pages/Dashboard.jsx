@@ -48,6 +48,8 @@ const Dashboard = () => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [actionLoading, setActionLoading] = useState(false);
+    const [actionLoadingMessage, setActionLoadingMessage] = useState('CARGANDO...');
 
     // User Profile Edit States
     const [showEditProfileModal, setShowEditProfileModal] = useState(false);
@@ -166,6 +168,8 @@ const Dashboard = () => {
 
     const handleCreateRaffle = async (e) => {
         e.preventDefault();
+        setActionLoadingMessage('CREANDO RONDA...');
+        setActionLoading(true);
         try {
             const token = localStorage.getItem('token');
             if (!token) return;
@@ -196,6 +200,8 @@ const Dashboard = () => {
             }
         } catch (err) {
             console.error('Error creating raffle:', err);
+        } finally {
+            setActionLoading(false);
         }
     };
 
@@ -219,6 +225,8 @@ const Dashboard = () => {
             }
         }
 
+        setActionLoadingMessage('GUARDANDO PERFIL...');
+        setActionLoading(true);
         try {
             const token = localStorage.getItem('token');
             if (!token) return;
@@ -247,6 +255,8 @@ const Dashboard = () => {
         } catch (err) {
             console.error('Error updating profile:', err);
             alert('Error de conexión');
+        } finally {
+            setActionLoading(false);
         }
     };
 
@@ -696,8 +706,12 @@ const Dashboard = () => {
                                     </div>
                                 </div>
 
-                                <button type="submit" className="w-full btn-primary py-4 text-lg shadow-2xl shadow-primary/30">
-                                    CREAR RONDA
+                                <button
+                                    type="submit"
+                                    disabled={actionLoading}
+                                    className={`w-full btn-primary py-4 text-lg shadow-2xl shadow-primary/30 ${actionLoading ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}`}
+                                >
+                                    {actionLoading ? 'CREANDO...' : 'CREAR RONDA'}
                                 </button>
                             </form>
                         </div>
@@ -855,8 +869,12 @@ const Dashboard = () => {
                                     </div>
                                 </div>
 
-                                <button type="submit" className="w-full btn-primary py-4 text-lg shadow-2xl shadow-primary/30">
-                                    GUARDAR CAMBIOS
+                                <button
+                                    type="submit"
+                                    disabled={actionLoading}
+                                    className={`w-full btn-primary py-4 text-lg shadow-2xl shadow-primary/30 ${actionLoading ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}`}
+                                >
+                                    {actionLoading ? 'GUARDANDO...' : 'GUARDAR CAMBIOS'}
                                 </button>
                             </form>
                         </div>
@@ -924,6 +942,9 @@ const Dashboard = () => {
                     </div>
                 )
             }
+
+            {/* Global Action Loading Overlay */}
+            {actionLoading && <LoadingOverlay message={actionLoadingMessage} />}
         </div >
     );
 };

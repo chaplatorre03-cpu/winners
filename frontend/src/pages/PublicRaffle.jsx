@@ -1259,6 +1259,9 @@ const PublicRaffle = () => {
                 </div>
             )
             }
+
+            {/* Global Action Loading Overlay */}
+            {purchasing && <LoadingOverlay message="RESERVANDO NÚMEROS..." />}
         </div >
     );
 };
