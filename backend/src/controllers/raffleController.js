@@ -111,7 +111,7 @@ exports.createRaffle = async (req, res) => {
                 totalTickets: parseInt(totalTickets),
                 image,
                 // Append noon UTC to avoid timezone shifts when displaying
-                endDate: new Date(`${endDate}T12:00:00Z`),
+                endDate: (() => { const d = typeof endDate === 'string' ? endDate.split('T')[0] : new Date(endDate).toISOString().split('T')[0]; return new Date(`${d}T23:59:59.999Z`); })(),
                 creatorId: req.userId,
                 status: 'ACTIVE',
                 payLink,
@@ -148,7 +148,12 @@ exports.purchaseTickets = async (req, res) => {
             return res.status(400).json({ error: 'La rifa no está activa' });
         }
 
-        if (new Date() > new Date(raffle.endDate)) {
+        const now = new Date();
+        const raffleEndDate = new Date(raffle.endDate);
+        if (raffleEndDate.getUTCHours() === 0 && raffleEndDate.getUTCMinutes() === 0) {
+            raffleEndDate.setUTCHours(23, 59, 59, 999);
+        }
+        if (now > raffleEndDate) {
             return res.status(400).json({ error: 'La rifa ha finalizado' });
         }
 
@@ -507,7 +512,7 @@ exports.updateRaffle = async (req, res) => {
         if (description !== undefined) updateData.description = description;
         if (price !== undefined) updateData.price = parseFloat(price);
         if (totalTickets !== undefined) updateData.totalTickets = parseInt(totalTickets);
-        if (endDate !== undefined) updateData.endDate = new Date(endDate);
+        if (endDate !== undefined) { const d = typeof endDate === 'string' ? endDate.split('T')[0] : new Date(endDate).toISOString().split('T')[0]; updateData.endDate = new Date(`${d}T23:59:59.999Z`); }
         if (status !== undefined) updateData.status = status;
         if (image !== undefined) updateData.image = image;
         if (payLink !== undefined) updateData.payLink = payLink;
