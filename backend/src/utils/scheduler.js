@@ -123,12 +123,11 @@ class Scheduler {
             const h48 = new Date(now.getTime() - 48 * 60 * 60 * 1000);
             const h72 = new Date(now.getTime() - 72 * 60 * 60 * 1000);
 
-            // --- STAGE 3: Cancel tickets older than 72h (remindersSent >= 2) ---
+            // --- STAGE 3: Cancel ALL tickets older than 72h (3 days) ---
             const toCancel = await prisma.ticket.findMany({
                 where: {
                     status: 'APARTADO',
-                    createdAt: { lte: h72 },
-                    remindersSent: { gte: 2 }
+                    createdAt: { lte: h72 }
                 },
                 include: { raffle: true }
             });
@@ -141,34 +140,37 @@ class Scheduler {
                     // Delete the ticket to free the number
                     await prisma.ticket.delete({ where: { id: ticket.id } });
 
-                    // Decrement sold count on the raffle
-                    await prisma.raffle.update({
-                        where: { id: ticket.raffleId },
-                        data: { ticketsSold: { decrement: 1 } }
-                    });
+                    // Decrement sold count on the raffle (ensure ticketsSold does not go below 0)
+                    const updatedRaffle = await prisma.raffle.findUnique({ where: { id: ticket.raffleId } });
+                    if (updatedRaffle && updatedRaffle.ticketsSold > 0) {
+                        await prisma.raffle.update({
+                            where: { id: ticket.raffleId },
+                            data: { ticketsSold: { decrement: 1 } }
+                        });
+                    }
 
-                    console.log(`[Agente de Seguimiento] Reserva CANCELADA: ticket #${ticket.number} en rifa "${ticket.raffle.title}"`);
+                    console.log(`[Agente de Seguimiento] Reserva CANCELADA y LIBERADA: ticket #${ticket.number} en rifa "${ticket.raffle.title}"`);
 
                     // Notify buyer via WhatsApp
                     if (ticket.buyerPhone) {
                         const msg =
                             `🚫 *WINNERS - Reserva Cancelada*\n\n` +
-                            `Hola ${ticket.buyerName || 'participante'}, debido a que no recibimos la confirmación de pago, ` +
+                            `Hola ${ticket.buyerName || 'participante'}, debido a que no recibimos la confirmación de pago en 72 horas, ` +
                             `tu reserva del número *${String(ticket.number).padStart(3, '0')}* para el sorteo *"${ticket.raffle.title}"* ha expirado y el número ha sido liberado.\n\n` +
                             `Si aún deseas participar, puedes reservar un nuevo número en el talonario web. ¡Éxitos! 🎟️`;
-                        await WhatsAppService.sendMessage(ticket.buyerPhone, msg);
+                        WhatsAppService.sendMessage(ticket.buyerPhone, msg).catch(e => console.warn('[Scheduler] Error WhatsApp cancelación:', e.message));
                     }
                 } catch (err) {
                     console.error(`[Agente de Seguimiento] Error cancelando ticket ${ticket.id}:`, err.message);
                 }
             }
 
-            // --- STAGE 2: Second warning for tickets 48h-72h old (remindersSent === 1) ---
+            // --- STAGE 2: Second warning for tickets 48h-72h old (remindersSent < 2) ---
             const toRemind2 = await prisma.ticket.findMany({
                 where: {
                     status: 'APARTADO',
                     createdAt: { lte: h48, gt: h72 },
-                    remindersSent: 1
+                    remindersSent: { lt: 2 }
                 },
                 include: { raffle: true }
             });
@@ -188,7 +190,7 @@ class Scheduler {
                             `Hola ${ticket.buyerName || 'participante'}, tu reserva del número *${String(ticket.number).padStart(3, '0')}* ` +
                             `para el sorteo *"${ticket.raffle.title}"* vence en las próximas horas.\n\n` +
                             `Si no confirmas tu pago, el número será liberado. ¡No pierdas tu oportunidad! 🍀`;
-                        await WhatsAppService.sendMessage(ticket.buyerPhone, msg);
+                        WhatsAppService.sendMessage(ticket.buyerPhone, msg).catch(e => console.warn('[Scheduler] Error WhatsApp 2do recordatorio:', e.message));
                     }
                 } catch (err) {
                     console.error(`[Agente de Seguimiento] Error enviando 2do recordatorio ticket ${ticket.id}:`, err.message);
@@ -221,7 +223,7 @@ class Scheduler {
                             `*${String(ticket.number).padStart(3, '0')}* para el sorteo *"${ticket.raffle.title}"*.\n\n` +
                             `Realiza tu pago para asegurar tu participación. Si en 24 horas no confirmamos el pago, el número será liberado.\n\n` +
                             `¡Mucha suerte! 🍀`;
-                        await WhatsAppService.sendMessage(ticket.buyerPhone, msg);
+                        WhatsAppService.sendMessage(ticket.buyerPhone, msg).catch(e => console.warn('[Scheduler] Error WhatsApp 1er recordatorio:', e.message));
                     }
                 } catch (err) {
                     console.error(`[Agente de Seguimiento] Error enviando 1er recordatorio ticket ${ticket.id}:`, err.message);
