@@ -1,5 +1,7 @@
 const jwt = require('jsonwebtoken');
 
+const JWT_SECRET = process.env.JWT_SECRET || 'winners_jwt_secret_key_default_2026';
+
 const authMiddleware = (req, res, next) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
@@ -8,13 +10,14 @@ const authMiddleware = (req, res, next) => {
             return res.status(401).json({ error: 'No token provided' });
         }
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, JWT_SECRET);
         req.userId = decoded.userId;
         // Implicitly make all registered users ADMIN to remove role-based blocks
         req.userRole = 'ADMIN';
         next();
     } catch (error) {
-        return res.status(401).json({ error: 'Invalid token' });
+        console.error('[authMiddleware] Token verification error:', error.message);
+        return res.status(401).json({ error: 'Invalid or expired token' });
     }
 };
 

@@ -209,6 +209,11 @@ const RaffleManagement = () => {
                 setSuccessType('status');
                 setShowTicketUpdateSuccess(true);
                 await fetchRaffleDetails();
+            } else if (response.status === 401) {
+                alert('Tu sesión de usuario ha expirado. Por favor, vuelve a iniciar sesión.');
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
             }
         } catch (err) {
             console.error('Error updating ticket:', err);
