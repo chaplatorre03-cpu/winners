@@ -57,7 +57,16 @@ const formatWinner = (win) => {
 };
 
 // Get single raffle
-exports.getRaffle = async (req, res) => {    try {        const { id } = req.params;\        // Auto-cleanup expired APARTADO tickets (> 72h)        try {            const Scheduler = require('../utils/scheduler');            Scheduler.followUpPayments().catch(e => console.warn('[getRaffle] Auto-cleanup err:', e.message));        } catch (e) {}
+exports.getRaffle = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Auto-cleanup expired APARTADO tickets (> 72h)
+        try {
+            const Scheduler = require('../utils/scheduler');
+            await Scheduler.followUpPayments();
+        } catch (e) {}
+
         const raffle = await prisma.raffle.findUnique({
             where: { id: id },
             include: {
