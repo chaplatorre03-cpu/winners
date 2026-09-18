@@ -281,6 +281,11 @@ const RaffleManagement = () => {
                 setTicketToDelete(null);
                 setSelectedTicket(null);
                 await fetchRaffleDetails();
+            } else if (response.status === 401) {
+                alert('Tu sesión de usuario ha expirado. Por favor, vuelve a iniciar sesión.');
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
             } else {
                 const data = await response.json();
                 alert(data.error || 'Error al eliminar ticket');
