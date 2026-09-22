@@ -1,4 +1,4 @@
-/**
+﻿/**
  * WhatsAppService.js
  * Handles sending WhatsApp notifications to raffle participants.
  * In development (no config), messages are logged to the console.
@@ -56,12 +56,15 @@ class WhatsAppService {
                     const mediaUrl = `${cleanBaseUrl}/message/sendMedia/${instanceName}`;
                     console.log(`[WhatsAppService] Enviando mensaje con imagen a ${phoneWithoutPlus}...`);
 
+                    const _mediaController = new AbortController();
+                    const _mediaTimer = setTimeout(() => _mediaController.abort(), 15000);
                     const mediaRes = await fetch(mediaUrl, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'apikey': apiKey
                         },
+                        signal: _mediaController.signal,
                         body: JSON.stringify({
                             number: phoneWithoutPlus,
                             mediatype: 'image',
@@ -71,6 +74,7 @@ class WhatsAppService {
                         })
                     });
 
+                    clearTimeout(_mediaTimer);
                     if (mediaRes.ok) {
                         const resText = await mediaRes.text();
                         console.log(`[WhatsAppService] Mensaje con imagen enviado exitosamente a ${phoneWithoutPlus}:`, resText);
@@ -89,12 +93,15 @@ class WhatsAppService {
                 const textUrl = `${cleanBaseUrl}/message/sendText/${instanceName}`;
                 console.log(`[WhatsAppService] Enviando mensaje de texto a ${phoneWithoutPlus}...`);
 
+                const _textController = new AbortController();
+                const _textTimer = setTimeout(() => _textController.abort(), 15000);
                 const response = await fetch(textUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'apikey': apiKey
                     },
+                    signal: _textController.signal,
                     body: JSON.stringify({
                         number: phoneWithoutPlus,
                         options: {
@@ -109,6 +116,7 @@ class WhatsAppService {
                     })
                 });
 
+                clearTimeout(_textTimer);
                 const resText = await response.text();
 
                 if (!response.ok) {

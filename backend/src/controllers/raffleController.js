@@ -1,4 +1,4 @@
-const prisma = require('../lib/prisma');
+﻿const prisma = require('../lib/prisma');
 const WhatsAppService = require('../services/WhatsAppService');
 
 // Get all raffles
@@ -222,8 +222,17 @@ exports.purchaseTickets = async (req, res) => {
                     `💎 *Equipo WINNERS*\n` +
                     `🌐 https://winners-one.vercel.app`;
 
-                WhatsAppService.sendMessage(buyerPhone, confirmMsg).catch(err => {
-                    console.error('[purchaseTickets] Error enviando WhatsApp instantáneo:', err.message);
+                // CRITICAL FIX: await with 12s timeout so Vercel serverless function doesn't end
+                // before Evolution API (Render) responds — cold starts can take 30-60s.
+                console.log('[purchaseTickets] Enviando confirmacion WhatsApp a ' + buyerPhone + '...');
+                const _waTimeout = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('WhatsApp timeout (12s)')), 12000)
+                );
+                await Promise.race([
+                    WhatsAppService.sendMessage(buyerPhone, confirmMsg),
+                    _waTimeout
+                ]).catch(err => {
+                    console.warn('[purchaseTickets] WhatsApp no completado a tiempo:', err.message);
                 });
             } catch (wErr) {
                 console.error('[purchaseTickets] Error construyendo mensaje de WhatsApp:', wErr.message);
