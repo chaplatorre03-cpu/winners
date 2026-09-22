@@ -4,10 +4,6 @@
         {
             "path": "/api/cron/follow-up",
             "schedule": "0 * * * *"
-        },
-        {
-            "path": "/api/cron/warmup",
-            "schedule": "*/10 * * * *"
         }
     ],
     "rewrites": [
