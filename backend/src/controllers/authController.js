@@ -1,4 +1,4 @@
-﻿const JWT_SECRET = process.env.JWT_SECRET || process.env.JWT_SECRET_KEY || 'winners_jwt_secret_key_default_2026';
+const JWT_SECRET = process.env.JWT_SECRET || process.env.JWT_SECRET_KEY || 'winners_jwt_secret_key_default_2026';
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
@@ -130,7 +130,7 @@ exports.verifyOTP = async (req, res) => {
         const token = jwt.sign(
             { userId: updatedUser.id, role: updatedUser.role },
             JWT_SECRET,
-            { expiresIn: '7d' }
+            { expiresIn: '30d' }
         );
 
         res.json({
@@ -175,7 +175,7 @@ exports.login = async (req, res) => {
         const token = jwt.sign(
             { userId: user.id, role: 'ADMIN' },
             JWT_SECRET,
-            { expiresIn: '7d' }
+            { expiresIn: '30d' }
         );
 
         res.json({

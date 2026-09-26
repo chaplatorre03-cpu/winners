@@ -423,6 +423,11 @@ const RaffleManagement = () => {
                 // Navigate to root panel to update selection to 'Administración' (optional or keep)
                 navigate(`/panel?raffle=${raffleId}`, { replace: true });
                 await fetchRaffleDetails();
+            } else if (response.status === 401) {
+                alert('Tu sesión ha expirado. Por favor, vuelve a iniciar sesión para guardar los ajustes.');
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
             } else {
                 const errorData = await response.json();
                 setCustomErrorMessage(errorData.error || response.statusText);

@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'winners_jwt_secret_key_default_2026';
+const JWT_SECRET = process.env.JWT_SECRET || process.env.JWT_SECRET_KEY || 'winners_jwt_secret_key_default_2026';
 
 const authMiddleware = (req, res, next) => {
     try {
