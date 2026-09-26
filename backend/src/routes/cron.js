@@ -1,6 +1,7 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const Scheduler = require('../utils/scheduler');
+const prisma = require('../lib/prisma');
 
 /**
  * GET /api/cron/follow-up
@@ -27,12 +28,13 @@ router.get('/follow-up', async (req, res) => {
         await warmUpWhatsAppGateway();
 
         // Execute background monitoring jobs
-        await Scheduler.followUpPayments();
+        const followUpStats = await Scheduler.followUpPayments();
         await Scheduler.analyzeFinancialHealth();
 
         res.json({
             success: true,
             message: 'Tareas de seguimiento ejecutadas exitosamente',
+            stats: followUpStats,
             timestamp: new Date().toISOString()
         });
     } catch (error) {
@@ -52,7 +54,7 @@ router.get('/warmup', async (req, res) => {
 
 /**
  * GET /api/cron/diagnostics
- * Returns diagnostic info about WhatsApp env vars and gateway connectivity.
+ * Returns diagnostic info about WhatsApp env vars, gateway connectivity, and recent ticket statuses.
  * Use this in production to debug notification failures.
  */
 router.get('/diagnostics', async (req, res) => {
@@ -78,6 +80,39 @@ router.get('/diagnostics', async (req, res) => {
             hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
         }
     };
+
+    // Query recent tickets for audit
+    try {
+        const now = new Date();
+        const recentTickets = await prisma.ticket.findMany({
+            select: {
+                id: true,
+                number: true,
+                status: true,
+                buyerName: true,
+                buyerPhone: true,
+                remindersSent: true,
+                createdAt: true,
+                raffle: { select: { title: true } }
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 10
+        });
+
+        report.tickets = recentTickets.map(t => ({
+            id: t.id,
+            number: t.number,
+            status: t.status,
+            buyerName: t.buyerName,
+            buyerPhone: t.buyerPhone,
+            remindersSent: t.remindersSent,
+            createdAt: t.createdAt,
+            hoursOld: ((now.getTime() - new Date(t.createdAt).getTime()) / (1000 * 3600)).toFixed(1),
+            raffleTitle: t.raffle?.title
+        }));
+    } catch (dbErr) {
+        report.ticketsError = dbErr.message;
+    }
 
     // Test connectivity to Evolution API
     if (isConfigured) {
