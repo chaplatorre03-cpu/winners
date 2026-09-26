@@ -16,20 +16,71 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-async function sendAlert(to, subject, html) {
+const LOGO_URL = 'https://winners-one.vercel.app/winners-logo.png';
+
+async function sendAlert(to, subject, bodyHtml) {
     if (!to || !process.env.EMAIL_USER) return;
     try {
+        const fullHtml = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>${subject}</title>
+</head>
+<body style="margin:0;padding:0;background:#0f0f1a;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f1a;padding:30px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#1a1a2e;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.4);">
+          <!-- HEADER -->
+          <tr>
+            <td align="center" style="background:linear-gradient(135deg,#7c3aed,#db2777);padding:32px 24px;">
+              <img src="${LOGO_URL}" alt="WINNERS" width="160" style="display:block;margin:0 auto 12px;max-width:160px;" onerror="this.style.display='none'"/>
+              <p style="margin:0;color:rgba(255,255,255,0.85);font-size:13px;letter-spacing:2px;text-transform:uppercase;">Agente Inteligente de Rifas</p>
+            </td>
+          </tr>
+          <!-- BODY -->
+          <tr>
+            <td style="padding:32px 32px 24px;color:#e2e8f0;font-size:15px;line-height:1.7;">
+              ${bodyHtml}
+            </td>
+          </tr>
+          <!-- FOOTER -->
+          <tr>
+            <td align="center" style="padding:20px 32px 32px;border-top:1px solid rgba(255,255,255,0.08);">
+              <p style="margin:0;color:#64748b;font-size:12px;">
+                Este mensaje fue generado automáticamente por el Agente Winners.<br/>
+                Por favor no respondas este correo.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
         await transporter.sendMail({
             from: `"Winners Agente" <${process.env.EMAIL_USER}>`,
             to,
+            replyTo: process.env.EMAIL_USER,
             subject,
-            html
+            html: fullHtml,
+            headers: {
+                'X-Mailer': 'Winners Notification System',
+                'X-Priority': '1',
+                'Importance': 'high'
+            }
         });
         console.log(`[Scheduler] Email enviado a ${to}: ${subject}`);
     } catch (e) {
         console.error('[Scheduler] Error enviando email:', e.message);
     }
 }
+
 
 class Scheduler {
     static start() {
@@ -110,9 +161,16 @@ class Scheduler {
                         await sendAlert(
                             raffle.creator.email,
                             `⚠️ Atención requerida: Rifa ${raffle.title}`,
-                            `<p>Hola ${raffle.creator.name || ''}, la rifa <b>${raffle.title}</b> está próxima a finalizar sin alcanzar la rentabilidad esperada.</p>
-                             <p>El Agente sugiere reprogramar el sorteo para el <b>${newSuggestedDate.toLocaleDateString('es-CO')}</b>.</p>
-                             <p>Revisa el Asistente Winners en tu panel de control.</p>`
+                            `<h2 style="margin:0 0 16px;color:#f472b6;font-size:20px;">⚠️ Tu rifa necesita atención</h2>
+                             <p style="margin:0 0 12px;">Hola <strong>${raffle.creator.name || 'Creador'}</strong>,</p>
+                             <p style="margin:0 0 16px;">La rifa <strong style="color:#a78bfa;">"${raffle.title}"</strong> está próxima a finalizar sin alcanzar la rentabilidad esperada.</p>
+                             <table width="100%" cellpadding="12" style="background:rgba(255,255,255,0.05);border-radius:10px;margin:0 0 20px;">
+                               <tr><td style="color:#94a3b8;font-size:13px;">📅 Fecha de cierre actual</td><td style="color:#e2e8f0;font-weight:bold;">${new Date(raffle.endDate).toLocaleDateString('es-CO', {day:'2-digit',month:'long',year:'numeric'})}</td></tr>
+                               <tr><td style="color:#94a3b8;font-size:13px;">📆 Fecha sugerida</td><td style="color:#34d399;font-weight:bold;">${newSuggestedDate.toLocaleDateString('es-CO', {day:'2-digit',month:'long',year:'numeric'})}</td></tr>
+                               <tr><td style="color:#94a3b8;font-size:13px;">⚡ Riesgo detectado</td><td style="color:#f87171;font-weight:bold;">ALTO</td></tr>
+                             </table>
+                             <p style="margin:0 0 20px;color:#94a3b8;font-size:14px;">El Agente Winners sugiere aplazar el sorteo <strong>15 días adicionales</strong> para darte más tiempo de alcanzar tu punto de equilibrio.</p>
+                             <a href="https://winners-one.vercel.app/panel" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:bold;font-size:14px;">Ver mi Panel de Control →</a>`
                         );
                         console.log(`[analyzeFinancialHealth] Email de alerta enviado exitosamente a ${raffle.creator.email}`);
                     } else {
