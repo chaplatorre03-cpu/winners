@@ -97,7 +97,7 @@ router.get('/diagnostics', async (req, res) => {
         }
     };
 
-    // Query recent tickets for audit
+    // Query recent tickets and raffles for audit
     try {
         const now = new Date();
         const recentTickets = await prisma.ticket.findMany({
@@ -114,6 +114,19 @@ router.get('/diagnostics', async (req, res) => {
             orderBy: { createdAt: 'desc' },
             take: 10
         });
+
+        const activeRaffles = await prisma.raffle.findMany({
+            where: { status: 'ACTIVE' },
+            select: {
+                id: true,
+                title: true,
+                endDate: true,
+                suggestedDrawDate: true,
+                creator: { select: { id: true, email: true, name: true } }
+            }
+        });
+
+        report.activeRaffles = activeRaffles;
 
         report.tickets = recentTickets.map(t => ({
             id: t.id,
