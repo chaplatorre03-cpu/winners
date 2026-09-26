@@ -53,6 +53,22 @@ router.get('/warmup', async (req, res) => {
 });
 
 /**
+ * GET /api/cron/reset-test
+ * Resets remindersSent counter to 0 for APARTADO tickets so reminder delivery can be re-tested.
+ */
+router.get('/reset-test', async (req, res) => {
+    try {
+        const updated = await prisma.ticket.updateMany({
+            where: { status: 'APARTADO' },
+            data: { remindersSent: 0 }
+        });
+        res.json({ success: true, message: 'Filtro de recordatorios reiniciado', resetCount: updated.count });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+/**
  * GET /api/cron/diagnostics
  * Returns diagnostic info about WhatsApp env vars, gateway connectivity, and recent ticket statuses.
  * Use this in production to debug notification failures.
