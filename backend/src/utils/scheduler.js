@@ -16,64 +16,43 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-const LOGO_URL = 'https://winners-one.vercel.app/winners-logo.png';
+// Verifica si la hora actual en Colombia (UTC-5) está entre 10:00 AM y 3:00 PM
+function isWithinAlertWindow() {
+    const nowColombia = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+    const hour = nowColombia.getHours(); // 0-23
+    return hour >= 10 && hour < 15; // 10:00 AM hasta 2:59 PM
+}
 
 async function sendAlert(to, subject, bodyHtml) {
     if (!to || !process.env.EMAIL_USER) return;
+
+    // Solo enviar entre 10:00 AM y 3:00 PM hora Colombia
+    if (!isWithinAlertWindow()) {
+        const nowColombia = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+        console.log(`[Scheduler] Email NO enviado (fuera de ventana horaria 10AM-3PM Colombia). Hora actual: ${nowColombia.getHours()}:${String(nowColombia.getMinutes()).padStart(2,'0')}`);
+        return;
+    }
+
     try {
         const fullHtml = `
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>${subject}</title>
-</head>
-<body style="margin:0;padding:0;background:#0f0f1a;font-family:'Segoe UI',Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f1a;padding:30px 0;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#1a1a2e;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.4);">
-          <!-- HEADER -->
-          <tr>
-            <td align="center" style="background:linear-gradient(135deg,#7c3aed,#db2777);padding:32px 24px;">
-              <img src="${LOGO_URL}" alt="WINNERS" width="160" style="display:block;margin:0 auto 12px;max-width:160px;" onerror="this.style.display='none'"/>
-              <p style="margin:0;color:rgba(255,255,255,0.85);font-size:13px;letter-spacing:2px;text-transform:uppercase;">Agente Inteligente de Rifas</p>
-            </td>
-          </tr>
-          <!-- BODY -->
-          <tr>
-            <td style="padding:32px 32px 24px;color:#e2e8f0;font-size:15px;line-height:1.7;">
-              ${bodyHtml}
-            </td>
-          </tr>
-          <!-- FOOTER -->
-          <tr>
-            <td align="center" style="padding:20px 32px 32px;border-top:1px solid rgba(255,255,255,0.08);">
-              <p style="margin:0;color:#64748b;font-size:12px;">
-                Este mensaje fue generado automáticamente por el Agente Winners.<br/>
-                Por favor no respondas este correo.
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
+            <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 480px; margin: 0 auto; background: #0a0a0a; border-radius: 16px; overflow: hidden; border: 1px solid #222;">
+                <div style="background: linear-gradient(135deg, #8b00ff, #ff00de); padding: 32px 24px; text-align: center;">
+                    <h1 style="color: #fff; margin: 0; font-size: 28px; font-weight: 900; letter-spacing: 4px; text-transform: uppercase;">WINNERS</h1>
+                </div>
+                <div style="padding: 32px 24px; text-align: center;">
+                    ${bodyHtml}
+                </div>
+                <div style="padding: 16px 24px; border-top: 1px solid #222; text-align: center;">
+                    <p style="color: #555; font-size: 11px; margin: 0;">Este mensaje fue generado automáticamente por el Agente Winners.<br/>Si no esperabas este correo, ignóralo.</p>
+                </div>
+            </div>`;
 
         await transporter.sendMail({
-            from: `"Winners Agente" <${process.env.EMAIL_USER}>`,
+            from: `"Winners" <${process.env.EMAIL_USER}>`,
             to,
             replyTo: process.env.EMAIL_USER,
             subject,
-            html: fullHtml,
-            headers: {
-                'X-Mailer': 'Winners Notification System',
-                'X-Priority': '1',
-                'Importance': 'high'
-            }
+            html: fullHtml
         });
         console.log(`[Scheduler] Email enviado a ${to}: ${subject}`);
     } catch (e) {
@@ -161,16 +140,20 @@ class Scheduler {
                         await sendAlert(
                             raffle.creator.email,
                             `⚠️ Atención requerida: Rifa ${raffle.title}`,
-                            `<h2 style="margin:0 0 16px;color:#f472b6;font-size:20px;">⚠️ Tu rifa necesita atención</h2>
-                             <p style="margin:0 0 12px;">Hola <strong>${raffle.creator.name || 'Creador'}</strong>,</p>
-                             <p style="margin:0 0 16px;">La rifa <strong style="color:#a78bfa;">"${raffle.title}"</strong> está próxima a finalizar sin alcanzar la rentabilidad esperada.</p>
-                             <table width="100%" cellpadding="12" style="background:rgba(255,255,255,0.05);border-radius:10px;margin:0 0 20px;">
-                               <tr><td style="color:#94a3b8;font-size:13px;">📅 Fecha de cierre actual</td><td style="color:#e2e8f0;font-weight:bold;">${new Date(raffle.endDate).toLocaleDateString('es-CO', {day:'2-digit',month:'long',year:'numeric'})}</td></tr>
-                               <tr><td style="color:#94a3b8;font-size:13px;">📆 Fecha sugerida</td><td style="color:#34d399;font-weight:bold;">${newSuggestedDate.toLocaleDateString('es-CO', {day:'2-digit',month:'long',year:'numeric'})}</td></tr>
-                               <tr><td style="color:#94a3b8;font-size:13px;">⚡ Riesgo detectado</td><td style="color:#f87171;font-weight:bold;">ALTO</td></tr>
-                             </table>
-                             <p style="margin:0 0 20px;color:#94a3b8;font-size:14px;">El Agente Winners sugiere aplazar el sorteo <strong>15 días adicionales</strong> para darte más tiempo de alcanzar tu punto de equilibrio.</p>
-                             <a href="https://winners-one.vercel.app/panel" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#db2777);color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:bold;font-size:14px;">Ver mi Panel de Control →</a>`
+                            `<p style="color:#ccc;font-size:14px;margin:0 0 8px;">Hola <strong style="color:#fff;">${raffle.creator.name || 'Creador'}</strong>,</p>
+                             <p style="color:#888;font-size:13px;margin:0 0 24px;">Tu rifa está próxima a finalizar sin alcanzar la rentabilidad esperada.</p>
+                             <div style="background:#1a1a1a;border:2px solid #8b00ff;border-radius:12px;padding:20px;margin:0 auto 20px;display:inline-block;text-align:left;width:100%;box-sizing:border-box;">
+                               <p style="color:#888;font-size:12px;margin:0 0 6px;">📌 Rifa</p>
+                               <p style="color:#fff;font-size:15px;font-weight:bold;margin:0 0 14px;">${raffle.title}</p>
+                               <p style="color:#888;font-size:12px;margin:0 0 4px;">📅 Cierre actual</p>
+                               <p style="color:#ccc;font-size:14px;margin:0 0 14px;">${new Date(raffle.endDate).toLocaleDateString('es-CO', {day:'2-digit',month:'long',year:'numeric'})}</p>
+                               <p style="color:#888;font-size:12px;margin:0 0 4px;">📆 Fecha sugerida por el Agente</p>
+                               <p style="color:#a855f7;font-size:16px;font-weight:900;margin:0 0 14px;">${newSuggestedDate.toLocaleDateString('es-CO', {day:'2-digit',month:'long',year:'numeric'})}</p>
+                               <p style="color:#888;font-size:12px;margin:0 0 4px;">⚡ Nivel de riesgo</p>
+                               <p style="color:#ff6b6b;font-weight:bold;font-size:14px;margin:0;">ALTO</p>
+                             </div>
+                             <p style="color:#888;font-size:12px;margin:0 0 20px;">El Agente Winners sugiere aplazar el sorteo <strong style="color:#fff;">15 días adicionales</strong> para alcanzar el punto de equilibrio.</p>
+                             <a href="https://winners-one.vercel.app/panel" style="display:inline-block;background:linear-gradient(135deg,#8b00ff,#ff00de);color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:bold;font-size:14px;letter-spacing:1px;">VER MI PANEL →</a>`
                         );
                         console.log(`[analyzeFinancialHealth] Email de alerta enviado exitosamente a ${raffle.creator.email}`);
                     } else {
