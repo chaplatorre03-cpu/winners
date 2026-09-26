@@ -53,18 +53,40 @@ router.get('/warmup', async (req, res) => {
 });
 
 /**
- * GET /api/cron/reset-test
- * Resets remindersSent counter to 0 for APARTADO tickets so reminder delivery can be re-tested.
+ * GET /api/cron/test-email
+ * Tests nodemailer SMTP delivery and returns full result or error details.
  */
-router.get('/reset-test', async (req, res) => {
+router.get('/test-email', async (req, res) => {
+    const nodemailer = require('nodemailer');
+    const emailUser = process.env.EMAIL_USER;
+    const emailPass = process.env.EMAIL_PASS;
+
+    if (!emailUser || !emailPass) {
+        return res.status(400).json({ error: 'EMAIL_USER o EMAIL_PASS no están configurados en .env' });
+    }
+
     try {
-        const updated = await prisma.ticket.updateMany({
-            where: { status: 'APARTADO' },
-            data: { remindersSent: 0 }
+        const transporter = nodemailer.createTransport({
+            host: 'smtp.gmail.com',
+            port: 465,
+            secure: true,
+            auth: {
+                user: emailUser,
+                pass: emailPass
+            }
         });
-        res.json({ success: true, message: 'Filtro de recordatorios reiniciado', resetCount: updated.count });
+
+        const info = await transporter.sendMail({
+            from: `"Winners Agente" <${emailUser}>`,
+            to: req.query.to || 'alexanderlatorre369@gmail.com',
+            subject: '🧪 Prueba de Notificación Agente Winners',
+            html: `<h3>Prueba de correo de notificaciones Winners</h3><p>Este correo confirma que el sistema de alertas por email funciona correctamente.</p>`
+        });
+
+        res.json({ success: true, messageId: info.messageId, response: info.response });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('[Test Email] Error:', err);
+        res.status(500).json({ success: false, error: err.message, stack: err.stack });
     }
 });
 
