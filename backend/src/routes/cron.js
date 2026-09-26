@@ -53,6 +53,83 @@ router.get('/warmup', async (req, res) => {
 });
 
 /**
+ * GET /api/cron/analyze-health
+ * Triggers analyzeFinancialHealth independently (also runs inside /follow-up).
+ * Use this to debug whether the health alert email is being sent.
+ */
+router.get('/analyze-health', async (req, res) => {
+    try {
+        const cronSecret = process.env.CRON_SECRET;
+        if (cronSecret) {
+            const authHeader = req.headers.authorization;
+            const querySecret = req.query.secret;
+            if (authHeader !== `Bearer ${cronSecret}` && querySecret !== cronSecret) {
+                return res.status(401).json({ error: 'No autorizado' });
+            }
+        }
+
+        console.log('[Vercel Cron] Ejecutando analyzeFinancialHealth de forma independiente...');
+        await Scheduler.analyzeFinancialHealth();
+        console.log('[Vercel Cron] analyzeFinancialHealth completado.');
+
+        res.json({
+            success: true,
+            message: 'analyzeFinancialHealth ejecutado. Revisa los logs del servidor para detalles.',
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('[Vercel Cron] Error en analyze-health:', error);
+        res.status(500).json({ error: 'Error ejecutando analyzeFinancialHealth', details: error.message });
+    }
+});
+
+/**
+ * GET /api/cron/health-check
+ * Returns the current health evaluation of all ACTIVE raffles WITHOUT sending any email.
+ * Use this to verify which raffles meet the criteria for a rescheduling alert.
+ */
+router.get('/health-check', async (req, res) => {
+    const nodemailer = require('nodemailer');
+    const RaffleHealthService = require('../services/RaffleHealthService');
+    try {
+        const activeRaffles = await prisma.raffle.findMany({
+            where: { status: 'ACTIVE' },
+            include: { tickets: true, creator: true }
+        });
+
+        const report = activeRaffles.map(raffle => {
+            const health = RaffleHealthService.evaluateHealth(raffle);
+            const endDate = new Date(raffle.endDate);
+            const daysRemaining = (endDate.getTime() - new Date().getTime()) / (1000 * 3600 * 24);
+            const wouldSendEmail = daysRemaining < 2 && !health.metrics.breakEvenReached && health.risk === 'HIGH';
+            return {
+                id: raffle.id,
+                title: raffle.title,
+                endDate: raffle.endDate,
+                suggestedDrawDate: raffle.suggestedDrawDate,
+                daysRemaining: daysRemaining.toFixed(2),
+                risk: health.risk,
+                score: health.score,
+                breakEvenReached: health.metrics.breakEvenReached,
+                creatorEmail: raffle.creator?.email || 'NO EMAIL',
+                wouldSendEmail,
+                reasons: health.reasons
+            };
+        });
+
+        res.json({
+            success: true,
+            count: activeRaffles.length,
+            timestamp: new Date().toISOString(),
+            raffles: report
+        });
+    } catch (error) {
+        console.error('[Health Check] Error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
  * GET /api/cron/test-email
  * Tests nodemailer SMTP delivery and returns full result or error details.
  */

@@ -60,9 +60,16 @@ class Scheduler {
                 include: { tickets: true, creator: true }
             });
 
+            console.log(`[analyzeFinancialHealth] Rifas ACTIVE encontradas: ${activeRaffles.length}`);
+
             for (const raffle of activeRaffles) {
                 const health = RaffleHealthService.evaluateHealth(raffle);
                 const metrics = health.metrics;
+
+                const endDate = new Date(raffle.endDate);
+                const daysRemaining = (endDate.getTime() - new Date().getTime()) / (1000 * 3600 * 24);
+
+                console.log(`[analyzeFinancialHealth] Rifa: "${raffle.title}" | risk=${health.risk} | score=${health.score} | daysRemaining=${daysRemaining.toFixed(2)} | breakEvenReached=${metrics.breakEvenReached} | creatorEmail=${raffle.creator?.email || 'NONE'}`);
 
                 // Si alcanzó el punto de equilibrio y tiene ganancias -> GATILLO DE SORTEO AUTOMÁTICO (Agente Financiero)
                 if (metrics.breakEvenReached && metrics.estimatedProfit >= (raffle.marginExpected || 0)) {
@@ -86,10 +93,10 @@ class Scheduler {
                 }
 
                 // Evaluar Reprogramación (Sugerida por la IA / Reglas)
-                const endDate = new Date(raffle.endDate);
-                const daysRemaining = (endDate.getTime() - new Date().getTime()) / (1000 * 3600 * 24);
+                const triggerReschedule = daysRemaining < 2 && !metrics.breakEvenReached && health.risk === 'HIGH';
+                console.log(`[analyzeFinancialHealth] ¿Cumple criterio de reprogramación? ${triggerReschedule} (daysRemaining<2: ${daysRemaining < 2}, !breakEven: ${!metrics.breakEvenReached}, risk HIGH: ${health.risk === 'HIGH'})`);
 
-                if (daysRemaining < 2 && !metrics.breakEvenReached && health.risk === 'HIGH') {
+                if (triggerReschedule) {
                     // Sugerir reprogramación a 15 días adicionales
                     const newSuggestedDate = new Date(endDate.getTime() + (15 * 24 * 60 * 60 * 1000));
                     await prisma.raffle.update({
@@ -97,8 +104,9 @@ class Scheduler {
                         data: { suggestedDrawDate: newSuggestedDate }
                     });
                     console.log(`[Agente Creador] Se sugiere reprogramar la rifa ${raffle.id} al ${newSuggestedDate.toISOString()}`);
-                    // Notificar al creador
+
                     if (raffle.creator?.email) {
+                        console.log(`[analyzeFinancialHealth] Enviando email de alerta a: ${raffle.creator.email}`);
                         await sendAlert(
                             raffle.creator.email,
                             `⚠️ Atención requerida: Rifa ${raffle.title}`,
@@ -106,9 +114,14 @@ class Scheduler {
                              <p>El Agente sugiere reprogramar el sorteo para el <b>${newSuggestedDate.toLocaleDateString('es-CO')}</b>.</p>
                              <p>Revisa el Asistente Winners en tu panel de control.</p>`
                         );
+                        console.log(`[analyzeFinancialHealth] Email de alerta enviado exitosamente a ${raffle.creator.email}`);
+                    } else {
+                        console.warn(`[analyzeFinancialHealth] Rifa "${raffle.title}" cumple criterios pero el creador NO tiene email registrado.`);
                     }
                 }
             }
+
+            console.log('[analyzeFinancialHealth] Job completado.');
         } catch (error) {
             console.error('[Scheduler] Error en analyzeFinancialHealth:', error);
         }
