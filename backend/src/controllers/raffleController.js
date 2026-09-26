@@ -149,12 +149,16 @@ exports.purchaseTickets = async (req, res) => {
         }
 
         const now = new Date();
-        const raffleEndDate = new Date(raffle.endDate);
-        // Shift cutoff by +1 day so reservations remain open throughout the draw date and the following day
-        raffleEndDate.setDate(raffleEndDate.getDate() + 1);
-        raffleEndDate.setHours(23, 59, 59, 999);
 
-        if (now > raffleEndDate) {
+        // Cutoff is set to exactly 00:00:00.000 COT of the day AFTER raffle.endDate (05:00:00 UTC of next day).
+        // Reservations are allowed throughout the entire draw date (until 23:59:59.999 COT) and block at midnight.
+        const dateStr = typeof raffle.endDate === 'string'
+            ? raffle.endDate.split('T')[0]
+            : new Date(raffle.endDate).toISOString().split('T')[0];
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const cutoffDate = new Date(Date.UTC(year, month - 1, day + 1, 5, 0, 0, 0));
+
+        if (now >= cutoffDate) {
             return res.status(400).json({ error: 'La rifa ha finalizado' });
         }
 
