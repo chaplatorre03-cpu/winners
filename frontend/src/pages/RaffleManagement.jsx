@@ -70,6 +70,22 @@ const RaffleManagement = () => {
 
     const [showCustomErrorModal, setShowCustomErrorModal] = useState(false);
     const [customErrorMessage, setCustomErrorMessage] = useState('');
+    const [isAuthError, setIsAuthError] = useState(false);
+
+    const triggerErrorModal = (message, isAuth = false) => {
+        setCustomErrorMessage(message);
+        setIsAuthError(isAuth);
+        setShowCustomErrorModal(true);
+    };
+
+    const handleCloseErrorModal = () => {
+        setShowCustomErrorModal(false);
+        if (isAuthError) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        }
+    };
 
     const [updatedRaffleInfo, setUpdatedRaffleInfo] = useState(INITIAL_RAFFLE_INFO);
     const [paymentConfigExpanded, setPaymentConfigExpanded] = useState(false);
@@ -424,19 +440,20 @@ const RaffleManagement = () => {
                 navigate(`/panel?raffle=${raffleId}`, { replace: true });
                 await fetchRaffleDetails();
             } else if (response.status === 401) {
-                alert('Tu sesión ha expirado. Por favor, vuelve a iniciar sesión para guardar los ajustes.');
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                window.location.href = '/login';
+                triggerErrorModal('Tu sesión ha expirado por seguridad. Al presionar "Entendido" o cerrar esta ventana, serás redirigido para ingresar tus credenciales nuevamente.', true);
             } else {
-                const errorData = await response.json();
-                setCustomErrorMessage(errorData.error || response.statusText);
-                setShowCustomErrorModal(true);
+                const errorData = await response.json().catch(() => ({}));
+                const isAuthErr = response.status === 401 || (errorData.error && errorData.error.toLowerCase().includes('token'));
+                triggerErrorModal(
+                    isAuthErr
+                        ? 'Tu sesión ha expirado por seguridad. Al presionar "Entendido" o cerrar esta ventana, serás redirigido para ingresar tus credenciales nuevamente.'
+                        : (errorData.error || response.statusText || 'Error al actualizar la rifa'),
+                    isAuthErr
+                );
             }
         } catch (err) {
             console.error('Error updating raffle:', err);
-            setCustomErrorMessage('Error de conexión al actualizar la rifa');
-            setShowCustomErrorModal(true);
+            triggerErrorModal('Error de conexión al actualizar la rifa');
         } finally {
             setActionLoading(false);
         }
@@ -1590,9 +1607,9 @@ const RaffleManagement = () => {
             {
                 showCustomErrorModal && (
                     <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md animate-fade-in" onClick={() => setShowCustomErrorModal(false)}></div>
+                        <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md animate-fade-in" onClick={handleCloseErrorModal}></div>
                         <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-[2.5rem] pt-16 md:pt-20 px-14 md:px-10 pb-6 md:pb-10 shadow-3xl border-2 border-white/50 animate-scale-in text-center flex flex-col max-h-[95vh] overflow-hidden">
-                            <CloseButton onClick={() => setShowCustomErrorModal(false)} />
+                            <CloseButton onClick={handleCloseErrorModal} />
                             <div className="overflow-y-auto custom-scrollbar flex-1 overflow-x-visible">
                                 <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 relative">
                                     <div className="absolute inset-0 border-4 border-red-100 rounded-full animate-ping opacity-20"></div>
@@ -1607,7 +1624,7 @@ const RaffleManagement = () => {
 
                             <div className="p-2 pt-4">
                                 <button
-                                    onClick={() => setShowCustomErrorModal(false)}
+                                    onClick={handleCloseErrorModal}
                                     className="w-full btn-primary py-4 rounded-2xl shadow-[0_15px_35px_-5px_rgba(255,0,222,0.4)] hover:shadow-[0_20px_45px_-5px_rgba(255,0,222,0.5)] text-sm font-black tracking-widest uppercase relative z-10 transition-all duration-300 active:scale-95"
                                 >
                                     ENTENDIDO
