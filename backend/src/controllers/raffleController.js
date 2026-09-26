@@ -1,4 +1,4 @@
-﻿const prisma = require('../lib/prisma');
+const prisma = require('../lib/prisma');
 const WhatsAppService = require('../services/WhatsAppService');
 
 // Get all raffles
@@ -150,9 +150,10 @@ exports.purchaseTickets = async (req, res) => {
 
         const now = new Date();
         const raffleEndDate = new Date(raffle.endDate);
-        if (raffleEndDate.getUTCHours() === 0 && raffleEndDate.getUTCMinutes() === 0) {
-            raffleEndDate.setUTCHours(23, 59, 59, 999);
-        }
+        // Shift cutoff by +1 day so reservations remain open throughout the draw date and the following day
+        raffleEndDate.setDate(raffleEndDate.getDate() + 1);
+        raffleEndDate.setHours(23, 59, 59, 999);
+
         if (now > raffleEndDate) {
             return res.status(400).json({ error: 'La rifa ha finalizado' });
         }
