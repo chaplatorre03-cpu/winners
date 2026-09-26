@@ -9,5 +9,15 @@
             "source": "/(.*)",
             "destination": "/index.html"
         }
+    ],
+    "crons": [
+        {
+            "path": "/api/cron/follow-up",
+            "schedule": "0 * * * *"
+        },
+        {
+            "path": "/api/cron/analyze-health",
+            "schedule": "0 */6 * * *"
+        }
     ]
 }
