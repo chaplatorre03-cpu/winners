@@ -22,10 +22,8 @@ router.get('/follow-up', async (req, res) => {
 
         console.log('[Vercel Cron] Iniciando ejecucion de tareas automatizadas...');
 
-        // Warm up the Evolution API (Render) BEFORE running scheduled jobs.
-        // Render free tier shuts down after 15 min of inactivity; first request takes 30-60s.
-        // Warming up here prevents WhatsApp notification timeouts.
-        await warmUpWhatsAppGateway();
+        // Warm up Evolution API asynchronously without blocking main thread execution
+        warmUpWhatsAppGateway().catch(err => console.warn('[Cron Warmup Non-blocking Error]:', err.message));
 
         // Execute background monitoring jobs
         const followUpStats = await Scheduler.followUpPayments();
