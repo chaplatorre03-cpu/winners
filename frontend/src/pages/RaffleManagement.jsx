@@ -226,10 +226,9 @@ const RaffleManagement = () => {
                 setShowTicketUpdateSuccess(true);
                 await fetchRaffleDetails();
             } else if (response.status === 401) {
-                alert('Tu sesión de usuario ha expirado. Por favor, vuelve a iniciar sesión.');
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                window.location.href = '/login';
+                setShowStatusConfirm(false);
+                setPendingStatusUpdate(null);
+                triggerErrorModal('Tu sesión ha expirado por seguridad. Al presionar "Entendido" o cerrar esta ventana, serás redirigido para ingresar tus credenciales nuevamente.', true);
             }
         } catch (err) {
             console.error('Error updating ticket:', err);
@@ -265,6 +264,8 @@ const RaffleManagement = () => {
                     setShowTicketUpdateSuccess(true);
                 }
                 await fetchRaffleDetails();
+            } else if (response.status === 401) {
+                triggerErrorModal('Tu sesión ha expirado por seguridad. Al presionar "Entendido" o cerrar esta ventana, serás redirigido para ingresar tus credenciales nuevamente.', true);
             }
         } catch (err) {
             console.error('Error updating ticket:', err);
@@ -298,13 +299,12 @@ const RaffleManagement = () => {
                 setSelectedTicket(null);
                 await fetchRaffleDetails();
             } else if (response.status === 401) {
-                alert('Tu sesión de usuario ha expirado. Por favor, vuelve a iniciar sesión.');
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                window.location.href = '/login';
+                setShowDeleteConfirm(false);
+                setTicketToDelete(null);
+                triggerErrorModal('Tu sesión ha expirado por seguridad. Al presionar "Entendido" o cerrar esta ventana, serás redirigido para ingresar tus credenciales nuevamente.', true);
             } else {
                 const data = await response.json();
-                alert(data.error || 'Error al eliminar ticket');
+                triggerErrorModal(data.error || 'Error al eliminar ticket');
             }
         } catch (err) {
             console.error('Error deleting ticket:', err);
