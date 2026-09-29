@@ -179,17 +179,19 @@ class Scheduler {
 
             // Helper to send WhatsApp with timeout in Vercel serverless environment
             const sendWhatsAppWithTimeout = async (phone, message) => {
-                if (!phone) return;
+                if (!phone) return true;
                 try {
                     const waTimeout = new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error('WhatsApp timeout (12s)')), 12000)
+                        setTimeout(() => reject(new Error('WhatsApp timeout (20s)')), 20000)
                     );
                     await Promise.race([
                         WhatsAppService.sendMessage(phone, message),
                         waTimeout
                     ]);
+                    return true;
                 } catch (err) {
                     console.warn(`[Scheduler] WhatsApp warning para ${phone}: ${err.message}`);
+                    return false;
                 }
             };
 
@@ -206,6 +208,16 @@ class Scheduler {
 
             for (const ticket of toCancel) {
                 try {
+                    // Notify buyer via WhatsApp BEFORE deletion
+                    if (ticket.buyerPhone) {
+                        const msg =
+                            `🚫 *WINNERS - Reserva Cancelada*\n\n` +
+                            `Hola ${ticket.buyerName || 'participante'}, debido a que no recibimos la confirmación de pago en 72 horas, ` +
+                            `tu reserva del número *${String(ticket.number).padStart(3, '0')}* para el sorteo *"${ticket.raffle.title}"* ha expirado y el número ha sido liberado.\n\n` +
+                            `Si aún deseas participar, puedes reservar un nuevo número en el talonario web. ¡Éxitos! 🎟️`;
+                        await sendWhatsAppWithTimeout(ticket.buyerPhone, msg);
+                    }
+
                     // Delete winner records first to avoid FK constraint errors
                     await prisma.raffleWinner.deleteMany({ where: { ticketId: ticket.id } });
 
@@ -222,16 +234,6 @@ class Scheduler {
                     }
 
                     console.log(`[Agente de Seguimiento] Reserva CANCELADA y LIBERADA: ticket #${ticket.number} en rifa "${ticket.raffle.title}"`);
-
-                    // Notify buyer via WhatsApp (AWAITED)
-                    if (ticket.buyerPhone) {
-                        const msg =
-                            `🚫 *WINNERS - Reserva Cancelada*\n\n` +
-                            `Hola ${ticket.buyerName || 'participante'}, debido a que no recibimos la confirmación de pago en 72 horas, ` +
-                            `tu reserva del número *${String(ticket.number).padStart(3, '0')}* para el sorteo *"${ticket.raffle.title}"* ha expirado y el número ha sido liberado.\n\n` +
-                            `Si aún deseas participar, puedes reservar un nuevo número en el talonario web. ¡Éxitos! 🎟️`;
-                        await sendWhatsAppWithTimeout(ticket.buyerPhone, msg);
-                    }
                 } catch (err) {
                     console.error(`[Agente de Seguimiento] Error cancelando ticket ${ticket.id}:`, err.message);
                 }
@@ -251,20 +253,25 @@ class Scheduler {
 
             for (const ticket of toRemind2) {
                 try {
-                    await prisma.ticket.update({
-                        where: { id: ticket.id },
-                        data: { remindersSent: 2 }
-                    });
-
-                    console.log(`[Agente de Seguimiento] 2do recordatorio enviado: ticket #${ticket.number} en rifa "${ticket.raffle.title}"`);
-
+                    let sentOk = true;
                     if (ticket.buyerPhone) {
                         const msg =
                             `⚠️ *WINNERS - Último Recordatorio*\n\n` +
                             `Hola ${ticket.buyerName || 'participante'}, tu reserva del número *${String(ticket.number).padStart(3, '0')}* ` +
                             `para el sorteo *"${ticket.raffle.title}"* vence en las próximas horas.\n\n` +
                             `Si no confirmas tu pago, el número será liberado. ¡No pierdas tu oportunidad! 🍀`;
-                        await sendWhatsAppWithTimeout(ticket.buyerPhone, msg);
+                        sentOk = await sendWhatsAppWithTimeout(ticket.buyerPhone, msg);
+                    }
+
+                    // Update DB ONLY if WhatsApp message was delivered successfully (or no phone)
+                    if (sentOk) {
+                        await prisma.ticket.update({
+                            where: { id: ticket.id },
+                            data: { remindersSent: 2 }
+                        });
+                        console.log(`[Agente de Seguimiento] 2do recordatorio enviado y registrado: ticket #${ticket.number} en rifa "${ticket.raffle.title}"`);
+                    } else {
+                        console.warn(`[Agente de Seguimiento] 2do recordatorio NO entregado para ticket #${ticket.number}, se reintentará en el próximo cron.`);
                     }
                 } catch (err) {
                     console.error(`[Agente de Seguimiento] Error enviando 2do recordatorio ticket ${ticket.id}:`, err.message);
@@ -285,13 +292,7 @@ class Scheduler {
 
             for (const ticket of toRemind1) {
                 try {
-                    await prisma.ticket.update({
-                        where: { id: ticket.id },
-                        data: { remindersSent: 1 }
-                    });
-
-                    console.log(`[Agente de Seguimiento] 1er recordatorio enviado: ticket #${ticket.number} en rifa "${ticket.raffle.title}"`);
-
+                    let sentOk = true;
                     if (ticket.buyerPhone) {
                         const msg =
                             `🎟️ *WINNERS - Recordatorio de Pago*\n\n` +
@@ -299,7 +300,18 @@ class Scheduler {
                             `*${String(ticket.number).padStart(3, '0')}* para el sorteo *"${ticket.raffle.title}"*.\n\n` +
                             `Realiza tu pago para asegurar tu participación. Si en 24 horas no confirmamos el pago, el número será liberado.\n\n` +
                             `¡Mucha suerte! 🍀`;
-                        await sendWhatsAppWithTimeout(ticket.buyerPhone, msg);
+                        sentOk = await sendWhatsAppWithTimeout(ticket.buyerPhone, msg);
+                    }
+
+                    // Update DB ONLY if WhatsApp message was delivered successfully (or no phone)
+                    if (sentOk) {
+                        await prisma.ticket.update({
+                            where: { id: ticket.id },
+                            data: { remindersSent: 1 }
+                        });
+                        console.log(`[Agente de Seguimiento] 1er recordatorio enviado y registrado: ticket #${ticket.number} en rifa "${ticket.raffle.title}"`);
+                    } else {
+                        console.warn(`[Agente de Seguimiento] 1er recordatorio NO entregado para ticket #${ticket.number}, se reintentará en el próximo cron.`);
                     }
                 } catch (err) {
                     console.error(`[Agente de Seguimiento] Error enviando 1er recordatorio ticket ${ticket.id}:`, err.message);
