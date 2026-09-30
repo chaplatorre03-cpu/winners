@@ -177,7 +177,10 @@ class Scheduler {
             const h48 = new Date(now.getTime() - 48 * 60 * 60 * 1000);
             const h72 = new Date(now.getTime() - 72 * 60 * 60 * 1000);
 
-            // Helper to send WhatsApp with timeout in Vercel serverless environment
+            /**
+             * Helper: sends a WhatsApp message with a hard timeout.
+             * Returns true if delivered, false on any error/timeout.
+             */
             const sendWhatsAppWithTimeout = async (phone, message) => {
                 if (!phone) return true;
                 try {
@@ -195,7 +198,9 @@ class Scheduler {
                 }
             };
 
-            // --- STAGE 3: Cancel ALL tickets older than 72h (3 days) ---
+            // =========================================================
+            // STAGE 3: Cancel tickets older than 72h and free the number
+            // =========================================================
             const toCancel = await prisma.ticket.findMany({
                 where: {
                     status: 'APARTADO',
@@ -239,7 +244,10 @@ class Scheduler {
                 }
             }
 
-            // --- STAGE 2: Second warning for tickets 48h-72h old (remindersSent < 2) ---
+            // =========================================================
+            // STAGE 2: Second (last) warning — tickets 48h–72h old
+            //          Only if remindersSent < 2 (not yet sent)
+            // =========================================================
             const toRemind2 = await prisma.ticket.findMany({
                 where: {
                     status: 'APARTADO',
@@ -253,32 +261,40 @@ class Scheduler {
 
             for (const ticket of toRemind2) {
                 try {
-                    let sentOk = true;
+                    console.log(`[Scheduler] STAGE 2 - Ticket #${ticket.number} | remindersSent=${ticket.remindersSent} | createdAt=${ticket.createdAt.toISOString()} | phone=${ticket.buyerPhone}`);
+
+                    // *** CRITICAL: Mark remindersSent=2 in DB FIRST ***
+                    // This guarantees the reminder is only sent once even if
+                    // the WhatsApp delivery fails or the cron runs again before the
+                    // ticket moves to the 72h window.
+                    await prisma.ticket.update({
+                        where: { id: ticket.id },
+                        data: { remindersSent: 2 }
+                    });
+                    console.log(`[Scheduler] STAGE 2 - remindersSent=2 guardado en BD para ticket #${ticket.number}`);
+
                     if (ticket.buyerPhone) {
                         const msg =
                             `⚠️ *WINNERS - Último Recordatorio*\n\n` +
                             `Hola ${ticket.buyerName || 'participante'}, tu reserva del número *${String(ticket.number).padStart(3, '0')}* ` +
                             `para el sorteo *"${ticket.raffle.title}"* vence en las próximas horas.\n\n` +
                             `Si no confirmas tu pago, el número será liberado. ¡No pierdas tu oportunidad! 🍀`;
-                        sentOk = await sendWhatsAppWithTimeout(ticket.buyerPhone, msg);
-                    }
-
-                    // Update DB ONLY if WhatsApp message was delivered successfully (or no phone)
-                    if (sentOk) {
-                        await prisma.ticket.update({
-                            where: { id: ticket.id },
-                            data: { remindersSent: 2 }
-                        });
-                        console.log(`[Agente de Seguimiento] 2do recordatorio enviado y registrado: ticket #${ticket.number} en rifa "${ticket.raffle.title}"`);
-                    } else {
-                        console.warn(`[Agente de Seguimiento] 2do recordatorio NO entregado para ticket #${ticket.number}, se reintentará en el próximo cron.`);
+                        const sentOk = await sendWhatsAppWithTimeout(ticket.buyerPhone, msg);
+                        if (sentOk) {
+                            console.log(`[Agente de Seguimiento] 2do recordatorio enviado: ticket #${ticket.number} en rifa "${ticket.raffle.title}"`);
+                        } else {
+                            console.warn(`[Agente de Seguimiento] 2do recordatorio WhatsApp falló para ticket #${ticket.number} - ya marcado (remindersSent=2), NO se reintentará.`);
+                        }
                     }
                 } catch (err) {
                     console.error(`[Agente de Seguimiento] Error enviando 2do recordatorio ticket ${ticket.id}:`, err.message);
                 }
             }
 
-            // --- STAGE 1: First reminder for tickets 24h-48h old (remindersSent === 0) ---
+            // =========================================================
+            // STAGE 1: First reminder — tickets 24h–48h old
+            //          Only if remindersSent === 0 (never sent before)
+            // =========================================================
             const toRemind1 = await prisma.ticket.findMany({
                 where: {
                     status: 'APARTADO',
@@ -292,7 +308,17 @@ class Scheduler {
 
             for (const ticket of toRemind1) {
                 try {
-                    let sentOk = true;
+                    console.log(`[Scheduler] STAGE 1 - Ticket #${ticket.number} | remindersSent=${ticket.remindersSent} | createdAt=${ticket.createdAt.toISOString()} | phone=${ticket.buyerPhone}`);
+
+                    // *** CRITICAL: Mark remindersSent=1 in DB FIRST ***
+                    // This guarantees the first reminder is only sent ONCE per ticket,
+                    // even if the WhatsApp delivery fails/times out and the cron runs again.
+                    await prisma.ticket.update({
+                        where: { id: ticket.id },
+                        data: { remindersSent: 1 }
+                    });
+                    console.log(`[Scheduler] STAGE 1 - remindersSent=1 guardado en BD para ticket #${ticket.number}`);
+
                     if (ticket.buyerPhone) {
                         const msg =
                             `🎟️ *WINNERS - Recordatorio de Pago*\n\n` +
@@ -300,18 +326,12 @@ class Scheduler {
                             `*${String(ticket.number).padStart(3, '0')}* para el sorteo *"${ticket.raffle.title}"*.\n\n` +
                             `Realiza tu pago para asegurar tu participación. Si en 24 horas no confirmamos el pago, el número será liberado.\n\n` +
                             `¡Mucha suerte! 🍀`;
-                        sentOk = await sendWhatsAppWithTimeout(ticket.buyerPhone, msg);
-                    }
-
-                    // Update DB ONLY if WhatsApp message was delivered successfully (or no phone)
-                    if (sentOk) {
-                        await prisma.ticket.update({
-                            where: { id: ticket.id },
-                            data: { remindersSent: 1 }
-                        });
-                        console.log(`[Agente de Seguimiento] 1er recordatorio enviado y registrado: ticket #${ticket.number} en rifa "${ticket.raffle.title}"`);
-                    } else {
-                        console.warn(`[Agente de Seguimiento] 1er recordatorio NO entregado para ticket #${ticket.number}, se reintentará en el próximo cron.`);
+                        const sentOk = await sendWhatsAppWithTimeout(ticket.buyerPhone, msg);
+                        if (sentOk) {
+                            console.log(`[Agente de Seguimiento] 1er recordatorio enviado: ticket #${ticket.number} en rifa "${ticket.raffle.title}"`);
+                        } else {
+                            console.warn(`[Agente de Seguimiento] 1er recordatorio WhatsApp falló para ticket #${ticket.number} - ya marcado (remindersSent=1), NO se reintentará.`);
+                        }
                     }
                 } catch (err) {
                     console.error(`[Agente de Seguimiento] Error enviando 1er recordatorio ticket ${ticket.id}:`, err.message);

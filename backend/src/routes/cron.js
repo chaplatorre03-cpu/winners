@@ -58,6 +58,75 @@ router.get('/warmup', async (req, res) => {
 });
 
 /**
+ * DELETE /api/cron/reset-apartados
+ * Deletes ALL tickets with status APARTADO and adjusts ticketsSold on each raffle.
+ * USE ONLY FOR TESTING - cleans the slate so new reservations can be tracked from zero.
+ */
+router.delete('/reset-apartados', async (req, res) => {
+    try {
+        const cronSecret = process.env.CRON_SECRET;
+        if (cronSecret) {
+            const authHeader = req.headers.authorization;
+            const querySecret = req.query.secret;
+            if (authHeader !== `Bearer ${cronSecret}` && querySecret !== cronSecret) {
+                return res.status(401).json({ error: 'No autorizado' });
+            }
+        }
+
+        // Find all APARTADO tickets
+        const apartados = await prisma.ticket.findMany({
+            where: { status: 'APARTADO' },
+            select: { id: true, raffleId: true, number: true }
+        });
+
+        if (apartados.length === 0) {
+            return res.json({ success: true, message: 'No hay tickets APARTADO para eliminar.', deleted: 0 });
+        }
+
+        // Group by raffle to decrement counts
+        const countByRaffle = {};
+        for (const t of apartados) {
+            countByRaffle[t.raffleId] = (countByRaffle[t.raffleId] || 0) + 1;
+        }
+
+        // Delete winner records linked to these tickets first
+        await prisma.raffleWinner.deleteMany({
+            where: { ticketId: { in: apartados.map(t => t.id) } }
+        });
+
+        // Delete all APARTADO tickets
+        const deleted = await prisma.ticket.deleteMany({
+            where: { status: 'APARTADO' }
+        });
+
+        // Decrement ticketsSold per raffle
+        for (const [raffleId, count] of Object.entries(countByRaffle)) {
+            const raffle = await prisma.raffle.findUnique({ where: { id: raffleId } });
+            if (raffle) {
+                const newSold = Math.max(0, raffle.ticketsSold - count);
+                await prisma.raffle.update({
+                    where: { id: raffleId },
+                    data: { ticketsSold: newSold }
+                });
+            }
+        }
+
+        console.log(`[Reset] ${deleted.count} ticket(s) APARTADO eliminados para pruebas.`);
+        res.json({
+            success: true,
+            message: `${deleted.count} ticket(s) APARTADO eliminados correctamente. Puedes crear nuevas reservas.`,
+            deleted: deleted.count,
+            raflesUpdated: Object.keys(countByRaffle).length
+        });
+    } catch (error) {
+        console.error('[Reset] Error eliminando tickets APARTADO:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
+
+/**
  * GET /api/cron/analyze-health
  * Triggers analyzeFinancialHealth independently (also runs inside /follow-up).
  * Use this to debug whether the health alert email is being sent.
