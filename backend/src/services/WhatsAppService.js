@@ -1,4 +1,4 @@
-﻿/**
+/**
  * WhatsAppService.js
  * Handles sending WhatsApp notifications to raffle participants.
  * In development (no config), messages are logged to the console.
@@ -57,7 +57,7 @@ class WhatsAppService {
                     console.log(`[WhatsAppService] Enviando mensaje con imagen a ${phoneWithoutPlus}...`);
 
                     const _mediaController = new AbortController();
-                    const _mediaTimer = setTimeout(() => _mediaController.abort(), 15000);
+                    const _mediaTimer = setTimeout(() => _mediaController.abort(), 25000);
                     const mediaRes = await fetch(mediaUrl, {
                         method: 'POST',
                         headers: {
@@ -94,7 +94,7 @@ class WhatsAppService {
                 console.log(`[WhatsAppService] Enviando mensaje de texto a ${phoneWithoutPlus}...`);
 
                 const _textController = new AbortController();
-                const _textTimer = setTimeout(() => _textController.abort(), 15000);
+                const _textTimer = setTimeout(() => _textController.abort(), 20000);
                 const response = await fetch(textUrl, {
                     method: 'POST',
                     headers: {

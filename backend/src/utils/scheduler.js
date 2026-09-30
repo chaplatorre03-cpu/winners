@@ -182,7 +182,7 @@ class Scheduler {
                 if (!phone) return true;
                 try {
                     const waTimeout = new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error('WhatsApp timeout (20s)')), 20000)
+                        setTimeout(() => reject(new Error('WhatsApp timeout (35s)')), 35000)
                     );
                     await Promise.race([
                         WhatsAppService.sendMessage(phone, message),

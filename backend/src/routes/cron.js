@@ -22,8 +22,15 @@ router.get('/follow-up', async (req, res) => {
 
         console.log('[Vercel Cron] Iniciando ejecucion de tareas automatizadas...');
 
-        // Warm up Evolution API asynchronously without blocking main thread execution
-        warmUpWhatsAppGateway().catch(err => console.warn('[Cron Warmup Non-blocking Error]:', err.message));
+        // Warm up Evolution API BEFORE sending WhatsApp messages.
+        // We wait up to 30 seconds so Render's free tier is fully awake
+        // when the media (logo image) is sent - preventing fallback to text-only.
+        console.log('[Vercel Cron] Despertando Evolution API (warmup bloqueante, max 30s)...');
+        const warmupResult = await Promise.race([
+            warmUpWhatsAppGateway(),
+            new Promise(resolve => setTimeout(() => resolve({ status: 'timeout' }), 30000))
+        ]);
+        console.log('[Vercel Cron] Warmup result:', JSON.stringify(warmupResult));
 
         // Execute background monitoring jobs
         const followUpStats = await Scheduler.followUpPayments();
