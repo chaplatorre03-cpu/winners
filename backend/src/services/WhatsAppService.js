@@ -57,7 +57,7 @@ class WhatsAppService {
                     console.log(`[WhatsAppService] Enviando mensaje con imagen a ${phoneWithoutPlus}...`);
 
                     const _mediaController = new AbortController();
-                    const _mediaTimer = setTimeout(() => _mediaController.abort(), 25000);
+                    const _mediaTimer = setTimeout(() => _mediaController.abort(), 35000);
                     const mediaRes = await fetch(mediaUrl, {
                         method: 'POST',
                         headers: {
@@ -84,7 +84,12 @@ class WhatsAppService {
                         console.warn(`[WhatsAppService] Error en sendMedia (${mediaRes.status}): ${errText}. Reintentando con sendText...`);
                     }
                 } catch (mediaErr) {
-                    console.warn(`[WhatsAppService] Fallo de red en sendMedia: ${mediaErr.message}. Reintentando con sendText...`);
+                    console.warn(`[WhatsAppService] Fallo de red/timeout en sendMedia: ${mediaErr.message}.`);
+                    // If sendMedia timed out (AbortError), Render might still process it. Do NOT send duplicate text!
+                    if (mediaErr.name === 'AbortError') {
+                        console.warn('[WhatsAppService] Timeout en sendMedia. Se omite fallback para evitar mensaje duplicado.');
+                        return;
+                    }
                 }
             }
 
@@ -191,8 +196,7 @@ class WhatsAppService {
             const ticketLabel = sortedNumbers.length > 1 ? 'Tus números participantes' : 'Tu número participante';
 
             const message =
-                `✨ *WINNERS PLATFORM* ✨\n` +
-                `━━━━━━━━━━━━━━━━━━━━\n\n` +
+                `✨ *WINNERS PLATFORM* ✨\n\n` +
                 `👋 ${nameGreeting},\n\n` +
                 `Te informamos que la fecha del sorteo *"${raffle.title}"* ha sido reprogramada.\n\n` +
                 `📅 *Detalles de la nueva programación:*\n` +
@@ -201,7 +205,6 @@ class WhatsAppService {
                 `🎟️ *${ticketLabel}:*\n` +
                 `👉 *${formattedNumbers}*\n\n` +
                 `ℹ️ *Tu número participante sigue 100% activo y garantizado para el sorteo.* ¡Mucha suerte! 🍀✨\n\n` +
-                `━━━━━━━━━━━━━━━━━━━━\n` +
                 `💎 *Equipo WINNERS*\n` +
                 `🌐 https://winners-one.vercel.app`;
 

@@ -214,24 +214,41 @@ exports.purchaseTickets = async (req, res) => {
                 if (raffle.payLink) paymentInfo += `\n• *Link de Pago:* ${raffle.payLink}`;
 
                 const confirmMsg =
-                    `✨ *WINNERS PLATFORM* ✨\n` +
-                    `________________________________________\n\n` +
+                    `✨ *WINNERS PLATFORM* ✨\n\n` +
                     `👋 Hola *${buyerName}*,\n\n` +
                     `¡Tus números han sido reservados con éxito!\n\n` +
                     `📱 *Sorteo:* "${raffle.title}"\n` +
                     `👉 *Números reservados:* ${formattedNumbers}\n` +
                     `💰 *Total a pagar:* ${totalCostFormatted}\n` +
                     (paymentInfo ? `\n🏦 *Métodos de pago:*${paymentInfo}\n` : '') +
-                    `\n⏳ Cuentas con *72 horas* para realizar tu pago y asegurar tu participación. ¡Mucha suerte! 🍀\n` +
-                    `________________________________________\n\n` +
+                    `\n⏳ Cuentas con *72 horas* para realizar tu pago y asegurar tu participación. ¡Mucha suerte! 🍀\n\n` +
                     `💎 *Equipo WINNERS*\n` +
                     `🌐 https://winners-one.vercel.app`;
 
-                // CRITICAL FIX: await with 12s timeout so Vercel serverless function doesn't end
-                // before Evolution API (Render) responds — cold starts can take 30-60s.
-                console.log('[purchaseTickets] Enviando confirmacion WhatsApp a ' + buyerPhone + '...');
+                // Wake Evolution API (Render free tier) BEFORE sending the media message.
+                // Without this warmup, Render cold-start (~30-60s) causes timeout to expire
+                // before the image is uploaded or causes duplicate fallback text messages.
+                const _apiUrl = process.env.WHATSAPP_API_URL;
+                const _apiKey = process.env.WHATSAPP_API_KEY;
+                if (_apiUrl && _apiKey) {
+                    console.log('[purchaseTickets] Despertando Evolution API (max 30s)...');
+                    try {
+                        const wuCtrl = new AbortController();
+                        const wuTimer = setTimeout(() => wuCtrl.abort(), 30000);
+                        await fetch(`${_apiUrl.replace(/\/$/, '')}/instance/fetchInstances`, {
+                            headers: { 'apikey': _apiKey },
+                            signal: wuCtrl.signal
+                        });
+                        clearTimeout(wuTimer);
+                        console.log('[purchaseTickets] Evolution API despertada OK.');
+                    } catch (wuErr) {
+                        console.warn('[purchaseTickets] Warmup no completado:', wuErr.message);
+                    }
+                }
+
+                console.log('[purchaseTickets] Enviando confirmacion WhatsApp con logo a ' + buyerPhone + '...');
                 const _waTimeout = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('WhatsApp timeout (12s)')), 12000)
+                    setTimeout(() => reject(new Error('WhatsApp timeout (45s)')), 45000)
                 );
                 await Promise.race([
                     WhatsAppService.sendMessage(buyerPhone, confirmMsg),
