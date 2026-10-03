@@ -179,7 +179,7 @@ class Scheduler {
 
             /**
              * Helper: sends a WhatsApp message with a hard timeout.
-             * Returns true if delivered, false on any error/timeout.
+             * Returns true if delivered/skipped, false on network error/timeout.
              */
             const sendWhatsAppWithTimeout = async (phone, message) => {
                 if (!phone) return true;
@@ -198,6 +198,28 @@ class Scheduler {
                 }
             };
 
+            // Wake Evolution API (Render free tier) BEFORE sending any reminders
+            const _apiUrl = process.env.WHATSAPP_API_URL;
+            const _apiKey = process.env.WHATSAPP_API_KEY;
+            const warmupRender = async () => {
+                if (_apiUrl && _apiKey) {
+                    try {
+                        const wuCtrl = new AbortController();
+                        const wuTimer = setTimeout(() => wuCtrl.abort(), 30000);
+                        await fetch(`${_apiUrl.replace(/\/$/, '')}/instance/fetchInstances`, {
+                            headers: { 'apikey': _apiKey },
+                            signal: wuCtrl.signal
+                        });
+                        clearTimeout(wuTimer);
+                        console.log('[Scheduler] Evolution API despertada OK.');
+                    } catch (wuErr) {
+                        console.warn('[Scheduler] Warmup Render warning:', wuErr.message);
+                    }
+                }
+            };
+
+            let isWarmedUp = false;
+
             // =========================================================
             // STAGE 3: Cancel tickets older than 72h and free the number
             // =========================================================
@@ -211,36 +233,48 @@ class Scheduler {
 
             console.log(`[Scheduler] STAGE 3 (Cancelación >72h): ${toCancel.length} ticket(s) encontrados.`);
 
-            for (const ticket of toCancel) {
-                try {
-                    // Notify buyer via WhatsApp BEFORE deletion
-                    if (ticket.buyerPhone) {
+            if (toCancel.length > 0) {
+                if (!isWarmedUp) { await warmupRender(); isWarmedUp = true; }
+
+                // Group by buyerPhone + raffleId
+                const cancelGroups = new Map();
+                for (const ticket of toCancel) {
+                    const key = `${ticket.buyerPhone || 'NO_PHONE'}_${ticket.raffleId}`;
+                    if (!cancelGroups.has(key)) cancelGroups.set(key, []);
+                    cancelGroups.get(key).push(ticket);
+                }
+
+                for (const [, groupTickets] of cancelGroups) {
+                    const first = groupTickets[0];
+                    const numList = groupTickets.map(t => `#${String(t.number).padStart(3, '0')}`).join(', ');
+                    const numLabel = groupTickets.length > 1 ? `los números *${numList}*` : `el número *${numList}*`;
+
+                    if (first.buyerPhone) {
                         const msg =
                             `🚫 *WINNERS - Reserva Cancelada*\n\n` +
-                            `Hola ${ticket.buyerName || 'participante'}, debido a que no recibimos la confirmación de pago en 72 horas, ` +
-                            `tu reserva del número *${String(ticket.number).padStart(3, '0')}* para el sorteo *"${ticket.raffle.title}"* ha expirado y el número ha sido liberado.\n\n` +
+                            `Hola ${first.buyerName || 'participante'}, debido a que no recibimos la confirmación de pago en 72 horas, ` +
+                            `tu reserva de ${numLabel} para el sorteo *"${first.raffle.title}"* ha expirado y los números han sido liberados.\n\n` +
                             `Si aún deseas participar, puedes reservar un nuevo número en el talonario web. ¡Éxitos! 🎟️`;
-                        await sendWhatsAppWithTimeout(ticket.buyerPhone, msg);
+                        await sendWhatsAppWithTimeout(first.buyerPhone, msg);
                     }
 
-                    // Delete winner records first to avoid FK constraint errors
-                    await prisma.raffleWinner.deleteMany({ where: { ticketId: ticket.id } });
+                    for (const ticket of groupTickets) {
+                        try {
+                            await prisma.raffleWinner.deleteMany({ where: { ticketId: ticket.id } });
+                            await prisma.ticket.delete({ where: { id: ticket.id } });
 
-                    // Delete the ticket to free the number
-                    await prisma.ticket.delete({ where: { id: ticket.id } });
-
-                    // Decrement sold count on the raffle (ensure ticketsSold does not go below 0)
-                    const updatedRaffle = await prisma.raffle.findUnique({ where: { id: ticket.raffleId } });
-                    if (updatedRaffle && updatedRaffle.ticketsSold > 0) {
-                        await prisma.raffle.update({
-                            where: { id: ticket.raffleId },
-                            data: { ticketsSold: { decrement: 1 } }
-                        });
+                            const updatedRaffle = await prisma.raffle.findUnique({ where: { id: ticket.raffleId } });
+                            if (updatedRaffle && updatedRaffle.ticketsSold > 0) {
+                                await prisma.raffle.update({
+                                    where: { id: ticket.raffleId },
+                                    data: { ticketsSold: { decrement: 1 } }
+                                });
+                            }
+                            console.log(`[Agente de Seguimiento] Reserva CANCELADA y LIBERADA: ticket #${ticket.number} en rifa "${ticket.raffle.title}"`);
+                        } catch (err) {
+                            console.error(`[Agente de Seguimiento] Error cancelando ticket ${ticket.id}:`, err.message);
+                        }
                     }
-
-                    console.log(`[Agente de Seguimiento] Reserva CANCELADA y LIBERADA: ticket #${ticket.number} en rifa "${ticket.raffle.title}"`);
-                } catch (err) {
-                    console.error(`[Agente de Seguimiento] Error cancelando ticket ${ticket.id}:`, err.message);
                 }
             }
 
@@ -259,35 +293,43 @@ class Scheduler {
 
             console.log(`[Scheduler] STAGE 2 (Recordatorio 48h): ${toRemind2.length} ticket(s) encontrados.`);
 
-            for (const ticket of toRemind2) {
-                try {
-                    console.log(`[Scheduler] STAGE 2 - Ticket #${ticket.number} | remindersSent=${ticket.remindersSent} | createdAt=${ticket.createdAt.toISOString()} | phone=${ticket.buyerPhone}`);
+            if (toRemind2.length > 0) {
+                if (!isWarmedUp) { await warmupRender(); isWarmedUp = true; }
 
-                    // *** CRITICAL: Mark remindersSent=2 in DB FIRST ***
-                    // This guarantees the reminder is only sent once even if
-                    // the WhatsApp delivery fails or the cron runs again before the
-                    // ticket moves to the 72h window.
-                    await prisma.ticket.update({
-                        where: { id: ticket.id },
-                        data: { remindersSent: 2 }
-                    });
-                    console.log(`[Scheduler] STAGE 2 - remindersSent=2 guardado en BD para ticket #${ticket.number}`);
+                // Group by buyerPhone + raffleId
+                const remind2Groups = new Map();
+                for (const ticket of toRemind2) {
+                    const key = `${ticket.buyerPhone || 'NO_PHONE'}_${ticket.raffleId}`;
+                    if (!remind2Groups.has(key)) remind2Groups.set(key, []);
+                    remind2Groups.get(key).push(ticket);
+                }
 
-                    if (ticket.buyerPhone) {
+                for (const [, groupTickets] of remind2Groups) {
+                    const first = groupTickets[0];
+                    const numList = groupTickets.map(t => `#${String(t.number).padStart(3, '0')}`).join(', ');
+                    const numLabel = groupTickets.length > 1 ? `los números *${numList}*` : `el número *${numList}*`;
+
+                    let sentOk = true;
+                    if (first.buyerPhone) {
                         const msg =
                             `⚠️ *WINNERS - Último Recordatorio*\n\n` +
-                            `Hola ${ticket.buyerName || 'participante'}, tu reserva del número *${String(ticket.number).padStart(3, '0')}* ` +
-                            `para el sorteo *"${ticket.raffle.title}"* vence en las próximas horas.\n\n` +
-                            `Si no confirmas tu pago, el número será liberado. ¡No pierdas tu oportunidad! 🍀`;
-                        const sentOk = await sendWhatsAppWithTimeout(ticket.buyerPhone, msg);
-                        if (sentOk) {
-                            console.log(`[Agente de Seguimiento] 2do recordatorio enviado: ticket #${ticket.number} en rifa "${ticket.raffle.title}"`);
-                        } else {
-                            console.warn(`[Agente de Seguimiento] 2do recordatorio WhatsApp falló para ticket #${ticket.number} - ya marcado (remindersSent=2), NO se reintentará.`);
-                        }
+                            `Hola ${first.buyerName || 'participante'}, tu reserva de ${numLabel} ` +
+                            `para el sorteo *"${first.raffle.title}"* vence en las próximas horas.\n\n` +
+                            `Si no confirmas tu pago, los números serán liberados. ¡No pierdas tu oportunidad! 🍀`;
+                        sentOk = await sendWhatsAppWithTimeout(first.buyerPhone, msg);
                     }
-                } catch (err) {
-                    console.error(`[Agente de Seguimiento] Error enviando 2do recordatorio ticket ${ticket.id}:`, err.message);
+
+                    // CRITICAL FIX: Only update DB if WhatsApp delivery succeeded or no phone
+                    if (sentOk) {
+                        const ids = groupTickets.map(t => t.id);
+                        await prisma.ticket.updateMany({
+                            where: { id: { in: ids } },
+                            data: { remindersSent: 2 }
+                        });
+                        console.log(`[Agente de Seguimiento] 2do recordatorio enviado y guardado en BD para ${groupTickets.length} ticket(s) de ${first.buyerName || first.buyerPhone}`);
+                    } else {
+                        console.warn(`[Agente de Seguimiento] 2do recordatorio WhatsApp falló para ${first.buyerPhone}. NO se actualiza DB para reintentar en el próximo cron.`);
+                    }
                 }
             }
 
@@ -306,35 +348,44 @@ class Scheduler {
 
             console.log(`[Scheduler] STAGE 1 (Recordatorio 24h): ${toRemind1.length} ticket(s) encontrados.`);
 
-            for (const ticket of toRemind1) {
-                try {
-                    console.log(`[Scheduler] STAGE 1 - Ticket #${ticket.number} | remindersSent=${ticket.remindersSent} | createdAt=${ticket.createdAt.toISOString()} | phone=${ticket.buyerPhone}`);
+            if (toRemind1.length > 0) {
+                if (!isWarmedUp) { await warmupRender(); isWarmedUp = true; }
 
-                    // *** CRITICAL: Mark remindersSent=1 in DB FIRST ***
-                    // This guarantees the first reminder is only sent ONCE per ticket,
-                    // even if the WhatsApp delivery fails/times out and the cron runs again.
-                    await prisma.ticket.update({
-                        where: { id: ticket.id },
-                        data: { remindersSent: 1 }
-                    });
-                    console.log(`[Scheduler] STAGE 1 - remindersSent=1 guardado en BD para ticket #${ticket.number}`);
+                // Group by buyerPhone + raffleId
+                const remind1Groups = new Map();
+                for (const ticket of toRemind1) {
+                    const key = `${ticket.buyerPhone || 'NO_PHONE'}_${ticket.raffleId}`;
+                    if (!remind1Groups.has(key)) remind1Groups.set(key, []);
+                    remind1Groups.get(key).push(ticket);
+                }
 
-                    if (ticket.buyerPhone) {
+                for (const [, groupTickets] of remind1Groups) {
+                    const first = groupTickets[0];
+                    const numList = groupTickets.map(t => `#${String(t.number).padStart(3, '0')}`).join(', ');
+                    const numLabel = groupTickets.length > 1 ? `los números *${numList}*` : `el número *${numList}*`;
+
+                    let sentOk = true;
+                    if (first.buyerPhone) {
                         const msg =
                             `🎟️ *WINNERS - Recordatorio de Pago*\n\n` +
-                            `Hola ${ticket.buyerName || 'participante'}, te recordamos que tienes reservado el número ` +
-                            `*${String(ticket.number).padStart(3, '0')}* para el sorteo *"${ticket.raffle.title}"*.\n\n` +
+                            `Hola ${first.buyerName || 'participante'}, te recordamos que tienes reservado ${numLabel} ` +
+                            `para el sorteo *"${first.raffle.title}"*.\n\n` +
                             `Realiza tu pago para asegurar tu participación. Si en 24 horas no confirmamos el pago, el número será liberado.\n\n` +
                             `¡Mucha suerte! 🍀`;
-                        const sentOk = await sendWhatsAppWithTimeout(ticket.buyerPhone, msg);
-                        if (sentOk) {
-                            console.log(`[Agente de Seguimiento] 1er recordatorio enviado: ticket #${ticket.number} en rifa "${ticket.raffle.title}"`);
-                        } else {
-                            console.warn(`[Agente de Seguimiento] 1er recordatorio WhatsApp falló para ticket #${ticket.number} - ya marcado (remindersSent=1), NO se reintentará.`);
-                        }
+                        sentOk = await sendWhatsAppWithTimeout(first.buyerPhone, msg);
                     }
-                } catch (err) {
-                    console.error(`[Agente de Seguimiento] Error enviando 1er recordatorio ticket ${ticket.id}:`, err.message);
+
+                    // CRITICAL FIX: Only update DB if WhatsApp delivery succeeded or no phone
+                    if (sentOk) {
+                        const ids = groupTickets.map(t => t.id);
+                        await prisma.ticket.updateMany({
+                            where: { id: { in: ids } },
+                            data: { remindersSent: 1 }
+                        });
+                        console.log(`[Agente de Seguimiento] 1er recordatorio enviado y guardado en BD para ${groupTickets.length} ticket(s) de ${first.buyerName || first.buyerPhone}`);
+                    } else {
+                        console.warn(`[Agente de Seguimiento] 1er recordatorio WhatsApp falló para ${first.buyerPhone}. NO se actualiza DB para reintentar en el próximo cron.`);
+                    }
                 }
             }
 
