@@ -225,36 +225,18 @@ exports.purchaseTickets = async (req, res) => {
                     `💎 *Equipo WINNERS*\n` +
                     `🌐 https://winners-one.vercel.app`;
 
-                // Wake Evolution API (Render free tier) BEFORE sending the media message.
-                // Without this warmup, Render cold-start (~30-60s) causes timeout to expire
-                // before the image is uploaded or causes duplicate fallback text messages.
-                const _apiUrl = process.env.WHATSAPP_API_URL;
-                const _apiKey = process.env.WHATSAPP_API_KEY;
-                if (_apiUrl && _apiKey) {
-                    console.log('[purchaseTickets] Despertando Evolution API (max 30s)...');
-                    try {
-                        const wuCtrl = new AbortController();
-                        const wuTimer = setTimeout(() => wuCtrl.abort(), 30000);
-                        await fetch(`${_apiUrl.replace(/\/$/, '')}/instance/fetchInstances`, {
-                            headers: { 'apikey': _apiKey },
-                            signal: wuCtrl.signal
-                        });
-                        clearTimeout(wuTimer);
-                        console.log('[purchaseTickets] Evolution API despertada OK.');
-                    } catch (wuErr) {
-                        console.warn('[purchaseTickets] Warmup no completado:', wuErr.message);
-                    }
-                }
-
-                console.log('[purchaseTickets] Enviando confirmacion WhatsApp con logo a ' + buyerPhone + '...');
+                // Safe 6-second timeout for Vercel serverless functions (which have a 10s hard limit).
+                // If Render is awake, sendMessage completes in <2s. If Render is sleeping (>6s),
+                // the timeout catches it safely so res.json() finishes smoothly without Vercel killing the process.
+                console.log('[purchaseTickets] Enviando confirmacion WhatsApp a ' + buyerPhone + '...');
                 const _waTimeout = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('WhatsApp timeout (45s)')), 45000)
+                    setTimeout(() => reject(new Error('WhatsApp timeout (6s)')), 6000)
                 );
                 await Promise.race([
                     WhatsAppService.sendMessage(buyerPhone, confirmMsg),
                     _waTimeout
                 ]).catch(err => {
-                    console.warn('[purchaseTickets] WhatsApp no completado a tiempo:', err.message);
+                    console.warn('[purchaseTickets] WhatsApp no completado en 6s (se enviará en seguimiento):', err.message);
                 });
             } catch (wErr) {
                 console.error('[purchaseTickets] Error construyendo mensaje de WhatsApp:', wErr.message);
