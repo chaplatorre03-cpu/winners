@@ -10,7 +10,6 @@ const prisma = require('../lib/prisma');
  */
 router.get('/follow-up', async (req, res) => {
     try {
-        // Optional security check: if CRON_SECRET is set, verify authorization header or query token
         const cronSecret = process.env.CRON_SECRET;
         if (cronSecret) {
             const authHeader = req.headers.authorization;
@@ -22,15 +21,8 @@ router.get('/follow-up', async (req, res) => {
 
         console.log('[Vercel Cron] Iniciando ejecucion de tareas automatizadas...');
 
-        // Warm up Evolution API BEFORE sending WhatsApp messages.
-        // We wait up to 30 seconds so Render's free tier is fully awake
-        // when the media (logo image) is sent - preventing fallback to text-only.
-        console.log('[Vercel Cron] Despertando Evolution API (warmup bloqueante, max 30s)...');
-        const warmupResult = await Promise.race([
-            warmUpWhatsAppGateway(),
-            new Promise(resolve => setTimeout(() => resolve({ status: 'timeout' }), 30000))
-        ]);
-        console.log('[Vercel Cron] Warmup result:', JSON.stringify(warmupResult));
+        // Non-blocking quick warmup ping for Render (max 4s)
+        warmUpWhatsAppGateway().catch(e => console.warn('[Vercel Cron] Quick warmup warning:', e.message));
 
         // Execute background monitoring jobs
         const followUpStats = await Scheduler.followUpPayments();
@@ -47,6 +39,62 @@ router.get('/follow-up', async (req, res) => {
         res.status(500).json({ error: 'Error ejecutando cron job', details: error.message });
     }
 });
+
+/**
+ * GET /api/cron/confirmations
+ * Endpoint DEDICADO para enviar confirmaciones de WhatsApp pendientes.
+ * Debe configurarse en cron-job.org para ejecutarse cada 5-15 minutos.
+ * Solo procesa tickets APARTADO < 24h con remindersSent=0.
+ * Es rápido y liviano — no procesa recordatorios ni cancelaciones.
+ */
+router.get('/confirmations', async (req, res) => {
+    try {
+        const cronSecret = process.env.CRON_SECRET;
+        if (cronSecret) {
+            const authHeader = req.headers.authorization;
+            const querySecret = req.query.secret;
+            if (authHeader !== `Bearer ${cronSecret}` && querySecret !== cronSecret) {
+                return res.status(401).json({ error: 'No autorizado' });
+            }
+        }
+
+        console.log('[Cron Confirmaciones] Verificando confirmaciones WA pendientes...');
+
+        // Warmup de Render antes de enviar WA
+        await warmUpWhatsAppGateway();
+
+        // Helper de envío con timeout de 25s
+        const sendWithTimeout = async (phone, message) => {
+            if (!phone) return true;
+            const WhatsAppService = require('../services/WhatsAppService');
+            try {
+                const waTimeout = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('WA timeout (25s)')), 25000)
+                );
+                await Promise.race([WhatsAppService.sendMessage(phone, message), waTimeout]);
+                return true;
+            } catch (err) {
+                console.warn(`[Cron Confirmaciones] WA warning para ${phone}: ${err.message}`);
+                return false;
+            }
+        };
+
+        const sent = await Scheduler.sendPendingConfirmations(sendWithTimeout);
+
+        res.json({
+            success: true,
+            confirmationsSent: sent,
+            timestamp: new Date().toISOString(),
+            message: sent > 0
+                ? `${sent} confirmación(es) de WhatsApp enviadas`
+                : 'No hay confirmaciones pendientes'
+        });
+    } catch (error) {
+        console.error('[Cron Confirmaciones] Error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 
 /**
  * GET /api/cron/warmup

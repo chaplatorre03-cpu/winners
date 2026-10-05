@@ -221,75 +221,12 @@ class Scheduler {
             let isWarmedUp = false;
 
             // =========================================================
-            // STAGE 0: Confirmación pendiente — tickets < 2h, sin confirmar
-            //          Actúa como red de seguridad cuando el WA de la compra
-            //          no pudo entregarse (Render en cold-start > 50s).
+            // STAGE 0: Confirmación pendiente — tickets < 24h, sin confirmar
+            //          El cron /api/cron/confirmations lo llama cada 5-15 min.
+            //          Aquí también se ejecuta para cubrir el cron horario.
             // =========================================================
-            const h2 = new Date(now.getTime() - 2 * 60 * 60 * 1000);
-
-            const pendingConfirm = await prisma.ticket.findMany({
-                where: {
-                    status: 'APARTADO',
-                    createdAt: { gt: h2 }, // menos de 2 horas
-                    remindersSent: 0
-                },
-                include: { raffle: true }
-            });
-
-            console.log(`[Scheduler] STAGE 0 (Confirmación pendiente <2h): ${pendingConfirm.length} ticket(s) encontrados.`);
-
-            if (pendingConfirm.length > 0) {
-                if (!isWarmedUp) { await warmupRender(); isWarmedUp = true; }
-
-                // Agrupar por teléfono + rifa
-                const stage0Groups = new Map();
-                for (const ticket of pendingConfirm) {
-                    const key = `${ticket.buyerPhone || 'NO_PHONE'}_${ticket.raffleId}`;
-                    if (!stage0Groups.has(key)) stage0Groups.set(key, []);
-                    stage0Groups.get(key).push(ticket);
-                }
-
-                for (const [, groupTickets] of stage0Groups) {
-                    const first = groupTickets[0];
-                    const numList = groupTickets.map(t => `#${String(t.number).padStart(3, '0')}`).join(', ');
-                    const totalCost = groupTickets.reduce((sum, t) => sum + (t.raffle.price || 0), 0);
-                    const totalFormatted = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalCost);
-
-                    let paymentInfo = '';
-                    if (first.raffle.nequiPhone) paymentInfo += `\n• *Nequi:* ${first.raffle.nequiPhone}`;
-                    if (first.raffle.daviplataPhone) paymentInfo += `\n• *Daviplata:* ${first.raffle.daviplataPhone}`;
-                    if (first.raffle.brebPhone) paymentInfo += `\n• *Breb:* ${first.raffle.brebPhone}`;
-                    if (first.raffle.payLink) paymentInfo += `\n• *Link de Pago:* ${first.raffle.payLink}`;
-
-                    const confirmMsg =
-                        `✨ *WINNERS PLATFORM* ✨\n\n` +
-                        `👋 Hola *${first.buyerName || 'participante'}*,\n\n` +
-                        `¡Tus números han sido reservados con éxito!\n\n` +
-                        `📱 *Sorteo:* "${first.raffle.title}"\n` +
-                        `👉 *Números reservados:* ${numList}\n` +
-                        `💰 *Total a pagar:* ${totalFormatted}\n` +
-                        (paymentInfo ? `\n🏦 *Métodos de pago:*${paymentInfo}\n` : '') +
-                        `\n⏳ Cuentas con *72 horas* para realizar tu pago y asegurar tu participación. ¡Mucha suerte! 🍀\n\n` +
-                        `💎 *Equipo WINNERS*\n` +
-                        `🌐 https://winners-one.vercel.app`;
-
-                    let sentOk = true;
-                    if (first.buyerPhone) {
-                        sentOk = await sendWhatsAppWithTimeout(first.buyerPhone, confirmMsg);
-                    }
-
-                    if (sentOk) {
-                        const ids = groupTickets.map(t => t.id);
-                        await prisma.ticket.updateMany({
-                            where: { id: { in: ids } },
-                            data: { remindersSent: 1 }
-                        });
-                        console.log(`[Agente de Seguimiento] STAGE 0: Confirmación enviada para ${groupTickets.length} ticket(s) de ${first.buyerName || first.buyerPhone}`);
-                    } else {
-                        console.warn(`[Agente de Seguimiento] STAGE 0: Confirmación fallida para ${first.buyerPhone}. Se reintentará en el próximo cron.`);
-                    }
-                }
-            }
+            const stage0Count = await Scheduler.sendPendingConfirmations(sendWhatsAppWithTimeout);
+            console.log(`[Scheduler] STAGE 0 completado: ${stage0Count} confirmaciones enviadas.`);
 
             // =========================================================
             // STAGE 3: Cancel tickets older than 72h and free the number
@@ -470,6 +407,89 @@ class Scheduler {
             console.error('[Scheduler] Error en followUpPayments:', error);
             throw error;
         }
+    }
+
+    /**
+     * STAGE 0: Envía confirmaciones de reserva a tickets recién creados (< 24h)
+     * que aún no recibieron su mensaje de WhatsApp (remindersSent === 0).
+     * Retorna la cantidad de confirmaciones enviadas.
+     * @param {Function} sendFn - Función helper para enviar WA con timeout
+     */
+    static async sendPendingConfirmations(sendFn) {
+        let sentCount = 0;
+        try {
+            const now = new Date();
+            const h24 = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+            // Tickets creados en las últimas 24h sin confirmación enviada
+            const pending = await prisma.ticket.findMany({
+                where: {
+                    status: 'APARTADO',
+                    createdAt: { gt: h24 },   // menos de 24h de antigüedad
+                    remindersSent: 0           // nunca confirmado
+                },
+                include: { raffle: true }
+            });
+
+            console.log(`[STAGE 0] Tickets pendientes de confirmación (< 24h, remindersSent=0): ${pending.length}`);
+            if (pending.length === 0) return 0;
+
+            // Agrupar por teléfono + rifa para enviar UN mensaje por persona
+            const groups = new Map();
+            for (const ticket of pending) {
+                const key = `${ticket.buyerPhone || 'NO_PHONE'}_${ticket.raffleId}`;
+                if (!groups.has(key)) groups.set(key, []);
+                groups.get(key).push(ticket);
+            }
+
+            for (const [, groupTickets] of groups) {
+                const first = groupTickets[0];
+                if (!first.buyerPhone) {
+                    // Sin teléfono: marcar directamente como enviado para que no siga apareciendo
+                    const ids = groupTickets.map(t => t.id);
+                    await prisma.ticket.updateMany({ where: { id: { in: ids } }, data: { remindersSent: 1 } });
+                    continue;
+                }
+
+                const numList = groupTickets.map(t => `#${String(t.number).padStart(3, '0')}`).join(', ');
+                const totalCost = groupTickets.reduce((sum, t) => sum + (t.raffle?.price || 0), 0);
+                const totalFormatted = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalCost);
+
+                let paymentInfo = '';
+                if (first.raffle?.nequiPhone) paymentInfo += `\n• *Nequi:* ${first.raffle.nequiPhone}`;
+                if (first.raffle?.daviplataPhone) paymentInfo += `\n• *Daviplata:* ${first.raffle.daviplataPhone}`;
+                if (first.raffle?.brebPhone) paymentInfo += `\n• *Breb:* ${first.raffle.brebPhone}`;
+                if (first.raffle?.payLink) paymentInfo += `\n• *Link de Pago:* ${first.raffle.payLink}`;
+
+                const confirmMsg =
+                    `✨ *WINNERS PLATFORM* ✨\n\n` +
+                    `👋 Hola *${first.buyerName || 'participante'}*,\n\n` +
+                    `¡Tus números han sido reservados con éxito!\n\n` +
+                    `📱 *Sorteo:* "${first.raffle?.title || 'Sorteo'}"\n` +
+                    `👉 *Números reservados:* ${numList}\n` +
+                    `💰 *Total a pagar:* ${totalFormatted}\n` +
+                    (paymentInfo ? `\n🏦 *Métodos de pago:*${paymentInfo}\n` : '') +
+                    `\n⏳ Cuentas con *72 horas* para realizar tu pago y asegurar tu participación. ¡Mucha suerte! 🍀\n\n` +
+                    `💎 *Equipo WINNERS*\n` +
+                    `🌐 https://winners-one.vercel.app`;
+
+                const sent = await sendFn(first.buyerPhone, confirmMsg);
+                if (sent) {
+                    const ids = groupTickets.map(t => t.id);
+                    await prisma.ticket.updateMany({
+                        where: { id: { in: ids } },
+                        data: { remindersSent: 1 }
+                    });
+                    console.log(`[STAGE 0] ✅ Confirmación enviada a ${first.buyerName || first.buyerPhone} — ${numList}`);
+                    sentCount++;
+                } else {
+                    console.warn(`[STAGE 0] ⚠️ Fallo para ${first.buyerPhone}. Se reintentará en el próximo ciclo.`);
+                }
+            }
+        } catch (err) {
+            console.error('[STAGE 0] Error en sendPendingConfirmations:', err.message);
+        }
+        return sentCount;
     }
 }
 

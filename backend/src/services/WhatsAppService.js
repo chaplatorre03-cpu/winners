@@ -85,10 +85,11 @@ class WhatsAppService {
                     }
                 } catch (mediaErr) {
                     console.warn(`[WhatsAppService] Fallo de red/timeout en sendMedia: ${mediaErr.message}.`);
-                    // If sendMedia timed out (AbortError), Render might still process it. Do NOT send duplicate text!
                     if (mediaErr.name === 'AbortError') {
-                        console.warn('[WhatsAppService] Timeout en sendMedia. Se omite fallback para evitar mensaje duplicado.');
-                        return;
+                        // IMPORTANTE: Lanzar el error para que el llamador sepa que falló.
+                        // NO retornar silenciosamente — eso hacía que el controlador creyera
+                        // que el envío fue exitoso y actualizaba remindersSent=1 incorrectamente.
+                        throw new Error('WhatsApp sendMedia timeout — Render no respondió a tiempo. El cron reintentará.');
                     }
                 }
             }

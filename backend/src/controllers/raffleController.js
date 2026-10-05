@@ -192,68 +192,16 @@ exports.purchaseTickets = async (req, res) => {
             }
         });
 
-        // ─── Enviar confirmación WhatsApp ANTES de responder ─────────────────
-        // Con maxDuration:60 en vercel.json, la función tiene 60s para ejecutarse.
-        // Render tarda ~20-50s en despertar del cold-start, así que 50s de timeout
-        // es suficiente para que llegue la confirmación en la mayoría de los casos.
-        // Si falla, remindersSent queda en 0 y el cron STAGE 0 lo recupera.
-        const buyerPhone = req.body.buyerPhone;
-        const buyerName = req.body.buyerName || 'participante';
-
-        if (buyerPhone) {
-            try {
-                const formattedNumbers = ticketNumbers.map(n => `#${String(n).padStart(3, '0')}`).join(', ');
-                const totalCostFormatted = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(raffle.price * ticketNumbers.length);
-
-                let paymentInfo = '';
-                if (raffle.nequiPhone) paymentInfo += `\n• *Nequi:* ${raffle.nequiPhone}`;
-                if (raffle.daviplataPhone) paymentInfo += `\n• *Daviplata:* ${raffle.daviplataPhone}`;
-                if (raffle.brebPhone) paymentInfo += `\n• *Breb:* ${raffle.brebPhone}`;
-                if (raffle.payLink) paymentInfo += `\n• *Link de Pago:* ${raffle.payLink}`;
-
-                const confirmMsg =
-                    `✨ *WINNERS PLATFORM* ✨\n\n` +
-                    `👋 Hola *${buyerName}*,\n\n` +
-                    `¡Tus números han sido reservados con éxito!\n\n` +
-                    `📱 *Sorteo:* "${raffle.title}"\n` +
-                    `👉 *Números reservados:* ${formattedNumbers}\n` +
-                    `💰 *Total a pagar:* ${totalCostFormatted}\n` +
-                    (paymentInfo ? `\n🏦 *Métodos de pago:*${paymentInfo}\n` : '') +
-                    `\n⏳ Cuentas con *72 horas* para realizar tu pago y asegurar tu participación. ¡Mucha suerte! 🍀\n\n` +
-                    `💎 *Equipo WINNERS*\n` +
-                    `🌐 https://winners-one.vercel.app`;
-
-                console.log('[purchaseTickets] Enviando confirmacion WhatsApp a ' + buyerPhone + ' (timeout 50s)...');
-
-                const _waTimeout = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('WhatsApp timeout (50s)')), 50000)
-                );
-
-                await Promise.race([
-                    WhatsAppService.sendMessage(buyerPhone, confirmMsg),
-                    _waTimeout
-                ]);
-
-                // Éxito → marcar como confirmación enviada
-                const createdIds = tickets.map(t => t.id);
-                await prisma.ticket.updateMany({
-                    where: { id: { in: createdIds } },
-                    data: { remindersSent: 1 }
-                });
-                console.log('[purchaseTickets] Confirmacion WhatsApp enviada OK para ' + buyerPhone);
-
-            } catch (waErr) {
-                // Si falla (Render muy lento o error), remindersSent queda en 0.
-                // El cron STAGE 0 lo detectará en la próxima hora y enviará la confirmación.
-                console.warn('[purchaseTickets] WhatsApp no entregado en 50s, el cron STAGE 0 lo recuperará:', waErr.message);
-            }
-        }
-
+        // ─── Responder inmediatamente ─────────────────────────────────────────
+        // El WA de confirmación es enviado por el cron STAGE 0 (máx. 5-15 min).
+        // Esto es 100% confiable porque no depende del tiempo de vida serverless.
         res.json({
             message: 'Números reservados con éxito',
             tickets,
             totalCost: raffle.price * ticketNumbers.length
         });
+        // remindersSent queda en 0 → el cron STAGE 0 lo detecta y envía la confirmación
+
 
     } catch (error) {
         console.error(error);
