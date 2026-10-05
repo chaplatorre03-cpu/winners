@@ -221,6 +221,77 @@ class Scheduler {
             let isWarmedUp = false;
 
             // =========================================================
+            // STAGE 0: Confirmación pendiente — tickets < 2h, sin confirmar
+            //          Actúa como red de seguridad cuando el WA de la compra
+            //          no pudo entregarse (Render en cold-start > 50s).
+            // =========================================================
+            const h2 = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+
+            const pendingConfirm = await prisma.ticket.findMany({
+                where: {
+                    status: 'APARTADO',
+                    createdAt: { gt: h2 }, // menos de 2 horas
+                    remindersSent: 0
+                },
+                include: { raffle: true }
+            });
+
+            console.log(`[Scheduler] STAGE 0 (Confirmación pendiente <2h): ${pendingConfirm.length} ticket(s) encontrados.`);
+
+            if (pendingConfirm.length > 0) {
+                if (!isWarmedUp) { await warmupRender(); isWarmedUp = true; }
+
+                // Agrupar por teléfono + rifa
+                const stage0Groups = new Map();
+                for (const ticket of pendingConfirm) {
+                    const key = `${ticket.buyerPhone || 'NO_PHONE'}_${ticket.raffleId}`;
+                    if (!stage0Groups.has(key)) stage0Groups.set(key, []);
+                    stage0Groups.get(key).push(ticket);
+                }
+
+                for (const [, groupTickets] of stage0Groups) {
+                    const first = groupTickets[0];
+                    const numList = groupTickets.map(t => `#${String(t.number).padStart(3, '0')}`).join(', ');
+                    const totalCost = groupTickets.reduce((sum, t) => sum + (t.raffle.price || 0), 0);
+                    const totalFormatted = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalCost);
+
+                    let paymentInfo = '';
+                    if (first.raffle.nequiPhone) paymentInfo += `\n• *Nequi:* ${first.raffle.nequiPhone}`;
+                    if (first.raffle.daviplataPhone) paymentInfo += `\n• *Daviplata:* ${first.raffle.daviplataPhone}`;
+                    if (first.raffle.brebPhone) paymentInfo += `\n• *Breb:* ${first.raffle.brebPhone}`;
+                    if (first.raffle.payLink) paymentInfo += `\n• *Link de Pago:* ${first.raffle.payLink}`;
+
+                    const confirmMsg =
+                        `✨ *WINNERS PLATFORM* ✨\n\n` +
+                        `👋 Hola *${first.buyerName || 'participante'}*,\n\n` +
+                        `¡Tus números han sido reservados con éxito!\n\n` +
+                        `📱 *Sorteo:* "${first.raffle.title}"\n` +
+                        `👉 *Números reservados:* ${numList}\n` +
+                        `💰 *Total a pagar:* ${totalFormatted}\n` +
+                        (paymentInfo ? `\n🏦 *Métodos de pago:*${paymentInfo}\n` : '') +
+                        `\n⏳ Cuentas con *72 horas* para realizar tu pago y asegurar tu participación. ¡Mucha suerte! 🍀\n\n` +
+                        `💎 *Equipo WINNERS*\n` +
+                        `🌐 https://winners-one.vercel.app`;
+
+                    let sentOk = true;
+                    if (first.buyerPhone) {
+                        sentOk = await sendWhatsAppWithTimeout(first.buyerPhone, confirmMsg);
+                    }
+
+                    if (sentOk) {
+                        const ids = groupTickets.map(t => t.id);
+                        await prisma.ticket.updateMany({
+                            where: { id: { in: ids } },
+                            data: { remindersSent: 1 }
+                        });
+                        console.log(`[Agente de Seguimiento] STAGE 0: Confirmación enviada para ${groupTickets.length} ticket(s) de ${first.buyerName || first.buyerPhone}`);
+                    } else {
+                        console.warn(`[Agente de Seguimiento] STAGE 0: Confirmación fallida para ${first.buyerPhone}. Se reintentará en el próximo cron.`);
+                    }
+                }
+            }
+
+            // =========================================================
             // STAGE 3: Cancel tickets older than 72h and free the number
             // =========================================================
             const toCancel = await prisma.ticket.findMany({
