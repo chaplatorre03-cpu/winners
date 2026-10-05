@@ -16,11 +16,11 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-// Verifica si la hora actual en Colombia (UTC-5) está entre 10:00 AM y 3:00 PM
+// Verifica si la hora actual en Colombia (UTC-5) está entre 10:00 AM y 3:00 PM (inclusive)
 function isWithinAlertWindow() {
     const nowColombia = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' }));
     const hour = nowColombia.getHours(); // 0-23
-    return hour >= 10 && hour < 15; // 10:00 AM hasta 2:59 PM
+    return hour >= 10 && hour <= 15; // 10:00 AM hasta 3:59 PM (incluye la hora de las 3:00 PM)
 }
 
 async function sendAlert(to, subject, bodyHtml) {
@@ -185,7 +185,7 @@ class Scheduler {
                 if (!phone) return true;
                 try {
                     const waTimeout = new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error('WhatsApp timeout (35s)')), 35000)
+                        setTimeout(() => reject(new Error('WhatsApp timeout (25s)')), 25000)
                     );
                     await Promise.race([
                         WhatsAppService.sendMessage(phone, message),

@@ -61,12 +61,6 @@ exports.getRaffle = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Auto-cleanup expired APARTADO tickets (> 72h)
-        try {
-            const Scheduler = require('../utils/scheduler');
-            await Scheduler.followUpPayments();
-        } catch (e) {}
-
         const raffle = await prisma.raffle.findUnique({
             where: { id: id },
             include: {
@@ -198,56 +192,68 @@ exports.purchaseTickets = async (req, res) => {
             }
         });
 
-        // Send immediate WhatsApp confirmation to buyer if phone is provided
-        const buyerPhone = req.body.buyerPhone;
-        const buyerName = req.body.buyerName || 'participante';
-
-        if (buyerPhone) {
-            try {
-                const formattedNumbers = ticketNumbers.map(n => `#${String(n).padStart(3, '0')}`).join(', ');
-                const totalCostFormatted = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(raffle.price * ticketNumbers.length);
-
-                let paymentInfo = '';
-                if (raffle.nequiPhone) paymentInfo += `\n• *Nequi:* ${raffle.nequiPhone}`;
-                if (raffle.daviplataPhone) paymentInfo += `\n• *Daviplata:* ${raffle.daviplataPhone}`;
-                if (raffle.brebPhone) paymentInfo += `\n• *Breb:* ${raffle.brebPhone}`;
-                if (raffle.payLink) paymentInfo += `\n• *Link de Pago:* ${raffle.payLink}`;
-
-                const confirmMsg =
-                    `✨ *WINNERS PLATFORM* ✨\n\n` +
-                    `👋 Hola *${buyerName}*,\n\n` +
-                    `¡Tus números han sido reservados con éxito!\n\n` +
-                    `📱 *Sorteo:* "${raffle.title}"\n` +
-                    `👉 *Números reservados:* ${formattedNumbers}\n` +
-                    `💰 *Total a pagar:* ${totalCostFormatted}\n` +
-                    (paymentInfo ? `\n🏦 *Métodos de pago:*${paymentInfo}\n` : '') +
-                    `\n⏳ Cuentas con *72 horas* para realizar tu pago y asegurar tu participación. ¡Mucha suerte! 🍀\n\n` +
-                    `💎 *Equipo WINNERS*\n` +
-                    `🌐 https://winners-one.vercel.app`;
-
-                // Safe 6-second timeout for Vercel serverless functions (which have a 10s hard limit).
-                // If Render is awake, sendMessage completes in <2s. If Render is sleeping (>6s),
-                // the timeout catches it safely so res.json() finishes smoothly without Vercel killing the process.
-                console.log('[purchaseTickets] Enviando confirmacion WhatsApp a ' + buyerPhone + '...');
-                const _waTimeout = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('WhatsApp timeout (6s)')), 6000)
-                );
-                await Promise.race([
-                    WhatsAppService.sendMessage(buyerPhone, confirmMsg),
-                    _waTimeout
-                ]).catch(err => {
-                    console.warn('[purchaseTickets] WhatsApp no completado en 6s (se enviará en seguimiento):', err.message);
-                });
-            } catch (wErr) {
-                console.error('[purchaseTickets] Error construyendo mensaje de WhatsApp:', wErr.message);
-            }
-        }
-
+        // Respond immediately to the client — the reservation is saved
+        // WhatsApp confirmation is sent in the background AFTER the response
         res.json({
             message: 'Números reservados con éxito',
             tickets,
             totalCost: raffle.price * ticketNumbers.length
         });
+
+        // ─── BACKGROUND: Send WhatsApp confirmation (fire-and-forget) ───────────
+        // This runs AFTER res.json() so Vercel's 10s response limit is never hit.
+        // Render's cold-start (~20-50s) no longer blocks the user's reservation.
+        const buyerPhone = req.body.buyerPhone;
+        const buyerName = req.body.buyerName || 'participante';
+
+        if (buyerPhone) {
+            (async () => {
+                try {
+                    const formattedNumbers = ticketNumbers.map(n => `#${String(n).padStart(3, '0')}`).join(', ');
+                    const totalCostFormatted = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(raffle.price * ticketNumbers.length);
+
+                    let paymentInfo = '';
+                    if (raffle.nequiPhone) paymentInfo += `\n• *Nequi:* ${raffle.nequiPhone}`;
+                    if (raffle.daviplataPhone) paymentInfo += `\n• *Daviplata:* ${raffle.daviplataPhone}`;
+                    if (raffle.brebPhone) paymentInfo += `\n• *Breb:* ${raffle.brebPhone}`;
+                    if (raffle.payLink) paymentInfo += `\n• *Link de Pago:* ${raffle.payLink}`;
+
+                    const confirmMsg =
+                        `✨ *WINNERS PLATFORM* ✨\n\n` +
+                        `👋 Hola *${buyerName}*,\n\n` +
+                        `¡Tus números han sido reservados con éxito!\n\n` +
+                        `📱 *Sorteo:* "${raffle.title}"\n` +
+                        `👉 *Números reservados:* ${formattedNumbers}\n` +
+                        `💰 *Total a pagar:* ${totalCostFormatted}\n` +
+                        (paymentInfo ? `\n🏦 *Métodos de pago:*${paymentInfo}\n` : '') +
+                        `\n⏳ Cuentas con *72 horas* para realizar tu pago y asegurar tu participación. ¡Mucha suerte! 🍀\n\n` +
+                        `💎 *Equipo WINNERS*\n` +
+                        `🌐 https://winners-one.vercel.app`;
+
+                    console.log('[purchaseTickets] [BG] Enviando confirmacion WhatsApp a ' + buyerPhone + '...');
+
+                    // Give Render up to 55s to wake up and process the message
+                    const _bgTimeout = new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error('WhatsApp BG timeout (55s)')), 55000)
+                    );
+                    await Promise.race([
+                        WhatsAppService.sendMessage(buyerPhone, confirmMsg),
+                        _bgTimeout
+                    ]);
+
+                    // Success → mark ticket as confirmation-sent (remindersSent=1)
+                    const createdIds = tickets.map(t => t.id);
+                    await prisma.ticket.updateMany({
+                        where: { id: { in: createdIds } },
+                        data: { remindersSent: 1 }
+                    });
+                    console.log('[purchaseTickets] [BG] Confirmacion WhatsApp enviada y DB actualizada para ' + buyerPhone);
+                } catch (bgErr) {
+                    // remindersSent stays 0 → the cron will send the 1st reminder after 24h
+                    console.warn('[purchaseTickets] [BG] WhatsApp confirmacion fallida para ' + buyerPhone + ':', bgErr.message);
+                }
+            })();
+        }
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Error al reservar los números' });
