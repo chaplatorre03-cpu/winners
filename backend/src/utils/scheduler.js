@@ -186,6 +186,13 @@ class Scheduler {
                 
                 // Solo enviar alerta si aún no hemos sugerido la reprogramación (evita correos repetidos cada hora/día)
                 if (triggerReschedule && !raffle.suggestedDrawDate) {
+                    // Verificar que estamos en la ventana de envío (10 AM - 3 PM)
+                    // Si es de madrugada, posponemos el aviso para que el correo sí llegue al usuario
+                    if (!isWithinAlertWindow()) {
+                        console.log(`[analyzeFinancialHealth] Rifa ${raffle.id} requiere aviso de 72h, pero está fuera de horario (10AM-3PM). Se pospone.`);
+                        continue;
+                    }
+
                     console.log(`[analyzeFinancialHealth] ¿Cumple criterio de reprogramación? ${triggerReschedule} (daysRemaining<3: ${daysRemaining < 3}, !breakEven: ${!metrics.breakEvenReached}, risk HIGH: ${health.risk === 'HIGH'})`);
 
                     // Sugerir reprogramación a 15 días adicionales
