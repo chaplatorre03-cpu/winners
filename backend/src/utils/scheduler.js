@@ -139,23 +139,50 @@ class Scheduler {
                             where: { raffleId: raffle.id, status: 'PAGADO' }
                         });
                         
-                        // Agrupar por teléfono
-                        const phones = [...new Set(paidTickets.map(t => t.buyerPhone).filter(Boolean))];
+                        // Agrupar tickets por teléfono para personalizar el mensaje y listar sus números
+                        const ticketsByPhone = {};
+                        for (const ticket of paidTickets) {
+                            if (!ticket.buyerPhone) continue;
+                            if (!ticketsByPhone[ticket.buyerPhone]) {
+                                ticketsByPhone[ticket.buyerPhone] = {
+                                    name: ticket.buyerName || 'Participante',
+                                    numbers: []
+                                };
+                            }
+                            ticketsByPhone[ticket.buyerPhone].numbers.push(String(ticket.ticketNumber).padStart(3, '0'));
+                        }
                         
                         const dateFormatted = newEndDate.toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' });
-                        const waMsg = `✨ *WINNERS PLATFORM* ✨\n\n` +
-                                      `⚠️ *Aviso Importante sobre el Sorteo*\n\n` +
-                                      `Hola, te informamos que el sorteo *"${raffle.title}"* ha sido aplazado automáticamente.\n\n` +
-                                      `📅 *Nueva fecha del sorteo:* ${dateFormatted}\n\n` +
-                                      `El organizador no alcanzó la meta de ventas mínima (rentabilidad). Para garantizar la transparencia y entrega del premio, el sistema extendió la fecha de forma automática.\n\n` +
-                                      `Tus números están seguros y siguen participando. ¡Mucha suerte! 🍀\n\n` +
-                                      `💎 *Equipo WINNERS*`;
+                        const oldDateFormatted = endDate.toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' });
 
-                        for (const phone of phones) {
+                        let notifiedCount = 0;
+                        for (const phone in ticketsByPhone) {
+                             const userData = ticketsByPhone[phone];
+                             // Extraer solo el primer nombre
+                             const shortName = userData.name.split(' ')[0].toUpperCase();
+                             const numsList = userData.numbers.map(n => `#${n}`).join(', ');
+
+                             const waMsg = `✨ *WINNERS PLATFORM* ✨\n` +
+                                           `--------------------------------------------------\n\n` +
+                                           `👋 Hola *${shortName}*,\n\n` +
+                                           `⚠️ *Aviso Importante sobre el Sorteo*\n\n` +
+                                           `Te informamos que la fecha del sorteo *"${raffle.title}"* ha sido reprogramada automáticamente.\n\n` +
+                                           `📆 *Detalles de la nueva programación:*\n` +
+                                           ` • Fecha anterior: ~${oldDateFormatted}~\n` +
+                                           ` • Nueva fecha oficial: 🎯 *${dateFormatted}*\n\n` +
+                                           `El organizador no alcanzó la meta de ventas mínima (rentabilidad). Para garantizar la transparencia y entrega del premio, el sistema extendió la fecha de forma automática.\n\n` +
+                                           `🎫 *Tus números participantes:*\n` +
+                                           `👉 ${numsList}\n\n` +
+                                           `ℹ️ Tus números participantes siguen 100% activos y garantizados para el sorteo. ¡Mucha suerte! 🍀✨\n` +
+                                           `--------------------------------------------------\n` +
+                                           `💎 *Equipo WINNERS*\n` +
+                                           `🌐 https://winners-one.vercel.app`;
+
                              const waTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error('WA timeout')), 25000));
                              await Promise.race([WhatsAppService.sendMessage(phone, waMsg), waTimeout]).catch(() => {});
+                             notifiedCount++;
                         }
-                        console.log(`[Agente Financiero] Notificados ${phones.length} participantes sobre el cambio de fecha.`);
+                        console.log(`[Agente Financiero] Notificados ${notifiedCount} participantes sobre el cambio de fecha.`);
                     } catch (err) {
                         console.error('[Agente Financiero] Error notificando a participantes:', err.message);
                     }
