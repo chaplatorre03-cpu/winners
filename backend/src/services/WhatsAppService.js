@@ -197,8 +197,7 @@ class WhatsAppService {
             const ticketLabel = sortedNumbers.length > 1 ? 'Tus números participantes' : 'Tu número participante';
 
             const message =
-                `✨ *WINNERS PLATFORM* ✨\n` +
-                `--------------------------------------------------\n\n` +
+                `✨ *WINNERS PLATFORM* ✨\n\n` +
                 `👋 ${nameGreeting},\n\n` +
                 `⚠️ *Aviso Importante sobre el Sorteo*\n\n` +
                 `Te informamos que la fecha del sorteo *"${raffle.title}"* ha sido reprogramada.\n\n` +
@@ -208,10 +207,9 @@ class WhatsAppService {
                 `El organizador ha modificado la fecha de cierre de la rifa. Para garantizar la transparencia y entrega del premio, la plataforma notifica este cambio a todos los participantes.\n\n` +
                 `🎫 *${ticketLabel}:*\n` +
                 `👉 ${formattedNumbers}\n\n` +
-                `ℹ️ Tus números siguen 100% activos y garantizados para el sorteo. ¡Mucha suerte! 🍀✨\n` +
-                `--------------------------------------------------\n` +
+                `ℹ️ Tus números siguen 100% activos y garantizados para el sorteo. ¡Mucha suerte! 🍀✨\n\n` +
                 `💎 *Equipo WINNERS*\n` +
-                `🌐 https://winners-one.vercel.app`;
+                `🌐 https://winners-one.vercel.app/${raffle.id}`;
 
             await WhatsAppService.sendMessage(phone, message);
 

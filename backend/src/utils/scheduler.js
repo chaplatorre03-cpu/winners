@@ -29,7 +29,7 @@ async function sendAlert(to, subject, bodyHtml) {
     // Solo enviar entre 10:00 AM y 3:00 PM hora Colombia
     if (!isWithinAlertWindow()) {
         const nowColombia = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' }));
-        console.log(`[Scheduler] Email NO enviado (fuera de ventana horaria 10AM-3PM Colombia). Hora actual: ${nowColombia.getHours()}:${String(nowColombia.getMinutes()).padStart(2,'0')}`);
+        console.log(`[Scheduler] Email NO enviado (fuera de ventana horaria 10AM-3PM Colombia). Hora actual: ${nowColombia.getHours()}:${String(nowColombia.getMinutes()).padStart(2, '0')}`);
         return;
     }
 
@@ -64,7 +64,7 @@ async function sendAlert(to, subject, bodyHtml) {
 class Scheduler {
     static start() {
         console.log('[Scheduler] Iniciando monitoreo en segundo plano...');
-        
+
         // Job 1: Monitoreo Financiero y de Salud (Se ejecuta cada 6 horas)
         setInterval(async () => {
             await this.analyzeFinancialHealth();
@@ -107,7 +107,7 @@ class Scheduler {
                     try {
                         await DrawExecutionService.executeDraw(raffle.id, null, 'SYSTEM', 1, true);
                         console.log(`[Agente Financiero] Sorteo ejecutado automáticamente para rifa ${raffle.id}`);
-                        
+
                         // Notificar al creador
                         if (raffle.creator?.email) {
                             await sendAlert(
@@ -125,9 +125,9 @@ class Scheduler {
                 // Evaluar Auto-Extensión si el día del sorteo ha llegado o pasado
                 if (daysRemaining <= 0 && !metrics.breakEvenReached) {
                     const newEndDate = new Date(endDate.getTime() + (15 * 24 * 60 * 60 * 1000));
-                    
+
                     console.log(`[Agente Financiero] La rifa ${raffle.id} finalizó sin llegar a la meta. Auto-extendiendo 15 días (hasta ${newEndDate.toISOString()}).`);
-                    
+
                     await prisma.raffle.update({
                         where: { id: raffle.id },
                         data: { endDate: newEndDate, suggestedDrawDate: null }
@@ -138,7 +138,7 @@ class Scheduler {
                         const paidTickets = await prisma.ticket.findMany({
                             where: { raffleId: raffle.id, status: 'PAGADO' }
                         });
-                        
+
                         // Agrupar tickets por teléfono para personalizar el mensaje y listar sus números
                         const ticketsByPhone = {};
                         for (const ticket of paidTickets) {
@@ -151,36 +151,34 @@ class Scheduler {
                             }
                             ticketsByPhone[ticket.buyerPhone].numbers.push(String(ticket.ticketNumber).padStart(3, '0'));
                         }
-                        
+
                         const dateFormatted = newEndDate.toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' });
                         const oldDateFormatted = endDate.toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' });
 
                         let notifiedCount = 0;
                         for (const phone in ticketsByPhone) {
-                             const userData = ticketsByPhone[phone];
-                             // Extraer solo el primer nombre
-                             const shortName = userData.name.split(' ')[0].toUpperCase();
-                             const numsList = userData.numbers.map(n => `#${n}`).join(', ');
+                            const userData = ticketsByPhone[phone];
+                            // Extraer solo el primer nombre
+                            const shortName = userData.name.split(' ')[0].toUpperCase();
+                            const numsList = userData.numbers.map(n => `#${n}`).join(', ');
 
-                             const waMsg = `✨ *WINNERS PLATFORM* ✨\n` +
-                                           `--------------------------------------------------\n\n` +
-                                           `👋 Hola *${shortName}*,\n\n` +
-                                           `⚠️ *Aviso Importante sobre el Sorteo*\n\n` +
-                                           `Te informamos que la fecha del sorteo *"${raffle.title}"* ha sido reprogramada automáticamente.\n\n` +
-                                           `📆 *Detalles de la nueva programación:*\n` +
-                                           ` • Fecha anterior: ~${oldDateFormatted}~\n` +
-                                           ` • Nueva fecha oficial: 🎯 *${dateFormatted}*\n\n` +
-                                           `El organizador no alcanzó la meta de ventas mínima (rentabilidad). Para garantizar la transparencia y entrega del premio, el sistema extendió la fecha de forma automática.\n\n` +
-                                           `🎫 *Tus números participantes:*\n` +
-                                           `👉 ${numsList}\n\n` +
-                                           `ℹ️ Tus números participantes siguen 100% activos y garantizados para el sorteo. ¡Mucha suerte! 🍀✨\n` +
-                                           `--------------------------------------------------\n` +
-                                           `💎 *Equipo WINNERS*\n` +
-                                           `🌐 https://winners-one.vercel.app`;
+                            const waMsg = `✨ *WINNERS PLATFORM* ✨\n\n` +
+                                `👋 Hola *${shortName}*,\n\n` +
+                                `⚠️ *Aviso Importante sobre el Sorteo*\n\n` +
+                                `Te informamos que la fecha del sorteo *"${raffle.title}"* ha sido reprogramada automáticamente.\n\n` +
+                                `📆 *Detalles de la nueva programación:*\n` +
+                                ` • Fecha anterior: ~${oldDateFormatted}~\n` +
+                                ` • Nueva fecha oficial: 🎯 *${dateFormatted}*\n\n` +
+                                `El organizador no alcanzó la meta de ventas mínima (rentabilidad). Para garantizar la transparencia y entrega del premio, el sistema extendió la fecha de forma automática.\n\n` +
+                                `🎫 *Tus números participantes:*\n` +
+                                `👉 ${numsList}\n\n` +
+                                `ℹ️ Tus números participantes siguen 100% activos y garantizados para el sorteo. ¡Mucha suerte! 🍀✨\n\n` +
+                                `💎 *Equipo WINNERS*\n` +
+                                `🌐 https://winners-one.vercel.app/${raffle.id}`;
 
-                             const waTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error('WA timeout')), 25000));
-                             await Promise.race([WhatsAppService.sendMessage(phone, waMsg), waTimeout]).catch(() => {});
-                             notifiedCount++;
+                            const waTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error('WA timeout')), 25000));
+                            await Promise.race([WhatsAppService.sendMessage(phone, waMsg), waTimeout]).catch(() => { });
+                            notifiedCount++;
                         }
                         console.log(`[Agente Financiero] Notificados ${notifiedCount} participantes sobre el cambio de fecha.`);
                     } catch (err) {
@@ -198,7 +196,7 @@ class Scheduler {
                                <p style="color:#888;font-size:12px;margin:0 0 6px;">📌 Rifa</p>
                                <p style="color:#fff;font-size:15px;font-weight:bold;margin:0 0 14px;">${raffle.title}</p>
                                <p style="color:#888;font-size:12px;margin:0 0 4px;">📅 Nueva fecha de cierre</p>
-                               <p style="color:#a855f7;font-size:16px;font-weight:900;margin:0 0 14px;">${newEndDate.toLocaleDateString('es-CO', {day:'2-digit',month:'long',year:'numeric'})}</p>
+                               <p style="color:#a855f7;font-size:16px;font-weight:900;margin:0 0 14px;">${newEndDate.toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
                              </div>
                              <p style="color:#888;font-size:12px;margin:0 0 20px;">El Agente Winners ha <strong style="color:#fff;">extendido el sorteo 15 días adicionales</strong> automáticamente para proteger la viabilidad del sorteo y a los participantes.</p>
                              <p style="color:#888;font-size:12px;margin:0 0 20px;">Todos los participantes con tickets <b>PAGADOS</b> han sido notificados de este cambio por WhatsApp.</p>
@@ -210,7 +208,7 @@ class Scheduler {
 
                 // Evaluar Reprogramación (Advertencia antes del cierre)
                 const triggerReschedule = daysRemaining > 0 && daysRemaining < 3 && !metrics.breakEvenReached && health.risk === 'HIGH';
-                
+
                 // Solo enviar alerta si aún no hemos sugerido la reprogramación (evita correos repetidos cada hora/día)
                 if (triggerReschedule && !raffle.suggestedDrawDate) {
                     // Verificar que estamos en la ventana de envío (10 AM - 3 PM)
@@ -241,9 +239,9 @@ class Scheduler {
                                <p style="color:#888;font-size:12px;margin:0 0 6px;">📌 Rifa</p>
                                <p style="color:#fff;font-size:15px;font-weight:bold;margin:0 0 14px;">${raffle.title}</p>
                                <p style="color:#888;font-size:12px;margin:0 0 4px;">📅 Cierre actual</p>
-                               <p style="color:#ccc;font-size:14px;margin:0 0 14px;">${new Date(raffle.endDate).toLocaleDateString('es-CO', {day:'2-digit',month:'long',year:'numeric'})}</p>
+                               <p style="color:#ccc;font-size:14px;margin:0 0 14px;">${new Date(raffle.endDate).toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
                                <p style="color:#888;font-size:12px;margin:0 0 4px;">📆 Fecha sugerida por el Agente</p>
-                               <p style="color:#a855f7;font-size:16px;font-weight:900;margin:0 0 14px;">${newSuggestedDate.toLocaleDateString('es-CO', {day:'2-digit',month:'long',year:'numeric'})}</p>
+                               <p style="color:#a855f7;font-size:16px;font-weight:900;margin:0 0 14px;">${newSuggestedDate.toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
                                <p style="color:#888;font-size:12px;margin:0 0 4px;">⚡ Nivel de riesgo</p>
                                <p style="color:#ff6b6b;font-weight:bold;font-size:14px;margin:0;">ALTO</p>
                              </div>
@@ -354,11 +352,14 @@ class Scheduler {
                     const numLabel = groupTickets.length > 1 ? `los números *${numList}*` : `el número *${numList}*`;
 
                     if (first.buyerPhone) {
+                        const raffleId = first.raffleId || first.raffle?.id || '';
                         const msg =
                             `🚫 *WINNERS - Reserva Cancelada*\n\n` +
                             `Hola ${first.buyerName || 'participante'}, debido a que no recibimos la confirmación de pago en 72 horas, ` +
                             `tu reserva de ${numLabel} para el sorteo *"${first.raffle.title}"* ha expirado y los números han sido liberados.\n\n` +
-                            `Si aún deseas participar, puedes reservar un nuevo número en el talonario web. ¡Éxitos! 🎟️`;
+                            `Si aún deseas participar, puedes reservar un nuevo número en el talonario web.\n\n` +
+                            `💎 *Equipo WINNERS*\n` +
+                            `🌐 https://winners-one.vercel.app${raffleId ? `/${raffleId}` : ''}`;
                         await sendWhatsAppWithTimeout(first.buyerPhone, msg);
                     }
 
@@ -415,11 +416,14 @@ class Scheduler {
 
                     let sentOk = true;
                     if (first.buyerPhone) {
+                        const raffleId = first.raffleId || first.raffle?.id || '';
                         const msg =
                             `⚠️ *WINNERS - Último Recordatorio*\n\n` +
                             `Hola ${first.buyerName || 'participante'}, tu reserva de ${numLabel} ` +
                             `para el sorteo *"${first.raffle.title}"* vence en las próximas horas.\n\n` +
-                            `Si no confirmas tu pago, los números serán liberados. ¡No pierdas tu oportunidad! 🍀`;
+                            `Si no confirmas tu pago, los números serán liberados. ¡No pierdas tu oportunidad! 🍀\n\n` +
+                            `💎 *Equipo WINNERS*\n` +
+                            `🌐 https://winners-one.vercel.app${raffleId ? `/${raffleId}` : ''}`;
                         sentOk = await sendWhatsAppWithTimeout(first.buyerPhone, msg);
                     }
 
@@ -470,12 +474,15 @@ class Scheduler {
 
                     let sentOk = true;
                     if (first.buyerPhone) {
+                        const raffleId = first.raffleId || first.raffle?.id || '';
                         const msg =
                             `🎟️ *WINNERS - Recordatorio de Pago*\n\n` +
                             `Hola ${first.buyerName || 'participante'}, te recordamos que tienes reservado ${numLabel} ` +
                             `para el sorteo *"${first.raffle.title}"*.\n\n` +
                             `Realiza tu pago para asegurar tu participación. Si en 24 horas no confirmamos el pago, el número será liberado.\n\n` +
-                            `¡Mucha suerte! 🍀`;
+                            `¡Mucha suerte! 🍀\n\n` +
+                            `💎 *Equipo WINNERS*\n` +
+                            `🌐 https://winners-one.vercel.app${raffleId ? `/${raffleId}` : ''}`;
                         sentOk = await sendWhatsAppWithTimeout(first.buyerPhone, msg);
                     }
 
@@ -554,9 +561,10 @@ class Scheduler {
                 let paymentInfo = '';
                 if (first.raffle?.nequiPhone) paymentInfo += `\n• *Nequi:* ${first.raffle.nequiPhone}`;
                 if (first.raffle?.daviplataPhone) paymentInfo += `\n• *Daviplata:* ${first.raffle.daviplataPhone}`;
-                if (first.raffle?.brebPhone) paymentInfo += `\n• *Breb:* ${first.raffle.brebPhone}`;
+                if (first.raffle?.brebPhone) paymentInfo += `\n• *Bre-b:* ${first.raffle.brebPhone}`;
                 if (first.raffle?.payLink) paymentInfo += `\n• *Link de Pago:* ${first.raffle.payLink}`;
 
+                const raffleId = first.raffleId || first.raffle?.id || '';
                 const confirmMsg =
                     `✨ *WINNERS PLATFORM* ✨\n\n` +
                     `👋 Hola *${first.buyerName || 'participante'}*,\n\n` +
@@ -567,7 +575,7 @@ class Scheduler {
                     (paymentInfo ? `\n🏦 *Métodos de pago:*${paymentInfo}\n` : '') +
                     `\n⏳ Cuentas con *72 horas* para realizar tu pago y asegurar tu participación. ¡Mucha suerte! 🍀\n\n` +
                     `💎 *Equipo WINNERS*\n` +
-                    `🌐 https://winners-one.vercel.app`;
+                    `🌐 https://winners-one.vercel.app${raffleId ? `/${raffleId}` : ''}`;
 
                 const sent = await sendFn(first.buyerPhone, confirmMsg);
                 if (sent) {
