@@ -182,11 +182,11 @@ class Scheduler {
                 }
 
                 // Evaluar Reprogramación (Advertencia antes del cierre)
-                const triggerReschedule = daysRemaining > 0 && daysRemaining < 2 && !metrics.breakEvenReached && health.risk === 'HIGH';
+                const triggerReschedule = daysRemaining > 0 && daysRemaining < 3 && !metrics.breakEvenReached && health.risk === 'HIGH';
                 
                 // Solo enviar alerta si aún no hemos sugerido la reprogramación (evita correos repetidos cada hora/día)
                 if (triggerReschedule && !raffle.suggestedDrawDate) {
-                    console.log(`[analyzeFinancialHealth] ¿Cumple criterio de reprogramación? ${triggerReschedule} (daysRemaining<2: ${daysRemaining < 2}, !breakEven: ${!metrics.breakEvenReached}, risk HIGH: ${health.risk === 'HIGH'})`);
+                    console.log(`[analyzeFinancialHealth] ¿Cumple criterio de reprogramación? ${triggerReschedule} (daysRemaining<3: ${daysRemaining < 3}, !breakEven: ${!metrics.breakEvenReached}, risk HIGH: ${health.risk === 'HIGH'})`);
 
                     // Sugerir reprogramación a 15 días adicionales
                     const newSuggestedDate = new Date(endDate.getTime() + (15 * 24 * 60 * 60 * 1000));
