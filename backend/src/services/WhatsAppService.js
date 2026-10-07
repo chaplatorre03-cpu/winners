@@ -193,19 +193,23 @@ class WhatsAppService {
                 ? sortedNumbers.map(n => `#${String(n).padStart(padLength, '0')}`).join(', ')
                 : 'Registrado';
 
-            const nameGreeting = data.name ? `Hola *${data.name}*` : 'Hola';
+            const nameGreeting = data.name ? `Hola *${data.name.split(' ')[0].toUpperCase()}*` : 'Hola *PARTICIPANTE*';
             const ticketLabel = sortedNumbers.length > 1 ? 'Tus números participantes' : 'Tu número participante';
 
             const message =
-                `✨ *WINNERS PLATFORM* ✨\n\n` +
+                `✨ *WINNERS PLATFORM* ✨\n` +
+                `--------------------------------------------------\n\n` +
                 `👋 ${nameGreeting},\n\n` +
+                `⚠️ *Aviso Importante sobre el Sorteo*\n\n` +
                 `Te informamos que la fecha del sorteo *"${raffle.title}"* ha sido reprogramada.\n\n` +
-                `📅 *Detalles de la nueva programación:*\n` +
-                `• *Fecha anterior:* ~${oldDate}~\n` +
-                `• *Nueva fecha oficial:* 🎯 *${newDate}*\n\n` +
-                `🎟️ *${ticketLabel}:*\n` +
-                `👉 *${formattedNumbers}*\n\n` +
-                `ℹ️ *Tu número participante sigue 100% activo y garantizado para el sorteo.* ¡Mucha suerte! 🍀✨\n\n` +
+                `📆 *Detalles de la nueva programación:*\n` +
+                ` • Fecha anterior: ~${oldDate}~\n` +
+                ` • Nueva fecha oficial: 🎯 *${newDate}*\n\n` +
+                `El organizador ha modificado la fecha de cierre de la rifa. Para garantizar la transparencia y entrega del premio, la plataforma notifica este cambio a todos los participantes.\n\n` +
+                `🎫 *${ticketLabel}:*\n` +
+                `👉 ${formattedNumbers}\n\n` +
+                `ℹ️ Tus números siguen 100% activos y garantizados para el sorteo. ¡Mucha suerte! 🍀✨\n` +
+                `--------------------------------------------------\n` +
                 `💎 *Equipo WINNERS*\n` +
                 `🌐 https://winners-one.vercel.app`;
 
