@@ -61,6 +61,9 @@ async function sendAlert(to, subject, bodyHtml) {
 }
 
 
+// In-memory set to prevent concurrent execution of the same notification key
+const activeProcessingKeys = new Set();
+
 class Scheduler {
     static start() {
         console.log('[Scheduler] Iniciando monitoreo en segundo plano...');
@@ -385,13 +388,13 @@ class Scheduler {
 
             // =========================================================
             // STAGE 2: Second (last) warning — tickets 48h–72h old
-            //          Only if remindersSent < 2 (not yet sent)
+            //          Only if remindersSent === 2 (1st reminder was sent)
             // =========================================================
             const toRemind2 = await prisma.ticket.findMany({
                 where: {
                     status: 'APARTADO',
                     createdAt: { lte: h48, gt: h72 },
-                    remindersSent: { lt: 2 }
+                    remindersSent: 2
                 },
                 include: { raffle: true }
             });
@@ -413,6 +416,13 @@ class Scheduler {
                     const first = groupTickets[0];
                     const numList = groupTickets.map(t => `#${String(t.number).padStart(3, '0')}`).join(', ');
                     const numLabel = groupTickets.length > 1 ? `los números *${numList}*` : `el número *${numList}*`;
+                    const ids = groupTickets.map(t => t.id);
+
+                    // Optimistic DB lock
+                    await prisma.ticket.updateMany({
+                        where: { id: { in: ids } },
+                        data: { remindersSent: 3 }
+                    });
 
                     let sentOk = true;
                     if (first.buyerPhone) {
@@ -427,29 +437,27 @@ class Scheduler {
                         sentOk = await sendWhatsAppWithTimeout(first.buyerPhone, msg);
                     }
 
-                    // CRITICAL FIX: Only update DB if WhatsApp delivery succeeded or no phone
                     if (sentOk) {
-                        const ids = groupTickets.map(t => t.id);
+                        console.log(`[Agente de Seguimiento] 2do recordatorio enviado y guardado en BD para ${groupTickets.length} ticket(s) de ${first.buyerName || first.buyerPhone}`);
+                    } else {
+                        console.warn(`[Agente de Seguimiento] 2do recordatorio WhatsApp falló para ${first.buyerPhone}. Revirtiendo BD a remindersSent=2 para reintentar.`);
                         await prisma.ticket.updateMany({
                             where: { id: { in: ids } },
                             data: { remindersSent: 2 }
                         });
-                        console.log(`[Agente de Seguimiento] 2do recordatorio enviado y guardado en BD para ${groupTickets.length} ticket(s) de ${first.buyerName || first.buyerPhone}`);
-                    } else {
-                        console.warn(`[Agente de Seguimiento] 2do recordatorio WhatsApp falló para ${first.buyerPhone}. NO se actualiza DB para reintentar en el próximo cron.`);
                     }
                 }
             }
 
             // =========================================================
             // STAGE 1: First reminder — tickets 24h–48h old
-            //          Only if remindersSent === 0 (never sent before)
+            //          Only if remindersSent === 1 (initial confirmation sent)
             // =========================================================
             const toRemind1 = await prisma.ticket.findMany({
                 where: {
                     status: 'APARTADO',
                     createdAt: { lte: h24, gt: h48 },
-                    remindersSent: 0
+                    remindersSent: 1
                 },
                 include: { raffle: true }
             });
@@ -471,6 +479,13 @@ class Scheduler {
                     const first = groupTickets[0];
                     const numList = groupTickets.map(t => `#${String(t.number).padStart(3, '0')}`).join(', ');
                     const numLabel = groupTickets.length > 1 ? `los números *${numList}*` : `el número *${numList}*`;
+                    const ids = groupTickets.map(t => t.id);
+
+                    // Optimistic DB lock
+                    await prisma.ticket.updateMany({
+                        where: { id: { in: ids } },
+                        data: { remindersSent: 2 }
+                    });
 
                     let sentOk = true;
                     if (first.buyerPhone) {
@@ -486,16 +501,14 @@ class Scheduler {
                         sentOk = await sendWhatsAppWithTimeout(first.buyerPhone, msg);
                     }
 
-                    // CRITICAL FIX: Only update DB if WhatsApp delivery succeeded or no phone
                     if (sentOk) {
-                        const ids = groupTickets.map(t => t.id);
+                        console.log(`[Agente de Seguimiento] 1er recordatorio enviado y guardado en BD para ${groupTickets.length} ticket(s) de ${first.buyerName || first.buyerPhone}`);
+                    } else {
+                        console.warn(`[Agente de Seguimiento] 1er recordatorio WhatsApp falló para ${first.buyerPhone}. Revirtiendo BD a remindersSent=1 para reintentar.`);
                         await prisma.ticket.updateMany({
                             where: { id: { in: ids } },
                             data: { remindersSent: 1 }
                         });
-                        console.log(`[Agente de Seguimiento] 1er recordatorio enviado y guardado en BD para ${groupTickets.length} ticket(s) de ${first.buyerName || first.buyerPhone}`);
-                    } else {
-                        console.warn(`[Agente de Seguimiento] 1er recordatorio WhatsApp falló para ${first.buyerPhone}. NO se actualiza DB para reintentar en el próximo cron.`);
                     }
                 }
             }
@@ -547,47 +560,65 @@ class Scheduler {
 
             for (const [, groupTickets] of groups) {
                 const first = groupTickets[0];
-                if (!first.buyerPhone) {
-                    // Sin teléfono: marcar directamente como enviado para que no siga apareciendo
-                    const ids = groupTickets.map(t => t.id);
-                    await prisma.ticket.updateMany({ where: { id: { in: ids } }, data: { remindersSent: 1 } });
+                const groupKey = `stage0_${first.buyerPhone}_${first.raffleId}`;
+
+                // In-memory process lock
+                if (activeProcessingKeys.has(groupKey)) {
+                    console.log(`[STAGE 0] Omitiendo ${groupKey}: ya en envío simultáneo en otro hilo.`);
                     continue;
                 }
+                activeProcessingKeys.add(groupKey);
 
-                const numList = groupTickets.map(t => `#${String(t.number).padStart(3, '0')}`).join(', ');
-                const totalCost = groupTickets.reduce((sum, t) => sum + (t.raffle?.price || 0), 0);
-                const totalFormatted = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalCost);
-
-                let paymentInfo = '';
-                if (first.raffle?.nequiPhone) paymentInfo += `\n• *Nequi:* ${first.raffle.nequiPhone}`;
-                if (first.raffle?.daviplataPhone) paymentInfo += `\n• *Daviplata:* ${first.raffle.daviplataPhone}`;
-                if (first.raffle?.brebPhone) paymentInfo += `\n• *Bre-b:* ${first.raffle.brebPhone}`;
-                if (first.raffle?.payLink) paymentInfo += `\n• *Link de Pago:* ${first.raffle.payLink}`;
-
-                const raffleId = first.raffleId || first.raffle?.id || '';
-                const confirmMsg =
-                    `✨ *WINNERS PLATFORM* ✨\n\n` +
-                    `👋 Hola *${first.buyerName || 'participante'}*,\n\n` +
-                    `¡Tus números han sido reservados con éxito!\n\n` +
-                    `📱 *Sorteo:* "${first.raffle?.title || 'Sorteo'}"\n` +
-                    `👉 *Números reservados:* ${numList}\n` +
-                    `💰 *Total a pagar:* ${totalFormatted}\n` +
-                    (paymentInfo ? `\n🏦 *Métodos de pago:*${paymentInfo}\n` : '') +
-                    `\n⏳ Cuentas con *72 horas* para realizar tu pago y asegurar tu participación. ¡Mucha suerte! 🍀\n\n` +
-                    `💎 *Equipo WINNERS*\n` +
-                    `🌐 https://winners-one.vercel.app${raffleId ? `/${raffleId}` : ''}`;
-
-                const sent = await sendFn(first.buyerPhone, confirmMsg);
-                if (sent) {
+                try {
                     const ids = groupTickets.map(t => t.id);
+
+                    // OPTIMISTIC DB LOCK: Mark remindersSent = 1 BEFORE sending WA
+                    // This prevents concurrent crons from fetching and re-sending to the same buyer.
                     await prisma.ticket.updateMany({
                         where: { id: { in: ids } },
                         data: { remindersSent: 1 }
                     });
-                    console.log(`[STAGE 0] ✅ Confirmación enviada a ${first.buyerName || first.buyerPhone} — ${numList}`);
-                    sentCount++;
-                } else {
-                    console.warn(`[STAGE 0] ⚠️ Fallo para ${first.buyerPhone}. Se reintentará en el próximo ciclo.`);
+
+                    if (!first.buyerPhone) {
+                        continue;
+                    }
+
+                    const numList = groupTickets.map(t => `#${String(t.number).padStart(3, '0')}`).join(', ');
+                    const totalCost = groupTickets.reduce((sum, t) => sum + (t.raffle?.price || 0), 0);
+                    const totalFormatted = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalCost);
+
+                    let paymentInfo = '';
+                    if (first.raffle?.nequiPhone) paymentInfo += `\n• *Nequi:* ${first.raffle.nequiPhone}`;
+                    if (first.raffle?.daviplataPhone) paymentInfo += `\n• *Daviplata:* ${first.raffle.daviplataPhone}`;
+                    if (first.raffle?.brebPhone) paymentInfo += `\n• *Bre-b:* ${first.raffle.brebPhone}`;
+                    if (first.raffle?.payLink) paymentInfo += `\n• *Link de Pago:* ${first.raffle.payLink}`;
+
+                    const raffleId = first.raffleId || first.raffle?.id || '';
+                    const confirmMsg =
+                        `✨ *WINNERS PLATFORM* ✨\n\n` +
+                        `👋 Hola *${first.buyerName || 'participante'}*,\n\n` +
+                        `¡Tus números han sido reservados con éxito!\n\n` +
+                        `📱 *Sorteo:* "${first.raffle?.title || 'Sorteo'}"\n` +
+                        `👉 *Números reservados:* ${numList}\n` +
+                        `💰 *Total a pagar:* ${totalFormatted}\n` +
+                        (paymentInfo ? `\n🏦 *Métodos de pago:*${paymentInfo}\n` : '') +
+                        `\n⏳ Cuentas con *72 horas* para realizar tu pago y asegurar tu participación. ¡Mucha suerte! 🍀\n\n` +
+                        `💎 *Equipo WINNERS*\n` +
+                        `🌐 https://winners-one.vercel.app${raffleId ? `/${raffleId}` : ''}`;
+
+                    const sent = await sendFn(first.buyerPhone, confirmMsg);
+                    if (sent) {
+                        console.log(`[STAGE 0] ✅ Confirmación enviada a ${first.buyerName || first.buyerPhone} — ${numList}`);
+                        sentCount++;
+                    } else {
+                        console.warn(`[STAGE 0] ⚠️ Fallo para ${first.buyerPhone}. Revirtiendo DB a remindersSent=0 para reintentar.`);
+                        await prisma.ticket.updateMany({
+                            where: { id: { in: ids } },
+                            data: { remindersSent: 0 }
+                        });
+                    }
+                } finally {
+                    activeProcessingKeys.delete(groupKey);
                 }
             }
         } catch (err) {
