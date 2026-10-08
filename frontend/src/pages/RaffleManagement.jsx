@@ -373,7 +373,7 @@ const RaffleManagement = () => {
     const progress = React.useMemo(() => raffle ? (currentStatCount / raffle.totalTickets) * 100 : 0, [raffle, currentStatCount]);
 
     const filteredTickets = React.useMemo(() => {
-        return tickets.filter(t => {
+        const filtered = tickets.filter(t => {
             const date = new Date(t.createdAt);
             const day = date.getDate().toString();
             const month = (date.getMonth() + 1).toString();
@@ -394,6 +394,27 @@ const RaffleManagement = () => {
 
             const matchesStatus = statusFilter ? t.status === statusFilter : true;
             return matchesSearch && matchesStatus;
+        });
+
+        // Orden de prioridad por estado: AP (APARTADO) -> RE (REVISANDO) -> OK (PAGADO)
+        // Criterio secundario: Fecha más reciente primero (createdAt DESC)
+        const statusPriority = {
+            'APARTADO': 1,
+            'REVISANDO': 2,
+            'PAGADO': 3
+        };
+
+        return filtered.sort((a, b) => {
+            const priorityA = statusPriority[a.status] || 99;
+            const priorityB = statusPriority[b.status] || 99;
+
+            if (priorityA !== priorityB) {
+                return priorityA - priorityB;
+            }
+
+            const dateA = new Date(a.createdAt || 0).getTime();
+            const dateB = new Date(b.createdAt || 0).getTime();
+            return dateB - dateA;
         });
     }, [tickets, searchQuery, statusFilter, formatNumber]);
 
