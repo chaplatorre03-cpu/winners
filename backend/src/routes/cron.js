@@ -223,7 +223,7 @@ router.get('/health-check', async (req, res) => {
             const health = RaffleHealthService.evaluateHealth(raffle);
             const endDate = new Date(raffle.endDate);
             const daysRemaining = (endDate.getTime() - new Date().getTime()) / (1000 * 3600 * 24);
-            const wouldSendEmail = daysRemaining < 2 && !health.metrics.breakEvenReached && health.risk === 'HIGH';
+            const wouldSendEmail = daysRemaining <= 3 && daysRemaining > 0;
             return {
                 id: raffle.id,
                 title: raffle.title,
@@ -232,7 +232,6 @@ router.get('/health-check', async (req, res) => {
                 daysRemaining: daysRemaining.toFixed(2),
                 risk: health.risk,
                 score: health.score,
-                breakEvenReached: health.metrics.breakEvenReached,
                 creatorEmail: raffle.creator?.email || 'NO EMAIL',
                 wouldSendEmail,
                 reasons: health.reasons

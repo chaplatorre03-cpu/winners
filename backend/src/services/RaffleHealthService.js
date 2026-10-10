@@ -10,7 +10,7 @@ class RaffleHealthService {
         let reasons = [];
         let risk = "LOW";
 
-        const { percentSold, salesVelocity, breakEvenReached, estimatedDaysToTarget, breakEvenTickets } = metrics;
+        const { percentSold, salesVelocity } = metrics;
         
         // Active days
         const createdAt = raffle.createdAt ? new Date(raffle.createdAt) : new Date();
@@ -25,13 +25,12 @@ class RaffleHealthService {
         }
 
         // Penalty: Time running out vs percentage sold
-        // Assuming a standard 30-day target if endDate is not strictly evaluated here
         const endDate = new Date(raffle.endDate);
         const daysRemaining = Math.max(0, (endDate.getTime() - new Date().getTime()) / (1000 * 3600 * 24));
         
-        if (daysRemaining < 7 && !breakEvenReached) {
+        if (daysRemaining < 7 && percentSold < 50) {
             score -= 40;
-            reasons.push("Faltan menos de 7 días y no se ha alcanzado el punto de equilibrio.");
+            reasons.push("Faltan menos de 7 días y el porcentaje de venta es inferior al 50%.");
         } else if (daysRemaining < 15 && percentSold < 30) {
             score -= 20;
             reasons.push("Menos de 15 días restantes con un porcentaje de venta bajo (<30%).");

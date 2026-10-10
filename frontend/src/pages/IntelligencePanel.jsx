@@ -159,7 +159,6 @@ const IntelligencePanel = () => {
                                         <h4>{m.title}</h4>
                                         <p>Score: <strong>{Math.round(m.score || 0)}/100</strong></p>
                                         <p>Riesgo: <strong>{emoji} {label}</strong></p>
-                                        <p>Punto de equilibrio: <strong>{m.breakEvenReached ? '✅ Alcanzado' : '❌ Pendiente'}</strong></p>
                                         <p>Ganancia estimada: <strong>${(m.profit || 0).toLocaleString('es-CO')}</strong></p>
                                     </div>
                                 );

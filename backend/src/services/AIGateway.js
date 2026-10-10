@@ -62,8 +62,7 @@ class AIGateway {
                 title: r.title,
                 score: health.score,
                 risk: health.risk,
-                profit: health.metrics.estimatedProfit,
-                breakEvenReached: health.metrics.breakEvenReached
+                profit: health.metrics.estimatedProfit
             };
         });
     }

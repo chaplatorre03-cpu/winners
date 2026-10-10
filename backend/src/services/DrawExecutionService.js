@@ -22,7 +22,7 @@ class DrawExecutionService {
             // Evaluate Financial constraints if called by AI/SYSTEM
             if (actorType === 'AI' || actorType === 'SYSTEM') {
                 const metrics = FinancialAnalysisService.calculateMetrics(raffle);
-                if (!metrics.breakEvenReached || metrics.estimatedProfit < (raffle.marginExpected || 0)) {
+                if (metrics.estimatedProfit < (raffle.marginExpected || 0)) {
                     throw new Error("No se cumple la rentabilidad mínima para ejecutar el sorteo automáticamente.");
                 }
             }

@@ -16,22 +16,14 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-// Verifica si la hora actual en Colombia (UTC-5) está entre 10:00 AM y 3:00 PM (inclusive)
-function isWithinAlertWindow() {
+// Verifica si la hora actual en Colombia (UTC-5) es exactamente las 10:00 AM
+function isAlertTime() {
     const nowColombia = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' }));
-    const hour = nowColombia.getHours(); // 0-23
-    return hour >= 10 && hour <= 15; // 10:00 AM hasta 3:59 PM (incluye la hora de las 3:00 PM)
+    return nowColombia.getHours() === 10;
 }
 
 async function sendAlert(to, subject, bodyHtml) {
     if (!to || !process.env.EMAIL_USER) return;
-
-    // Solo enviar entre 10:00 AM y 3:00 PM hora Colombia
-    if (!isWithinAlertWindow()) {
-        const nowColombia = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' }));
-        console.log(`[Scheduler] Email NO enviado (fuera de ventana horaria 10AM-3PM Colombia). Hora actual: ${nowColombia.getHours()}:${String(nowColombia.getMinutes()).padStart(2, '0')}`);
-        return;
-    }
 
     try {
         const fullHtml = `
@@ -95,6 +87,10 @@ class Scheduler {
 
             console.log(`[analyzeFinancialHealth] Rifas ACTIVE encontradas: ${activeRaffles.length}`);
 
+            const nowColombia = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+            const todayColombiaStr = nowColombia.toISOString().split('T')[0];
+            const currentHour = nowColombia.getHours();
+
             for (const raffle of activeRaffles) {
                 const health = RaffleHealthService.evaluateHealth(raffle);
                 const metrics = health.metrics;
@@ -102,34 +98,33 @@ class Scheduler {
                 const endDate = new Date(raffle.endDate);
                 const daysRemaining = (endDate.getTime() - new Date().getTime()) / (1000 * 3600 * 24);
 
-                console.log(`[analyzeFinancialHealth] Rifa: "${raffle.title}" | risk=${health.risk} | score=${health.score} | daysRemaining=${daysRemaining.toFixed(2)} | breakEvenReached=${metrics.breakEvenReached} | creatorEmail=${raffle.creator?.email || 'NONE'}`);
+                console.log(`[analyzeFinancialHealth] Rifa: "${raffle.title}" | risk=${health.risk} | score=${health.score} | daysRemaining=${daysRemaining.toFixed(2)} | percentSold=${metrics.percentSold.toFixed(1)}% | creatorEmail=${raffle.creator?.email || 'NONE'}`);
 
-                // Si alcanzó el punto de equilibrio y tiene ganancias -> GATILLO DE SORTEO AUTOMÁTICO (Agente Financiero)
-                if (metrics.breakEvenReached && metrics.estimatedProfit >= (raffle.marginExpected || 0)) {
-                    console.log(`[Agente Financiero] La rifa ${raffle.id} alcanzó la meta de rentabilidad. Programando sorteo...`);
+                // Si alcanzó el 100% de ventas y la meta de ganancias -> GATILLO DE SORTEO AUTOMÁTICO
+                if (metrics.percentSold >= 100 && metrics.estimatedProfit >= (raffle.marginExpected || 0)) {
+                    console.log(`[Agente Financiero] La rifa ${raffle.id} alcanzó el 100% de ventas. Programando sorteo...`);
                     try {
                         await DrawExecutionService.executeDraw(raffle.id, null, 'SYSTEM', 1, true);
                         console.log(`[Agente Financiero] Sorteo ejecutado automáticamente para rifa ${raffle.id}`);
 
-                        // Notificar al creador
                         if (raffle.creator?.email) {
                             await sendAlert(
                                 raffle.creator.email,
                                 `🎉 Sorteo Ejecutado Automáticamente: ${raffle.title}`,
-                                `<p>Hola ${raffle.creator.name}, el Agente Inteligente ejecutó el sorteo de <b>${raffle.title}</b> al superar la rentabilidad esperada.</p><p>Revisa el dashboard para contactar al ganador.</p>`
+                                `<p>Hola ${raffle.creator.name}, el Agente Inteligente ejecutó el sorteo de <b>${raffle.title}</b> al completarse el 100% de ventas.</p><p>Revisa el dashboard para contactar al ganador.</p>`
                             );
                         }
                     } catch (err) {
                         console.error(`[Agente Financiero] Fallo al ejecutar sorteo para ${raffle.id}:`, err.message);
                     }
-                    continue; // Skip reschedule checks if completed
+                    continue;
                 }
 
-                // Evaluar Auto-Extensión si el día del sorteo ha llegado o pasado
-                if (daysRemaining <= 0 && !metrics.breakEvenReached) {
+                // Evaluar Auto-Extensión si la fecha del sorteo ha llegado y no se han vendido todas las boletas
+                if (daysRemaining <= 0 && metrics.percentSold < 100) {
                     const newEndDate = new Date(endDate.getTime() + (15 * 24 * 60 * 60 * 1000));
 
-                    console.log(`[Agente Financiero] La rifa ${raffle.id} finalizó sin llegar a la meta. Auto-extendiendo 15 días (hasta ${newEndDate.toISOString()}).`);
+                    console.log(`[Agente Financiero] La rifa ${raffle.id} finalizó sin completar las ventas. Auto-extendiendo 15 días (hasta ${newEndDate.toISOString()}).`);
 
                     await prisma.raffle.update({
                         where: { id: raffle.id },
@@ -142,7 +137,6 @@ class Scheduler {
                             where: { raffleId: raffle.id, status: 'PAGADO' }
                         });
 
-                        // Agrupar tickets por teléfono para personalizar el mensaje y listar sus números
                         const ticketsByPhone = {};
                         for (const ticket of paidTickets) {
                             if (!ticket.buyerPhone) continue;
@@ -161,7 +155,6 @@ class Scheduler {
                         let notifiedCount = 0;
                         for (const phone in ticketsByPhone) {
                             const userData = ticketsByPhone[phone];
-                            // Extraer solo el primer nombre
                             const shortName = userData.name.split(' ')[0].toUpperCase();
                             const numsList = userData.numbers.map(n => `#${n}`).join(', ');
 
@@ -172,7 +165,7 @@ class Scheduler {
                                 `📆 *Detalles de la nueva programación:*\n` +
                                 ` • Fecha anterior: ~${oldDateFormatted}~\n` +
                                 ` • Nueva fecha oficial: 🎯 *${dateFormatted}*\n\n` +
-                                `El organizador no alcanzó la meta de ventas mínima (rentabilidad). Para garantizar la transparencia y entrega del premio, el sistema extendió la fecha de forma automática.\n\n` +
+                                `El organizador no alcanzó la meta de ventas requerida. Para garantizar la transparencia y entrega del premio, el sistema extendió la fecha de forma automática.\n\n` +
                                 `🎫 *Tus números participantes:*\n` +
                                 `👉 ${numsList}\n\n` +
                                 `ℹ️ Tus números participantes siguen 100% activos y garantizados para el sorteo. ¡Mucha suerte! 🍀✨\n\n` +
@@ -194,7 +187,7 @@ class Scheduler {
                             raffle.creator.email,
                             `🔄 Fecha extendida automáticamente: ${raffle.title}`,
                             `<p style="color:#ccc;font-size:14px;margin:0 0 8px;">Hola <strong style="color:#fff;">${raffle.creator.name || 'Creador'}</strong>,</p>
-                             <p style="color:#888;font-size:13px;margin:0 0 24px;">Tu rifa alcanzó su fecha de cierre original sin llegar a la rentabilidad esperada.</p>
+                             <p style="color:#888;font-size:13px;margin:0 0 24px;">Tu rifa alcanzó su fecha de cierre original sin completar la totalidad de las ventas.</p>
                              <div style="background:#1a1a1a;border:2px solid #8b00ff;border-radius:12px;padding:20px;margin:0 auto 20px;display:inline-block;text-align:left;width:100%;box-sizing:border-box;">
                                <p style="color:#888;font-size:12px;margin:0 0 6px;">📌 Rifa</p>
                                <p style="color:#fff;font-size:15px;font-weight:bold;margin:0 0 14px;">${raffle.title}</p>
@@ -206,55 +199,51 @@ class Scheduler {
                              <a href="https://winners-one.vercel.app/panel" style="display:inline-block;background:linear-gradient(135deg,#8b00ff,#ff00de);color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:bold;font-size:14px;letter-spacing:1px;">VER MI PANEL →</a>`
                         );
                     }
-                    continue; // Skip reschedule checks
+                    continue;
                 }
 
-                // Evaluar Reprogramación (Advertencia antes del cierre)
-                const triggerReschedule = daysRemaining > 0 && daysRemaining < 3 && !metrics.breakEvenReached && health.risk === 'HIGH';
+                // Notificación Diaria por Correo a las 10:00 AM durante los últimos 3 días antes de finalizar
+                const isFinalThreeDays = daysRemaining > 0 && daysRemaining <= 3;
 
-                // Solo enviar alerta si aún no hemos sugerido la reprogramación (evita correos repetidos cada hora/día)
-                if (triggerReschedule && !raffle.suggestedDrawDate) {
-                    // Verificar que estamos en la ventana de envío (10 AM - 3 PM)
-                    // Si es de madrugada, posponemos el aviso para que el correo sí llegue al usuario
-                    if (!isWithinAlertWindow()) {
-                        console.log(`[analyzeFinancialHealth] Rifa ${raffle.id} requiere aviso de 72h, pero está fuera de horario (10AM-3PM). Se pospone.`);
-                        continue;
-                    }
+                // Verificar la fecha en que se envió la última alerta por correo
+                const lastAlertDateStr = raffle.suggestedDrawDate
+                    ? new Date(new Date(raffle.suggestedDrawDate).toLocaleString('en-US', { timeZone: 'America/Bogota' })).toISOString().split('T')[0]
+                    : null;
+                const alreadySentToday = lastAlertDateStr === todayColombiaStr;
 
-                    console.log(`[analyzeFinancialHealth] ¿Cumple criterio de reprogramación? ${triggerReschedule} (daysRemaining<3: ${daysRemaining < 3}, !breakEven: ${!metrics.breakEvenReached}, risk HIGH: ${health.risk === 'HIGH'})`);
+                if (isFinalThreeDays && currentHour === 10 && !alreadySentToday) {
+                    console.log(`[analyzeFinancialHealth] Enviando correo diario (10:00 AM) para la rifa ${raffle.id} (Días restantes: ${daysRemaining.toFixed(1)})`);
 
-                    // Sugerir reprogramación a 15 días adicionales
                     const newSuggestedDate = new Date(endDate.getTime() + (15 * 24 * 60 * 60 * 1000));
+
+                    // Guardar la fecha del envío de hoy en suggestedDrawDate para evitar duplicar el correo hoy
                     await prisma.raffle.update({
                         where: { id: raffle.id },
-                        data: { suggestedDrawDate: newSuggestedDate }
+                        data: { suggestedDrawDate: new Date() }
                     });
-                    console.log(`[Agente Creador] Se sugiere reprogramar la rifa ${raffle.id} al ${newSuggestedDate.toISOString()}`);
 
                     if (raffle.creator?.email) {
-                        console.log(`[analyzeFinancialHealth] Enviando email de alerta a: ${raffle.creator.email}`);
+                        const daysLabel = Math.ceil(daysRemaining) === 1 ? '1 día' : `${Math.ceil(daysRemaining)} días`;
+
                         await sendAlert(
                             raffle.creator.email,
                             `⚠️ Atención requerida: Rifa ${raffle.title}`,
                             `<p style="color:#ccc;font-size:14px;margin:0 0 8px;">Hola <strong style="color:#fff;">${raffle.creator.name || 'Creador'}</strong>,</p>
-                             <p style="color:#888;font-size:13px;margin:0 0 24px;">Tu rifa está próxima a finalizar sin alcanzar la rentabilidad esperada.</p>
+                             <p style="color:#888;font-size:13px;margin:0 0 24px;">Tu rifa finaliza en <strong>${daysLabel}</strong>.</p>
                              <div style="background:#1a1a1a;border:2px solid #8b00ff;border-radius:12px;padding:20px;margin:0 auto 20px;display:inline-block;text-align:left;width:100%;box-sizing:border-box;">
                                <p style="color:#888;font-size:12px;margin:0 0 6px;">📌 Rifa</p>
                                <p style="color:#fff;font-size:15px;font-weight:bold;margin:0 0 14px;">${raffle.title}</p>
-                               <p style="color:#888;font-size:12px;margin:0 0 4px;">📅 Cierre actual</p>
+                               <p style="color:#888;font-size:12px;margin:0 0 4px;">📅 Cierre oficial</p>
                                <p style="color:#ccc;font-size:14px;margin:0 0 14px;">${new Date(raffle.endDate).toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
-                               <p style="color:#888;font-size:12px;margin:0 0 4px;">📆 Fecha sugerida por el Agente</p>
-                               <p style="color:#a855f7;font-size:16px;font-weight:900;margin:0 0 14px;">${newSuggestedDate.toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                               <p style="color:#888;font-size:12px;margin:0 0 4px;">📊 Avance de ventas</p>
+                               <p style="color:#a855f7;font-size:16px;font-weight:900;margin:0 0 14px;">${metrics.percentSold.toFixed(1)}% (${metrics.ticketStats.paid} boletos pagados de ${raffle.totalTickets})</p>
                                <p style="color:#888;font-size:12px;margin:0 0 4px;">⚡ Nivel de riesgo</p>
-                               <p style="color:#ff6b6b;font-weight:bold;font-size:14px;margin:0;">ALTO</p>
+                               <p style="color:${health.risk === 'HIGH' ? '#ff6b6b' : '#a855f7'};font-weight:bold;font-size:14px;margin:0;">${health.risk}</p>
                              </div>
-                             <p style="color:#888;font-size:12px;margin:0 0 20px;">El Agente Winners sugiere aplazar el sorteo <strong style="color:#fff;">15 días adicionales</strong> para alcanzar el punto de equilibrio.</p>
-                             <p style="color:#888;font-size:12px;margin:0 0 20px;">Si la fecha actual llega sin alcanzar la rentabilidad, <b>el sistema la extenderá automáticamente por 15 días</b> y notificará a los participantes con ticket pagado.</p>
+                             <p style="color:#888;font-size:12px;margin:0 0 20px;">Recuerda promocionar tu rifa en estos últimos días. Si la fecha actual llega sin vender la totalidad de boletas, <b>el sistema la extenderá automáticamente por 15 días</b> y notificará a los participantes con ticket pagado.</p>
                              <a href="https://winners-one.vercel.app/panel" style="display:inline-block;background:linear-gradient(135deg,#8b00ff,#ff00de);color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:bold;font-size:14px;letter-spacing:1px;">VER MI PANEL →</a>`
                         );
-                        console.log(`[analyzeFinancialHealth] Email de alerta enviado exitosamente a ${raffle.creator.email}`);
-                    } else {
-                        console.warn(`[analyzeFinancialHealth] Rifa "${raffle.title}" cumple criterios pero el creador NO tiene email registrado.`);
+                        console.log(`[analyzeFinancialHealth] Email diario a las 10:00 AM enviado a ${raffle.creator.email}`);
                     }
                 }
             }

@@ -80,7 +80,6 @@ router.post('/evaluate-prize', async (req, res) => {
             return res.status(400).json({ error: 'Todos los campos son requeridos.' });
         }
 
-        const breakEven = Math.ceil(Number(prizeCost) / Number(proposedTicketPrice));
         const maxRevenue = Number(proposedTicketPrice) * Number(proposedTickets);
         const maxProfit = maxRevenue - Number(prizeCost);
 
@@ -89,7 +88,6 @@ Premio: ${prizeName}
 Costo del premio: $${Number(prizeCost).toLocaleString('es-CO')}
 Precio por ticket: $${Number(proposedTicketPrice).toLocaleString('es-CO')}
 Total de tickets: ${proposedTickets}
-Punto de equilibrio (calculado): ${breakEven} tickets
 Ingreso máximo potencial: $${maxRevenue.toLocaleString('es-CO')}
 Ganancia máxima potencial: $${maxProfit.toLocaleString('es-CO')}
 
@@ -101,7 +99,7 @@ Dame: 1) Clasificación de viabilidad (ALTA/MEDIA/BAJA), 2) Recomendaciones para
 
         res.json({
             analysis: response,
-            rawMetrics: { breakEven, maxRevenue, maxProfit }
+            rawMetrics: { maxRevenue, maxProfit }
         });
     } catch (error) {
         console.error('[Intelligence API] Error en evaluate-prize:', error);

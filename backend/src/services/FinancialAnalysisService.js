@@ -27,10 +27,6 @@ class FinancialAnalysisService {
         // Profit
         const estimatedProfit = revenue - totalCosts;
 
-        // Break even (Punto de equilibrio)
-        const breakEvenTickets = price > 0 ? Math.ceil(totalCosts / price) : 0;
-        const breakEvenReached = totalCosts > 0 ? (paidTickets >= breakEvenTickets) : (paidTickets > 0);
-
         // Margins
         const currentMargin = revenue > 0 ? (estimatedProfit / revenue) * 100 : 0;
 
@@ -50,8 +46,6 @@ class FinancialAnalysisService {
             potentialRevenue,
             totalCosts,
             estimatedProfit,
-            breakEvenTickets,
-            breakEvenReached,
             currentMargin,
             salesVelocity,
             estimatedDaysToTarget,
