@@ -62,7 +62,9 @@ class AIGateway {
                 title: r.title,
                 score: health.score,
                 risk: health.risk,
-                profit: health.metrics.estimatedProfit
+                profit: health.metrics.estimatedProfit,
+                paidCount: health.metrics.ticketStats.paid,
+                totalTickets: r.totalTickets || 0
             };
         });
     }
