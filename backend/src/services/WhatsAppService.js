@@ -202,7 +202,7 @@ class WhatsAppService {
                 `El organizador ha modificado la fecha de cierre de la rifa. Para garantizar la transparencia y entrega del premio, la plataforma notifica este cambio a todos los participantes.\n\n` +
                 `🎫 *${ticketLabel}:*\n` +
                 `👉 ${formattedNumbers}\n\n` +
-                `ℹ️ Tus números siguen 100% activos y garantizados para el sorteo. ¡Mucha suerte! 🍀✨\n\n` +
+                `ℹ️ Tus números siguen 100% activos y garantizados para el sorteo, si no has cancelado aún tienes tiempo para hacerlo. ¡Mucha suerte! 🍀✨\n\n` +
                 `💎 *Equipo WINNERS*\n` +
                 `🌐 https://winners-one.vercel.app/${raffle.id}`;
 
