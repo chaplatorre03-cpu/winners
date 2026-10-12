@@ -233,8 +233,10 @@ class Scheduler {
                              <div style="background:#1a1a1a;border:2px solid #8b00ff;border-radius:12px;padding:20px;margin:0 auto 20px;display:inline-block;text-align:left;width:100%;box-sizing:border-box;">
                                <p style="color:#888;font-size:12px;margin:0 0 6px;">📌 Rifa</p>
                                <p style="color:#fff;font-size:15px;font-weight:bold;margin:0 0 14px;">${raffle.title}</p>
-                               <p style="color:#888;font-size:12px;margin:0 0 4px;">📅 Cierre oficial</p>
+                               <p style="color:#888;font-size:12px;margin:0 0 4px;">📅 Cierre actual</p>
                                <p style="color:#ccc;font-size:14px;margin:0 0 14px;">${new Date(raffle.endDate).toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                               <p style="color:#888;font-size:12px;margin:0 0 6px;">🗓️ Fecha sugerida por el Agente</p>
+                               <p style="display:inline-block;background:linear-gradient(135deg,#8b00ff22,#ff00de18);border:1px solid #8b00ff88;border-radius:8px;padding:8px 16px;color:#c084fc;font-size:20px;font-weight:900;letter-spacing:0.5px;margin:0 0 16px;">${newSuggestedDate.toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
                                <p style="color:#888;font-size:12px;margin:0 0 4px;">📊 Avance de ventas</p>
                                <p style="color:#a855f7;font-size:16px;font-weight:900;margin:0 0 14px;">${metrics.percentSold.toFixed(1)}% (${metrics.ticketStats.paid} boletos pagados de ${raffle.totalTickets})</p>
                                <p style="color:#888;font-size:12px;margin:0 0 4px;">⚡ Nivel de riesgo</p>
