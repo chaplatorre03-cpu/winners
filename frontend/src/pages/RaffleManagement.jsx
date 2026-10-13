@@ -195,7 +195,7 @@ const RaffleManagement = () => {
         setPendingStatusUpdate({
             id: ticket.id,
             status: newStatus,
-            number: ticket.number,
+            number: formatNumber(ticket.number),
             buyerName: ticket.buyerName
         });
         setShowStatusConfirm(true);
