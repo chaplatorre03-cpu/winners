@@ -338,10 +338,9 @@ const PublicRaffle = () => {
 
                             <div
                                 onClick={() => {
-                                    setSuccessModalMode('organizer');
-                                    setSuccessModalView('success');
-                                    setCopiedField(null);
-                                    setShowSuccessModal(true);
+                                    const phone = (raffle.creator?.phone || raffle.organizerPhone || '3204446733').replace(/\D/g, '').slice(-10);
+                                    const msg = encodeURIComponent(`Hola, deseo informacion sobre el sorteo: ${raffle.title}`);
+                                    window.open(`https://api.whatsapp.com/send?phone=57${phone}&text=${msg}`, '_blank', 'noopener,noreferrer');
                                 }}
                                 className="p-6 border-[1.2px] border-primary bg-primary/5 rounded-2xl flex flex-col items-center hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-0.5 transition-all cursor-pointer group/organizer"
                             >
