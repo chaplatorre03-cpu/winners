@@ -186,6 +186,7 @@ const RaffleManagement = () => {
     };
 
     const formatNumber = (num) => {
+        if (num === undefined || num === null) return '';
         if (!raffle?.totalTickets) return num;
         const padding = (raffle.totalTickets - 1).toString().length;
         return num.toString().padStart(padding, '0');
@@ -274,20 +275,24 @@ const RaffleManagement = () => {
         }
     };
 
-    const handleDeleteTicket = (ticketId) => {
-        setTicketToDelete(ticketId);
+    const handleDeleteTicket = (ticketOrId) => {
+        const ticketObj = typeof ticketOrId === 'object' && ticketOrId !== null
+            ? ticketOrId
+            : (tickets.find(t => t.id === ticketOrId) || selectedTicket || { id: ticketOrId });
+        setTicketToDelete(ticketObj);
         setShowDeleteConfirm(true);
     };
 
     const confirmDeleteTicket = async () => {
         if (!ticketToDelete) return;
+        const ticketId = typeof ticketToDelete === 'object' ? ticketToDelete.id : ticketToDelete;
         const token = localStorage.getItem('token');
         if (!token) return;
 
         setActionLoadingMessage('LIBERANDO NÚMERO...');
         setActionLoading(true);
         try {
-            const response = await fetch(`${API_URL}/raffles/tickets/${ticketToDelete}`, {
+            const response = await fetch(`${API_URL}/raffles/tickets/${ticketId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -873,7 +878,7 @@ const RaffleManagement = () => {
                                     {!isEnded && selectedTicket.status !== 'PAGADO' && (
                                         <div className="pt-6 mt-2 border-t border-gray-100 px-2">
                                             <button
-                                                onClick={() => handleDeleteTicket(selectedTicket.id)}
+                                                onClick={() => handleDeleteTicket(selectedTicket)}
                                                 className="w-full px-6 py-4 bg-gradient-to-r from-red-500 to-red-600 text-white font-black rounded-2xl hover:shadow-[0_10px_30px_rgba(239,68,68,0.4)] transition-all uppercase tracking-widest italic text-sm border-b-4 border-red-700 active:border-b-0 active:translate-y-1"
                                             >
                                                 ELIMINAR RESERVA
@@ -1543,7 +1548,9 @@ const RaffleManagement = () => {
                                 </div>
 
                                 <h3 className="text-3xl font-black text-gray-900 uppercase italic tracking-tighter mb-4">¿ELIMINAR?</h3>
-                                <p className="text-gray-500 font-medium mb-8">¿Estás seguro de eliminar esta reserva? El número volverá a estar disponible.</p>
+                                <p className="text-gray-500 font-medium mb-8">
+                                    ¿Estás seguro de eliminar esta reserva? El número <span className="font-black text-gray-700">{formatNumber(ticketToDelete?.number ?? selectedTicket?.number)}</span> volverá a estar disponible.
+                                </p>
                             </div>
 
                             <div className="flex flex-col gap-3 p-2 pt-4">
