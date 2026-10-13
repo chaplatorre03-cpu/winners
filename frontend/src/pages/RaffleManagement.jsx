@@ -1607,7 +1607,7 @@ const RaffleManagement = () => {
 
                                 <h3 className="text-3xl font-black text-gray-900 uppercase italic tracking-tighter mb-4">¿CONFIRMAR?</h3>
                                 <p className="text-gray-500 font-medium mb-8">
-                                    ¿Estás seguro de cambiar el estado a <span className="text-primary font-black">{pendingStatusUpdate.status}</span> para el número <span className="font-black text-gray-700">{pendingStatusUpdate.number}</span> de <span className="font-black text-gray-700 italic">{pendingStatusUpdate.buyerName}</span>?
+                                    ¿Estás seguro de cambiar el estado a <span style={{ color: pendingStatusUpdate.status === 'PAGADO' ? '#00ff00' : pendingStatusUpdate.status === 'REVISANDO' ? '#ff00de' : '#8b00ff' }} className="font-black">{pendingStatusUpdate.status}</span> para el número <span className="font-black text-gray-700">{pendingStatusUpdate.number}</span> de <span className="font-black text-gray-700 italic">{pendingStatusUpdate.buyerName}</span>?
                                 </p>
                             </div>
 
