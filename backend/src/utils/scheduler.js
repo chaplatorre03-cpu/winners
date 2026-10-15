@@ -126,57 +126,25 @@ class Scheduler {
 
                     console.log(`[Agente Financiero] La rifa ${raffle.id} finalizó sin completar las ventas. Auto-extendiendo 15 días (hasta ${newEndDate.toISOString()}).`);
 
-                    await prisma.raffle.update({
+                    const updatedRaffle = await prisma.raffle.update({
                         where: { id: raffle.id },
-                        data: { endDate: newEndDate, suggestedDrawDate: null }
+                        data: { endDate: newEndDate, suggestedDrawDate: null },
+                        include: {
+                            tickets: {
+                                where: {
+                                    status: { in: ['PAGADO', 'APARTADO', 'REVISANDO'] }
+                                }
+                            }
+                        }
                     });
 
-                    // Notificar por WhatsApp a los participantes PAGADOS
+                    // Notificar por WhatsApp a los participantes usando WhatsAppService unificado
                     try {
-                        const paidTickets = await prisma.ticket.findMany({
-                            where: { raffleId: raffle.id, status: 'PAGADO' }
-                        });
-
-                        const ticketsByPhone = {};
-                        for (const ticket of paidTickets) {
-                            if (!ticket.buyerPhone) continue;
-                            if (!ticketsByPhone[ticket.buyerPhone]) {
-                                ticketsByPhone[ticket.buyerPhone] = {
-                                    name: ticket.buyerName || 'Participante',
-                                    numbers: []
-                                };
-                            }
-                            ticketsByPhone[ticket.buyerPhone].numbers.push(String(ticket.ticketNumber).padStart(3, '0'));
-                        }
-
                         const dateFormatted = newEndDate.toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' });
                         const oldDateFormatted = endDate.toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' });
 
-                        let notifiedCount = 0;
-                        for (const phone in ticketsByPhone) {
-                            const userData = ticketsByPhone[phone];
-                            const shortName = userData.name.split(' ')[0].toUpperCase();
-                            const numsList = userData.numbers.map(n => `#${n}`).join(', ');
-
-                            const waMsg = `✨ *WINNERS PLATFORM* ✨\n\n` +
-                                `👋 Hola *${shortName}*,\n\n` +
-                                `⚠️ *Aviso Importante sobre el Sorteo*\n\n` +
-                                `Te informamos que la fecha del sorteo *"${raffle.title}"* ha sido reprogramada automáticamente.\n\n` +
-                                `📆 *Detalles de la nueva programación:*\n` +
-                                ` • Fecha anterior: ~${oldDateFormatted}~\n` +
-                                ` • Nueva fecha oficial: 🎯 *${dateFormatted}*\n\n` +
-                                `El organizador no alcanzó la meta de ventas requerida. Para garantizar la transparencia y entrega del premio, el sistema extendió la fecha de forma automática.\n\n` +
-                                `🎫 *Tus números participantes:*\n` +
-                                `👉 ${numsList}\n\n` +
-                                `ℹ️ Tus números participantes siguen 100% activos y garantizados para el sorteo. ¡Mucha suerte! 🍀✨\n\n` +
-                                `💎 *Equipo WINNERS*\n` +
-                                `🌐 https://winners-one.vercel.app/${raffle.id}`;
-
-                            const waTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error('WA timeout')), 25000));
-                            await Promise.race([WhatsAppService.sendMessage(phone, waMsg), waTimeout]).catch(() => { });
-                            notifiedCount++;
-                        }
-                        console.log(`[Agente Financiero] Notificados ${notifiedCount} participantes sobre el cambio de fecha.`);
+                        await WhatsAppService.notifyDateChange(updatedRaffle, oldDateFormatted, dateFormatted, true);
+                        console.log(`[Agente Financiero] Participantes notificados sobre la auto-extensión de fecha.`);
                     } catch (err) {
                         console.error('[Agente Financiero] Error notificando a participantes:', err.message);
                     }
@@ -195,7 +163,7 @@ class Scheduler {
                                <p style="color:#a855f7;font-size:16px;font-weight:900;margin:0 0 14px;">${newEndDate.toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
                              </div>
                              <p style="color:#888;font-size:12px;margin:0 0 20px;">El Agente Winners ha <strong style="color:#fff;">extendido el sorteo 15 días adicionales</strong> automáticamente para proteger la viabilidad del sorteo y a los participantes.</p>
-                             <p style="color:#888;font-size:12px;margin:0 0 20px;">Todos los participantes con tickets <b>PAGADOS</b> han sido notificados de este cambio por WhatsApp.</p>
+                             <p style="color:#888;font-size:12px;margin:0 0 20px;">Todos los participantes han sido notificados de este cambio por WhatsApp.</p>
                              <a href="https://winners-one.vercel.app/panel" style="display:inline-block;background:linear-gradient(135deg,#8b00ff,#ff00de);color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:bold;font-size:14px;letter-spacing:1px;">VER MI PANEL →</a>`
                         );
                     }

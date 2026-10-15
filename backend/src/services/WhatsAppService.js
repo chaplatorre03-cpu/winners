@@ -144,7 +144,7 @@ class WhatsAppService {
      * @param {string} oldDate - The previous end date (formatted string)
      * @param {string} newDate - The new end date (formatted string)
      */
-    static async notifyDateChange(raffle, oldDate, newDate) {
+    static async notifyDateChange(raffle, oldDate, newDate, isAutoExtended = false) {
         const tickets = raffle.tickets || [];
 
         // Group tickets by buyer phone
@@ -176,7 +176,7 @@ class WhatsAppService {
             return;
         }
 
-        console.log(`[WhatsAppService] Notificando cambio de fecha a ${buyerMap.size} participante(s) de "${raffle.title}"`);
+        console.log(`[WhatsAppService] Notificando cambio de fecha (${isAutoExtended ? 'automático' : 'manual'}) a ${buyerMap.size} participante(s) de "${raffle.title}"`);
 
         // Format padding based on total tickets (e.g., 3 digits for 100-999, 4 digits for 1000+)
         const padLength = raffle.totalTickets ? Math.max(2, String(raffle.totalTickets - 1).length) : 3;
@@ -191,15 +191,19 @@ class WhatsAppService {
             const nameGreeting = data.name ? `Hola *${data.name.split(' ')[0].toUpperCase()}*` : 'Hola *PARTICIPANTE*';
             const ticketLabel = sortedNumbers.length > 1 ? 'Tus números participantes' : 'Tu número participante';
 
+            const reasonText = isAutoExtended
+                ? 'El organizador no alcanzó la meta de ventas requerida. Para garantizar la transparencia y entrega del premio, el sistema extendió la fecha de forma automática.'
+                : 'El organizador ha modificado la fecha de cierre de la rifa. Para garantizar la transparencia y entrega del premio, la plataforma notifica este cambio a todos los participantes.';
+
             const message =
                 `✨ *WINNERS PLATFORM* ✨\n\n` +
                 `👋 ${nameGreeting},\n\n` +
                 `⚠️ *Aviso Importante sobre el Sorteo*\n\n` +
-                `Te informamos que la fecha del sorteo *"${raffle.title}"* ha sido reprogramada.\n\n` +
+                `Te informamos que la fecha del sorteo *"${raffle.title}"* ha sido reprogramada${isAutoExtended ? ' automáticamente' : ''}.\n\n` +
                 `📆 *Detalles de la nueva programación:*\n` +
                 ` • Fecha anterior: ~${oldDate}~\n` +
                 ` • Nueva fecha oficial: 🎯 *${newDate}*\n\n` +
-                `El organizador ha modificado la fecha de cierre de la rifa. Para garantizar la transparencia y entrega del premio, la plataforma notifica este cambio a todos los participantes.\n\n` +
+                `${reasonText}\n\n` +
                 `🎫 *${ticketLabel}:*\n` +
                 `👉 ${formattedNumbers}\n\n` +
                 `ℹ️ Tus números siguen 100% activos y garantizados para el sorteo, si no has cancelado aún tienes tiempo para hacerlo. ¡Mucha suerte! 🍀✨\n\n` +
